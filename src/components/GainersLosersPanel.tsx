@@ -54,7 +54,7 @@ export default function GainersLosersPanel({ rows }: Props) {
   const losers  = [...sorted].reverse().slice(0, TOP_N);
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ gap: '1px', background: 'var(--border)' }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ gap: '1px', background: 'var(--border)' }}>
       <Panel title="TOP GAINERS" className="flex-1">
         <MiniTable items={gainers} positive />
       </Panel>

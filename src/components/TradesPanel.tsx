@@ -29,6 +29,7 @@ export default function TradesPanel({ trades }: Props) {
   return (
     <Panel
       title="RECENT / PAPER TRADES"
+      className="h-full"
       headerRight={<span>DATE · SYMBOL · SIDE · ENTRY · EXIT · P&amp;L</span>}
     >
       {recent.length === 0 ? (

@@ -28,7 +28,7 @@ function rrColor(rr: number) {
 export default function TradeIdeasPanel({ ideas, onTake, busy }: Props) {
   if (ideas.length === 0) {
     return (
-      <Panel title="TRADE IDEAS" headerRight={<span>entry · stop · target · qty · R:R</span>}>
+      <Panel title="TRADE IDEAS" className="h-full" headerRight={<span>entry · stop · target · qty · R:R</span>}>
         <EmptyState message="— no ideas —" hint="run a scan to generate trade ideas" />
       </Panel>
     );
@@ -37,6 +37,7 @@ export default function TradeIdeasPanel({ ideas, onTake, busy }: Props) {
   return (
     <Panel
       title="TRADE IDEAS"
+      className="h-full"
       headerRight={<span style={{ color: 'var(--color-accent)' }}>{ideas.length} idea{ideas.length !== 1 ? 's' : ''}</span>}
     >
       <div style={{ overflowX: 'auto', overflowY: 'auto', height: '100%' }}>

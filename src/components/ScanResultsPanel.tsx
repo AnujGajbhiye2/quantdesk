@@ -78,7 +78,7 @@ export default function ScanResultsPanel({ rows, selected, placeholders = [], on
 
   if (totalCount === 0) {
     return (
-      <Panel title="TOP MOMENTUM / SCAN RESULTS">
+      <Panel title="TOP MOMENTUM / SCAN RESULTS" className="h-full">
         <EmptyState message="- no data -" hint="run: scan --strategy=rsi-reversion" />
       </Panel>
     );
@@ -87,6 +87,7 @@ export default function ScanResultsPanel({ rows, selected, placeholders = [], on
   return (
     <Panel
       title="TOP MOMENTUM / SCAN RESULTS"
+      className="h-full"
       headerRight={<span>{rows.length} ingested{placeholders.length > 0 ? ` + ${placeholders.length} available` : ''}</span>}
     >
       {ingestError && (

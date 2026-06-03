@@ -44,14 +44,14 @@ export default function SignalDashboardPanel({ rows, signals }: Props) {
 
   if (rows.length === 0) {
     return (
-      <Panel title="SIGNAL DASHBOARD" headerRight={<span>RSI · MACD · MA · STRATEGY</span>}>
+      <Panel title="SIGNAL DASHBOARD" className="h-full" headerRight={<span>RSI · MACD · MA · STRATEGY</span>}>
         <EmptyState message="— no data —" hint="ingest market data first" />
       </Panel>
     );
   }
 
   return (
-    <Panel title="SIGNAL DASHBOARD" headerRight={<span>RSI(14) · MACD · MA50/200 · SIGNAL</span>}>
+    <Panel title="SIGNAL DASHBOARD" className="h-full" headerRight={<span>RSI(14) · MACD · MA50/200 · SIGNAL</span>}>
       <div style={{ overflowX: 'auto', overflowY: 'auto', height: '100%' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
           <thead>
