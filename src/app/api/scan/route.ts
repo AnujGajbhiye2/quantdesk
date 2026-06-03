@@ -44,6 +44,10 @@ export async function POST(request: Request) {
       rawParams:  body.rawParams,
     });
 
+    // Build a symbol->currency map for glyph display in the UI
+    const allMeta = await import('@/core/db/bars').then((m) => m.getAllSymbols());
+    const currencyMap = new Map(allMeta.map((m) => [m.symbol, m.currency]));
+
     // Build trade ideas for non-exit signals (enter_long / enter_short only)
     const ideas: TradeIdea[] = [];
     for (const raw of result.rawResults) {
@@ -54,7 +58,9 @@ export async function POST(request: Request) {
         raw.decision,
         { equity: body.equity, riskPct: body.riskPct },
       );
-      if (idea) ideas.push(idea);
+      if (idea) {
+        ideas.push({ ...idea, currency: currencyMap.get(idea.symbol) ?? 'USD' });
+      }
     }
 
     const scanned = body.symbols?.length

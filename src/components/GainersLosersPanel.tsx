@@ -2,6 +2,7 @@
 
 import Panel from './Panel';
 import EmptyState from './EmptyState';
+import { fmtMoney } from '@/core/format/currency';
 import type { MarketRow } from '@/core/market/snapshot';
 
 interface Props {
@@ -35,7 +36,7 @@ function MiniTable({ items, positive }: { items: MarketRow[]; positive: boolean 
             >
               {row.name}
             </td>
-            <td style={{ padding: '2px 6px', textAlign: 'right' }}>{fmt(row.last)}</td>
+            <td style={{ padding: '2px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(row.last, row.currency)}</td>
             <td style={{ padding: '2px 6px', textAlign: 'right', color }}>
               {row.changePct >= 0 ? '+' : ''}{fmt(row.changePct)}%
             </td>

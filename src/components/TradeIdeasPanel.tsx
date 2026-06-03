@@ -2,6 +2,7 @@
 
 import Panel from './Panel';
 import EmptyState from './EmptyState';
+import { fmtMoney } from '@/core/format/currency';
 import type { TradeIdea } from '@/core/types';
 
 interface Props {
@@ -28,7 +29,7 @@ function rrColor(rr: number) {
 export default function TradeIdeasPanel({ ideas, onTake, busy }: Props) {
   if (ideas.length === 0) {
     return (
-      <Panel title="TRADE IDEAS" className="h-full" headerRight={<span>entry · stop · target · qty · R:R</span>}>
+      <Panel title="TRADE IDEAS" className="h-full" headerRight={<span>entry · stop · target · qty · risk · R:R</span>}>
         <EmptyState message="— no ideas —" hint="run a scan to generate trade ideas" />
       </Panel>
     );
@@ -50,7 +51,7 @@ export default function TradeIdeasPanel({ ideas, onTake, busy }: Props) {
               <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>STOP</th>
               <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>TARGET</th>
               <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>QTY</th>
-              <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>RISK$</th>
+              <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>RISK</th>
               <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>R:R</th>
               <th style={{ textAlign: 'left',   padding: '2px 6px', fontWeight: 400, maxWidth: 160 }}>REASON</th>
               {onTake && <th style={{ textAlign: 'center', padding: '2px 6px', fontWeight: 400 }}>ACTION</th>}
@@ -69,19 +70,19 @@ export default function TradeIdeasPanel({ ideas, onTake, busy }: Props) {
                   {idea.side.toUpperCase()}
                 </td>
                 <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                  {fmt(idea.entryPrice)}
+                  {fmtMoney(idea.entryPrice, idea.currency)}
                 </td>
                 <td style={{ padding: '3px 6px', textAlign: 'right', color: 'var(--color-down)', fontVariantNumeric: 'tabular-nums' }}>
-                  {fmt(idea.stopPrice)}
+                  {fmtMoney(idea.stopPrice, idea.currency)}
                 </td>
                 <td style={{ padding: '3px 6px', textAlign: 'right', color: 'var(--color-up)', fontVariantNumeric: 'tabular-nums' }}>
-                  {fmt(idea.targetPrice)}
+                  {fmtMoney(idea.targetPrice, idea.currency)}
                 </td>
                 <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                   {fmt(idea.qty, 4)}
                 </td>
                 <td style={{ padding: '3px 6px', textAlign: 'right', color: 'var(--color-down)', fontVariantNumeric: 'tabular-nums' }}>
-                  {fmt(idea.riskAmount)}
+                  {fmtMoney(idea.riskAmount, idea.currency)}
                 </td>
                 <td style={{ padding: '3px 6px', textAlign: 'right', color: rrColor(idea.rr), fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
                   {isFinite(idea.rr) ? `${idea.rr.toFixed(1)}x` : '--'}

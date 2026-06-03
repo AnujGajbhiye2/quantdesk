@@ -14,6 +14,19 @@ vi.mock('@/core/db/paper', () => ({
   getPaperTrade:    vi.fn(),
 }));
 
+// Mock broker's markOpenTrades - returns empty by default (no open marks)
+const mockMarkOpenTrades = vi.fn().mockReturnValue([]);
+
+vi.mock('@/core/paper/broker', () => ({
+  markOpenTrades:           (...args: unknown[]) => mockMarkOpenTrades(...args),
+  markOpenTradesWithQuotes: vi.fn().mockResolvedValue([]),
+  openPaperTrade:           vi.fn(),
+  closePaperTrade:          vi.fn(),
+  sweepOpenTrades:          vi.fn().mockReturnValue([]),
+  projectTrade:             vi.fn(),
+  DuplicateOpenTradeError:  class extends Error {},
+}));
+
 const { buildTradeBook } = await import('./tradebook');
 
 // ---------------------------------------------------------------------------
@@ -154,5 +167,33 @@ describe('buildTradeBook', () => {
     const book = buildTradeBook();
     // avg = (5 + (-3)) / 2 = 1
     expect(book.avgPnlPct).toBeCloseTo(1, 4);
+  });
+
+  it('openUnrealizedPnl sums mark results from markOpenTrades', () => {
+    const openTrade = makeTrade({ id: 'o1', status: 'open', symbol: 'AAPL' });
+    mockGetAll.mockReturnValue([openTrade, closedWin('c1', 50)]);
+    mockMarkOpenTrades.mockReturnValue([
+      { trade: openTrade, markPrice: 110, unrealizedPnl: 100, unrealizedPnlPct: 10 },
+    ]);
+
+    const book = buildTradeBook();
+    expect(book.openUnrealizedPnl).toBeCloseTo(100, 6);
+    // Realized totalPnl unaffected by open unrealized
+    expect(book.totalPnl).toBeCloseTo(50, 6);
+  });
+
+  it('byStrategy.openUnrealizedPnl splits per strategy', () => {
+    const openRsi = makeTrade({ id: 'o1', strategyId: 'rsi', status: 'open' });
+    const openMa  = makeTrade({ id: 'o2', strategyId: 'ma',  status: 'open' });
+    mockGetAll.mockReturnValue([openRsi, openMa, closedWin('c1', 50, 'rsi')]);
+    mockMarkOpenTrades.mockReturnValue([
+      { trade: openRsi, markPrice: 105, unrealizedPnl:  80, unrealizedPnlPct:  8 },
+      { trade: openMa,  markPrice:  95, unrealizedPnl: -30, unrealizedPnlPct: -3 },
+    ]);
+
+    const book = buildTradeBook();
+    expect(book.byStrategy['rsi'].openUnrealizedPnl).toBeCloseTo(80, 6);
+    expect(book.byStrategy['ma'].openUnrealizedPnl).toBeCloseTo(-30, 6);
+    expect(book.openUnrealizedPnl).toBeCloseTo(50, 6); // 80 + (-30)
   });
 });

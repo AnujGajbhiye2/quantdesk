@@ -1,6 +1,7 @@
 'use client';
 
 import Sparkline from './Sparkline';
+import { fmtMoney } from '@/core/format/currency';
 import type { MarketRow } from '@/core/market/snapshot';
 
 interface Props {
@@ -59,7 +60,7 @@ export default function MarketSummaryStrip({ rows }: Props) {
           <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.06em' }}>
             {row.symbol}
           </span>
-          <span style={{ fontSize: 'var(--fs-sm)', fontVariantNumeric: 'tabular-nums' }}>{fmt(row.last)}</span>
+          <span style={{ fontSize: 'var(--fs-sm)', fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(row.last, row.currency)}</span>
           <span style={{ color: row.priceSource === 'quote' ? 'var(--color-accent)' : 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>
             {sourceLabel(row)}
           </span>

@@ -23,6 +23,7 @@ interface PaperTradeRow {
   pnl_pct:      number | null;
   costs:        number;
   notes:        string | null;
+  currency:     string | null; // joined from symbols table
 }
 
 function rowToTrade(r: PaperTradeRow): PaperTrade {
@@ -31,6 +32,7 @@ function rowToTrade(r: PaperTradeRow): PaperTrade {
     strategyId:  r.strategy_id,
     symbol:      r.symbol,
     side:        r.side as 'long' | 'short',
+    currency:    r.currency ?? undefined,
     qty:         r.qty,
     entryTime:   r.entry_time,
     entryPrice:  r.entry_price,
@@ -107,7 +109,12 @@ export function updatePaperTrade(trade: PaperTrade): void {
 export function getPaperTrade(id: string): PaperTrade | undefined {
   const db = getDb();
   const row = db
-    .prepare(`SELECT * FROM paper_trades WHERE id = ?`)
+    .prepare(`
+      SELECT pt.*, s.currency
+      FROM paper_trades pt
+      LEFT JOIN symbols s ON pt.symbol = s.symbol
+      WHERE pt.id = ?
+    `)
     .get(id) as PaperTradeRow | undefined;
   return row ? rowToTrade(row) : undefined;
 }
@@ -117,9 +124,11 @@ export function getOpenPaperTradeBySymbol(symbol: string): PaperTrade | undefine
   const db = getDb();
   const row = db
     .prepare(`
-      SELECT * FROM paper_trades
-      WHERE symbol = ? AND status = 'open'
-      ORDER BY entry_time DESC
+      SELECT pt.*, s.currency
+      FROM paper_trades pt
+      LEFT JOIN symbols s ON pt.symbol = s.symbol
+      WHERE pt.symbol = ? AND pt.status = 'open'
+      ORDER BY pt.entry_time DESC
       LIMIT 1
     `)
     .get(symbol) as PaperTradeRow | undefined;
@@ -137,17 +146,23 @@ export function getPaperTrades(opts: GetPaperTradesOpts = {}): PaperTrade[] {
   const params: Record<string, unknown> = {};
 
   if (opts.status) {
-    conditions.push('status = @status');
+    conditions.push('pt.status = @status');
     params.status = opts.status;
   }
   if (opts.strategyId) {
-    conditions.push('strategy_id = @strategyId');
+    conditions.push('pt.strategy_id = @strategyId');
     params.strategyId = opts.strategyId;
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const rows  = db
-    .prepare(`SELECT * FROM paper_trades ${where} ORDER BY entry_time DESC`)
+    .prepare(`
+      SELECT pt.*, s.currency
+      FROM paper_trades pt
+      LEFT JOIN symbols s ON pt.symbol = s.symbol
+      ${where}
+      ORDER BY pt.entry_time DESC
+    `)
     .all(params) as PaperTradeRow[];
 
   return rows.map(rowToTrade);

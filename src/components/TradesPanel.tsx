@@ -2,10 +2,15 @@
 
 import Panel from './Panel';
 import EmptyState from './EmptyState';
+import { fmtMoney } from '@/core/format/currency';
 import type { PaperTrade } from '@/core/types';
+
+/** Map of tradeId -> unrealized P&L for open positions (from mark action). */
+export type MarksMap = Map<string, { unrealizedPnl: number; unrealizedPnlPct: number }>;
 
 interface Props {
   trades: PaperTrade[];
+  marks?: MarksMap;
 }
 
 function pnlColor(v: number | undefined) {
@@ -23,7 +28,7 @@ function fmt(n: number | undefined, dec = 2) {
   return n.toFixed(dec);
 }
 
-export default function TradesPanel({ trades }: Props) {
+export default function TradesPanel({ trades, marks }: Props) {
   const recent = [...trades].reverse().slice(0, 20);
 
   return (
@@ -52,8 +57,15 @@ export default function TradesPanel({ trades }: Props) {
           </thead>
           <tbody>
             {recent.map((t) => {
-              const sideColor = t.side === 'long' ? 'var(--color-up)' : 'var(--color-down)';
+              const sideColor   = t.side === 'long' ? 'var(--color-up)' : 'var(--color-down)';
               const statusColor = t.status === 'open' ? 'var(--color-accent)' : 'var(--text-muted)';
+              const cur         = t.currency ?? 'USD';
+              const mark        = t.status === 'open' ? marks?.get(t.id) : undefined;
+              // For open trades show MTM unrealized P&L; for closed show realized P&L
+              const displayPnl    = mark != null ? mark.unrealizedPnl    : t.pnl;
+              const displayPnlPct = mark != null ? mark.unrealizedPnlPct : t.pnlPct;
+              const isMtm         = mark != null;
+
               return (
                 <tr key={t.id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '2px 4px', color: 'var(--text-muted)' }}>{fmtDate(t.entryTime)}</td>
@@ -63,19 +75,23 @@ export default function TradesPanel({ trades }: Props) {
                     {t.side.toUpperCase()}
                   </td>
                   <td style={{ padding: '2px 4px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                    {fmt(t.entryPrice)}
+                    {fmtMoney(t.entryPrice, cur)}
                   </td>
                   <td style={{ padding: '2px 4px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-muted)' }}>
-                    {fmt(t.exitPrice)}
+                    {t.exitPrice != null ? fmtMoney(t.exitPrice, cur) : '--'}
                   </td>
                   <td style={{ padding: '2px 4px', textAlign: 'right', color: 'var(--text-muted)' }}>
                     {fmt(t.qty, 4)}
                   </td>
-                  <td style={{ padding: '2px 4px', textAlign: 'right', color: pnlColor(t.pnl), fontVariantNumeric: 'tabular-nums' }}>
-                    {t.pnl != null ? `${t.pnl >= 0 ? '+' : ''}${fmt(t.pnl)}` : '--'}
+                  <td style={{ padding: '2px 4px', textAlign: 'right', color: pnlColor(displayPnl), fontVariantNumeric: 'tabular-nums' }}>
+                    {displayPnl != null
+                      ? `${isMtm ? '~' : ''}${displayPnl >= 0 ? '+' : ''}${fmtMoney(displayPnl, cur)}`
+                      : '--'}
                   </td>
-                  <td style={{ padding: '2px 4px', textAlign: 'right', color: pnlColor(t.pnlPct), fontVariantNumeric: 'tabular-nums' }}>
-                    {t.pnlPct != null ? `${t.pnlPct >= 0 ? '+' : ''}${fmt(t.pnlPct)}%` : '--'}
+                  <td style={{ padding: '2px 4px', textAlign: 'right', color: pnlColor(displayPnlPct), fontVariantNumeric: 'tabular-nums' }}>
+                    {displayPnlPct != null
+                      ? `${isMtm ? '~' : ''}${displayPnlPct >= 0 ? '+' : ''}${fmt(displayPnlPct)}%`
+                      : '--'}
                   </td>
                   <td style={{ padding: '2px 4px', textAlign: 'center', color: statusColor }}>
                     {t.status.toUpperCase()}

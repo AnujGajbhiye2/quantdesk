@@ -39,15 +39,17 @@ export interface TradeIdea {
   symbol:       string;
   strategyId:   string;
   side:         'long' | 'short';
+  /** ISO 4217 currency code for this symbol (e.g. 'USD', 'INR'). */
+  currency:     string;
   /** Expected entry price = last close; actual fill happens at next bar open. */
   entryPrice:   number;
   stopPrice:    number;
   targetPrice:  number;
   /** Risk-based quantity: risks ~riskPct of equity to the stop. */
   qty:          number;
-  /** Dollar amount at risk to the stop (entry - stop) * qty. */
+  /** Amount at risk to the stop (entry - stop) * qty, in the symbol's currency. */
   riskAmount:   number;
-  /** Dollar reward to target (target - entry) * qty. */
+  /** Reward to target (target - entry) * qty, in the symbol's currency. */
   rewardAmount: number;
   /** Risk/reward ratio (rewardAmount / riskAmount). */
   rr:           number;
@@ -60,6 +62,8 @@ export interface PaperTrade {
   strategyId: string;
   symbol: string;
   side: 'long' | 'short';
+  /** ISO 4217 currency code, joined from the symbols table (e.g. 'USD', 'INR'). */
+  currency?: string;
   qty: number;
   entryTime: string;
   entryPrice: number;

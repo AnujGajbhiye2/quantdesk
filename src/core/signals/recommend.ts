@@ -117,6 +117,9 @@ export function recommendTrade(
     symbol:       signal.symbol,
     strategyId:   signal.strategyId,
     side:         signal.side === 'flat' ? 'long' : signal.side,
+    // currency is unknown at this layer; the caller (api/scan route) overwrites
+    // this with the correct value from the symbols table.
+    currency:     'USD',
     entryPrice,
     stopPrice,
     targetPrice,

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Panel from './Panel';
 import Sparkline from './Sparkline';
 import EmptyState from './EmptyState';
+import { fmtMoney } from '@/core/format/currency';
 import type { MarketRow } from '@/core/market/snapshot';
 
 export interface PlaceholderSymbol {
@@ -137,8 +138,8 @@ export default function ScanResultsPanel({ rows, selected, placeholders = [], on
                 >
                   {row.name}
                 </td>
-                <td style={{ padding: '3px 6px', textAlign: 'right' }}>
-                  {fmt(row.last)}
+                <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {fmtMoney(row.last, row.currency)}
                 </td>
                 <td style={{ padding: '3px 6px', color: row.priceSource === 'quote' ? 'var(--color-accent)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                   {fmtAsOf(row)}

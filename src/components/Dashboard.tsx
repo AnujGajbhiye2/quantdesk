@@ -7,12 +7,14 @@ import CommandBar, { type CommandBarHandle } from "./CommandBar";
 import ScanResultsPanel, { type PlaceholderSymbol } from "./ScanResultsPanel";
 import GainersLosersPanel from "./GainersLosersPanel";
 import SignalDashboardPanel from "./SignalDashboardPanel";
-import TradesPanel from "./TradesPanel";
+import TradesPanel, { type MarksMap } from "./TradesPanel";
 import TradeIdeasPanel from "./TradeIdeasPanel";
+import StrategyEdgePanel from "./StrategyEdgePanel";
 import MarketSummaryStrip from "./MarketSummaryStrip";
 import GoToSymbolOverlay from "./GoToSymbolOverlay";
 import { useKeyboardNav } from "./useKeyboardNav";
 import type { MarketRow } from "@/core/market/snapshot";
+import type { TradeBook } from "@/core/paper/tradebook";
 import type { PaperTrade, Signal, TradeIdea, SymbolMeta } from "@/core/types";
 import { marketOf, ALL_MARKETS, type Market } from "@/core/market/markets";
 
@@ -45,6 +47,8 @@ export default function Dashboard({
 }: Props) {
   const [rows, setRows] = useState<MarketRow[]>(initialRows);
   const [trades, setTrades] = useState<PaperTrade[]>(initialTrades);
+  const [marks, setMarks] = useState<MarksMap>(new Map());
+  const [book, setBook] = useState<TradeBook | null>(null);
   const [signals, setSignals] = useState<Signal[]>([]);
   const [ideas, setIdeas] = useState<TradeIdea[]>([]);
   const [ideaBusy, setIdeaBusy] = useState(false);
@@ -179,6 +183,37 @@ export default function Dashboard({
     void refreshQuotes(filteredRows);
   }, [filteredRows, refreshQuotes]);
 
+  // Load marks and book on initial mount
+  useEffect(() => {
+    const init = async () => {
+      const [markRes, bookRes] = await Promise.all([
+        fetch("/api/paper", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "mark", useQuotes: false }),
+        }),
+        fetch("/api/paper", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "tradebook" }),
+        }),
+      ]);
+      if (markRes.ok) {
+        const { marks: markResults } = (await markRes.json()) as {
+          marks: { trade: { id: string }; unrealizedPnl: number; unrealizedPnlPct: number }[];
+        };
+        setMarks(new Map(markResults.map((m) => [m.trade.id, { unrealizedPnl: m.unrealizedPnl, unrealizedPnlPct: m.unrealizedPnlPct }])));
+      }
+      if (bookRes.ok) {
+        const { book: newBook } = (await bookRes.json()) as { book: TradeBook };
+        setBook(newBook);
+      }
+    };
+    void init();
+  // Run once on mount only
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSignals = useCallback(
     (sigs: Signal[], newIdeas?: TradeIdea[]) => {
       setSignals(sigs);
@@ -241,12 +276,22 @@ export default function Dashboard({
         body: JSON.stringify({ action: "sweep" }),
       });
 
-      const [mRes, tRes] = await Promise.all([
+      const [mRes, tRes, markRes, bookRes] = await Promise.all([
         fetch("/api/market"),
         fetch("/api/paper", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "list" }),
+        }),
+        fetch("/api/paper", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "mark", useQuotes: false }),
+        }),
+        fetch("/api/paper", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "tradebook" }),
         }),
       ]);
       if (mRes.ok) {
@@ -260,6 +305,16 @@ export default function Dashboard({
           trades: PaperTrade[];
         };
         setTrades(newTrades);
+      }
+      if (markRes.ok) {
+        const { marks: markResults } = (await markRes.json()) as {
+          marks: { trade: { id: string }; unrealizedPnl: number; unrealizedPnlPct: number }[];
+        };
+        setMarks(new Map(markResults.map((m) => [m.trade.id, { unrealizedPnl: m.unrealizedPnl, unrealizedPnlPct: m.unrealizedPnlPct }])));
+      }
+      if (bookRes.ok) {
+        const { book: newBook } = (await bookRes.json()) as { book: TradeBook };
+        setBook(newBook);
       }
     } finally {
       setRefreshing(false);
@@ -303,10 +358,6 @@ export default function Dashboard({
 
   return (
     <>
-      {/* Row 5: Market summary strip */}
-      <div className="col-span-12 h-[72px]">
-        <MarketSummaryStrip rows={visibleRows} />
-      </div>
       {gotoOpen && (
         <GoToSymbolOverlay
           allSymbols={allSymbols}
@@ -496,7 +547,7 @@ export default function Dashboard({
             style={{ background: "var(--border)" }}
           >
             {/* Row 1: Scan (7) + Gainers/Losers (5) */}
-            <div className="col-span-7 h-[380px]">
+            <div className="col-span-7 h-95">
               <ScanResultsPanel
                 rows={visibleRows}
                 selected={selected}
@@ -504,17 +555,17 @@ export default function Dashboard({
                 onIngestDone={() => void refreshAll()}
               />
             </div>
-            <div className="col-span-5 h-[380px]">
+            <div className="col-span-5 h-95">
               <GainersLosersPanel rows={visibleRows} />
             </div>
 
-            {/* Row 2: Signal dashboard (full width) */}
-            <div className="col-span-6 h-[320px]">
+            {/* Row 2: Signal dashboard (6) + Trade ideas (6) */}
+            <div className="col-span-6 h-80">
               <SignalDashboardPanel rows={visibleRows} signals={signals} />
             </div>
 
-            {/* Row 3: Trade ideas (full width) */}
-            <div className="col-span-6 h-[320px]">
+            {/* Row 3: Trade ideas (6) */}
+            <div className="col-span-6 h-80">
               <TradeIdeasPanel
                 ideas={ideas}
                 onTake={handleTakeIdea}
@@ -522,9 +573,19 @@ export default function Dashboard({
               />
             </div>
 
-            {/* Row 4: Recent trades (full width) */}
-            <div className="col-span-12 h-[280px]">
-              <TradesPanel trades={trades} />
+            {/* Row 4: Strategy edge (full width) */}
+            <div className="col-span-12 h-40">
+              <StrategyEdgePanel book={book} />
+            </div>
+
+            {/* Row 5: Recent trades (full width) */}
+            <div className="col-span-12 h-70">
+              <TradesPanel trades={trades} marks={marks} />
+            </div>
+
+            {/* Row 6: Market summary strip */}
+            <div className="col-span-12 h-18">
+              <MarketSummaryStrip rows={visibleRows} />
             </div>
           </div>
         </div>
