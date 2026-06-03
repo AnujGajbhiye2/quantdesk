@@ -1,8 +1,13 @@
 import type { Strategy } from './Strategy';
 import { validateStrategy } from './validate';
-import { RSIReversionStrategy } from './examples/rsi-reversion';
-import { MACrossoverStrategy } from './examples/ma-crossover';
-import { MACDMomentumStrategy } from './examples/macd-momentum';
+import { RSIReversionStrategy }      from './examples/rsi-reversion';
+import { MACrossoverStrategy }        from './examples/ma-crossover';
+import { MACDMomentumStrategy }       from './examples/macd-momentum';
+import { BollingerReversionStrategy } from './examples/bollinger-reversion';
+import { DonchianBreakoutStrategy }   from './examples/donchian-breakout';
+import { RocMomentumStrategy }        from './examples/roc-momentum';
+import { AtrTrendStrategy }           from './examples/atr-trend';
+import { StochReversalStrategy }      from './examples/stoch-reversal';
 
 /**
  * Strategy registry.
@@ -49,3 +54,8 @@ export function list(): { id: string; name: string; description: string }[] {
 register(new RSIReversionStrategy());
 register(new MACrossoverStrategy());
 register(new MACDMomentumStrategy());
+register(new BollingerReversionStrategy());
+register(new DonchianBreakoutStrategy());
+register(new RocMomentumStrategy());
+register(new AtrTrendStrategy());
+register(new StochReversalStrategy());
