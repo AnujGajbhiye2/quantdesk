@@ -34,6 +34,27 @@ export interface Signal {
 
 export type TradeStatus = 'open' | 'closed';
 
+/** A concrete, actionable trade idea produced by the recommendation engine. */
+export interface TradeIdea {
+  symbol:       string;
+  strategyId:   string;
+  side:         'long' | 'short';
+  /** Expected entry price = last close; actual fill happens at next bar open. */
+  entryPrice:   number;
+  stopPrice:    number;
+  targetPrice:  number;
+  /** Risk-based quantity: risks ~riskPct of equity to the stop. */
+  qty:          number;
+  /** Dollar amount at risk to the stop (entry - stop) * qty. */
+  riskAmount:   number;
+  /** Dollar reward to target (target - entry) * qty. */
+  rewardAmount: number;
+  /** Risk/reward ratio (rewardAmount / riskAmount). */
+  rr:           number;
+  reason:       string;
+  time:         string;
+}
+
 export interface PaperTrade {
   id: string;
   strategyId: string;

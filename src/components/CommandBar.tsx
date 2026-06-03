@@ -2,7 +2,7 @@
 
 import { useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import type { MarketRow } from '@/core/market/snapshot';
-import type { Signal } from '@/core/types';
+import type { Signal, TradeIdea } from '@/core/types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -14,7 +14,7 @@ export interface CommandBarHandle {
 
 interface CommandBarProps {
   onMarketRefresh: (rows: MarketRow[]) => void;
-  onSignals:       (signals: Signal[]) => void;
+  onSignals:       (signals: Signal[], ideas?: TradeIdea[]) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -83,8 +83,8 @@ const CommandBar = forwardRef<CommandBarHandle, CommandBarProps>(function Comman
           body:    JSON.stringify({ strategyId, symbols }),
         });
         if (!res.ok) throw new Error(await res.text());
-        const data = await res.json() as { signals: Signal[]; scanned: number; durationMs: number };
-        onSignals(data.signals);
+        const data = await res.json() as { signals: Signal[]; ideas?: TradeIdea[]; scanned: number; durationMs: number };
+        onSignals(data.signals, data.ideas);
 
         // Refresh market data
         const mRes  = await fetch('/api/market');

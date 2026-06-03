@@ -43,19 +43,34 @@ export async function POST(request: Request) {
 
     switch (action) {
       case 'open': {
+        const entryPrice = body.entryPrice as number;
+        // Support direct absolute stopPrice/targetPrice in addition to pct-based
+        let stopPct  = body.stopPct  as number | undefined;
+        let targetPct = body.targetPct as number | undefined;
+        if (body.stopPrice   != null && entryPrice > 0) {
+          const stopAbs = body.stopPrice as number;
+          stopPct = Math.abs(entryPrice - stopAbs) / entryPrice;
+        }
+        if (body.targetPrice != null && entryPrice > 0) {
+          const targetAbs = body.targetPrice as number;
+          targetPct = Math.abs(targetAbs - entryPrice) / entryPrice;
+        }
+        // Support pre-computed qty (overrides sizePct-based sizing)
+        const preQty = body.qty as number | undefined;
         const trade = openPaperTrade({
           strategyId:  body.strategyId  as string,
           symbol:      body.symbol      as string,
           side:        body.side        as 'long' | 'short',
-          entryPrice:  body.entryPrice  as number,
+          entryPrice,
           entryTime:   body.entryTime   as string,
-          sizePct:     body.sizePct     as number | undefined,
-          stopPct:     body.stopPct     as number | undefined,
-          targetPct:   body.targetPct   as number | undefined,
-          equity:      body.equity      as number | undefined,
+          sizePct:     preQty != null ? undefined : (body.sizePct as number | undefined),
+          stopPct,
+          targetPct,
+          equity:      preQty != null ? entryPrice * preQty : (body.equity as number | undefined),
           commission:  body.commission  as number | undefined,
           slippagePct: body.slippagePct as number | undefined,
           notes:       body.notes       as string | undefined,
+          _overrideQty: preQty,
         });
         return NextResponse.json({ trade });
       }

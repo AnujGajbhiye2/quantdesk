@@ -40,6 +40,8 @@ export interface OpenTradeInput {
   commission?:  number;
   slippagePct?: number;
   notes?:       string;
+  /** Directly override qty (skips sizePct/equity-based sizing). */
+  _overrideQty?: number;
 }
 
 /**
@@ -64,8 +66,10 @@ export function openPaperTrade(input: OpenTradeInput): PaperTrade {
 
   void commission; // stored at close; declared here for interface completeness
 
-  const fillPrice                 = entryFillPrice(side, rawEntryPrice, slippagePct);
-  const qty                       = qtyForCash(equity, sizePct, fillPrice);
+  const fillPrice = entryFillPrice(side, rawEntryPrice, slippagePct);
+  const qty       = input._overrideQty != null
+    ? input._overrideQty
+    : qtyForCash(equity, sizePct, fillPrice);
   const { stopPrice, targetPrice } = stopTargetPrices(side, fillPrice, stopPct, targetPct);
 
   const trade: PaperTrade = {

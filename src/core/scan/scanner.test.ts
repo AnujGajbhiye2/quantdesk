@@ -54,34 +54,41 @@ describe('scanSymbol', () => {
   it('enter_long decision -> side = long signal', () => {
     const strategy = constStrategy({ action: 'enter_long', reason: 'RSI oversold' });
     const bars = makeBars(10);
-    const signal = scanSymbol('AAPL', bars, strategy, {});
+    const result = scanSymbol('AAPL', bars, strategy, {});
 
-    expect(signal).not.toBeNull();
-    expect(signal!.symbol).toBe('AAPL');
-    expect(signal!.side).toBe('long');
-    expect(signal!.reason).toBe('RSI oversold');
-    expect(signal!.strategyId).toBe('const');
+    expect(result).not.toBeNull();
+    expect(result!.signal.symbol).toBe('AAPL');
+    expect(result!.signal.side).toBe('long');
+    expect(result!.signal.reason).toBe('RSI oversold');
+    expect(result!.signal.strategyId).toBe('const');
+  });
+
+  it('exposes decision on result', () => {
+    const strategy = constStrategy({ action: 'enter_long', stopPct: 0.05 });
+    const bars = makeBars(5);
+    const result = scanSymbol('X', bars, strategy, {});
+    expect(result!.decision.stopPct).toBe(0.05);
   });
 
   it('enter_short decision -> side = short signal', () => {
     const strategy = constStrategy({ action: 'enter_short' });
     const bars = makeBars(5);
-    const signal = scanSymbol('MSFT', bars, strategy, {});
-    expect(signal!.side).toBe('short');
+    const result = scanSymbol('MSFT', bars, strategy, {});
+    expect(result!.signal.side).toBe('short');
   });
 
   it('exit decision -> side = flat signal', () => {
     const strategy = constStrategy({ action: 'exit' });
     const bars = makeBars(5);
-    const signal = scanSymbol('TSLA', bars, strategy, {});
-    expect(signal!.side).toBe('flat');
+    const result = scanSymbol('TSLA', bars, strategy, {});
+    expect(result!.signal.side).toBe('flat');
   });
 
   it('signal time = latest bar time', () => {
     const strategy = constStrategy({ action: 'enter_long' });
     const bars = makeBars(7);
-    const signal = scanSymbol('TEST', bars, strategy, {});
-    expect(signal!.time).toBe(bars[bars.length - 1].time);
+    const result = scanSymbol('TEST', bars, strategy, {});
+    expect(result!.signal.time).toBe(bars[bars.length - 1].time);
   });
 
   it('strategy receives only bars[0..n-1] (no look-ahead)', () => {
@@ -103,7 +110,7 @@ describe('scanSymbol', () => {
   it('reason defaults to empty string when strategy provides none', () => {
     const strategy = constStrategy({ action: 'enter_long' });
     const bars = makeBars(3);
-    const signal = scanSymbol('X', bars, strategy, {});
-    expect(signal!.reason).toBe('');
+    const result = scanSymbol('X', bars, strategy, {});
+    expect(result!.signal.reason).toBe('');
   });
 });

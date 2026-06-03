@@ -8,11 +8,12 @@ import ScanResultsPanel from './ScanResultsPanel';
 import GainersLosersPanel from './GainersLosersPanel';
 import SignalDashboardPanel from './SignalDashboardPanel';
 import TradesPanel from './TradesPanel';
+import TradeIdeasPanel from './TradeIdeasPanel';
 import MarketSummaryStrip from './MarketSummaryStrip';
 import GoToSymbolOverlay from './GoToSymbolOverlay';
 import { useKeyboardNav } from './useKeyboardNav';
 import type { MarketRow } from '@/core/market/snapshot';
-import type { PaperTrade, Signal, SymbolMeta } from '@/core/types';
+import type { PaperTrade, Signal, TradeIdea, SymbolMeta } from '@/core/types';
 import { marketOf, ALL_MARKETS, type Market } from '@/core/market/markets';
 
 interface Props {
@@ -31,6 +32,8 @@ export default function Dashboard({
   const [rows,       setRows]       = useState<MarketRow[]>(initialRows);
   const [trades,     setTrades]     = useState<PaperTrade[]>(initialTrades);
   const [signals,    setSignals]    = useState<Signal[]>([]);
+  const [ideas,      setIdeas]      = useState<TradeIdea[]>([]);
+  const [ideaBusy,   setIdeaBusy]   = useState(false);
   const [strategies]               = useState(initialStrategies);
   const [scanStratId, setScanStratId] = useState(initialStrategies[0]?.id ?? '');
   const [gotoOpen,   setGotoOpen]  = useState(false);
@@ -74,8 +77,46 @@ export default function Dashboard({
     setSelected(-1);
   }, [setSelected]);
 
-  const handleSignals = useCallback((sigs: Signal[]) => {
+  const handleSignals = useCallback((sigs: Signal[], newIdeas?: TradeIdea[]) => {
     setSignals(sigs);
+    if (newIdeas) setIdeas(newIdeas);
+  }, []);
+
+  const handleTakeIdea = useCallback(async (idea: TradeIdea) => {
+    setIdeaBusy(true);
+    try {
+      const res = await fetch('/api/paper', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          action:      'open',
+          strategyId:  idea.strategyId,
+          symbol:      idea.symbol,
+          side:        idea.side,
+          entryPrice:  idea.entryPrice,
+          entryTime:   idea.time,
+          stopPrice:   idea.stopPrice,
+          targetPrice: idea.targetPrice,
+          qty:         idea.qty,
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      // Refresh trades list
+      const tRes = await fetch('/api/paper', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'list' }),
+      });
+      if (tRes.ok) {
+        const { trades: newTrades } = await tRes.json() as { trades: PaperTrade[] };
+        setTrades(newTrades);
+      }
+      setScanStatus(`Paper trade opened: ${idea.side.toUpperCase()} ${idea.symbol} x${idea.qty.toFixed(2)}`);
+    } catch (err) {
+      setScanStatus(`error opening trade: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIdeaBusy(false);
+    }
   }, []);
 
   // Fetch fresh market + trades data
@@ -111,9 +152,10 @@ export default function Dashboard({
         body:    JSON.stringify({ strategyId: scanStratId }),
       });
       if (!res.ok) throw new Error(await res.text());
-      const data = await res.json() as { signals: Signal[]; scanned: number; durationMs: number };
+      const data = await res.json() as { signals: Signal[]; ideas: TradeIdea[]; scanned: number; durationMs: number };
       setSignals(data.signals);
-      setScanStatus(`${data.signals.length} signal(s) across ${data.scanned} symbol(s) in ${data.durationMs}ms`);
+      setIdeas(data.ideas ?? []);
+      setScanStatus(`${data.signals.length} signal(s), ${(data.ideas ?? []).length} idea(s) across ${data.scanned} symbol(s) in ${data.durationMs}ms`);
     } catch (err) {
       setScanStatus(`error: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -259,7 +301,7 @@ export default function Dashboard({
         <div
           className="flex-1 grid overflow-hidden"
           style={{
-            gridTemplateRows: '1fr 1fr 120px 80px',
+            gridTemplateRows: '1fr 180px 180px 120px 80px',
             gridTemplateColumns: '1fr 1fr',
             gap: '1px',
             background: 'var(--border)',
@@ -275,7 +317,12 @@ export default function Dashboard({
             <SignalDashboardPanel rows={filteredRows} signals={signals} />
           </div>
 
-          {/* Row 3 - Recent trades (full width) */}
+          {/* Row 3 - Trade ideas (full width) */}
+          <div className="col-span-2 overflow-hidden" style={{ background: 'var(--bg-panel)' }}>
+            <TradeIdeasPanel ideas={ideas} onTake={handleTakeIdea} busy={ideaBusy} />
+          </div>
+
+          {/* Row 4 - Recent trades (full width) */}
           <div className="col-span-2 overflow-hidden" style={{ background: 'var(--bg-panel)' }}>
             <TradesPanel trades={trades} />
           </div>

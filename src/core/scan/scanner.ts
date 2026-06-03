@@ -1,6 +1,6 @@
 import 'server-only';
 import type { Bar, Signal, Timeframe } from '@/core/types';
-import type { Strategy } from '@/core/strategy/Strategy';
+import type { Strategy, StrategyDecision } from '@/core/strategy/Strategy';
 import { get as getStrategy } from '@/core/strategy/registry';
 import { makeContext, type IndicatorCache } from '@/core/strategy/context';
 import { getBars, getAllSymbols } from '@/core/db/bars';
@@ -20,6 +20,12 @@ export interface ScanOpts {
 // Pure core - testable without DB
 // ---------------------------------------------------------------------------
 
+export interface ScanSymbolResult {
+  signal:   Signal;
+  decision: StrategyDecision;
+  bars:     readonly Bar[];
+}
+
 /**
  * Evaluate a strategy on the latest bar of the given series.
  * Returns null if there are fewer than 2 bars or the decision is 'hold'.
@@ -29,11 +35,11 @@ export function scanSymbol(
   bars:         readonly Bar[],
   strategy:     Strategy,
   parsedParams: unknown,
-): Signal | null {
+): ScanSymbolResult | null {
   if (bars.length < 2) return null;
 
   const cache: IndicatorCache = new Map();
-  const ctx   = makeContext(bars as Bar[], bars.length - 1, 'flat', cache);
+  const ctx      = makeContext(bars as Bar[], bars.length - 1, 'flat', cache);
   const decision = strategy.onBar(ctx, parsedParams);
 
   if (decision.action === 'hold') return null;
@@ -43,13 +49,15 @@ export function scanSymbol(
     : decision.action === 'enter_short' ? 'short'
     : 'flat'; // 'exit'
 
-  return {
+  const signal: Signal = {
     symbol,
     time:       bars[bars.length - 1].time,
     side,
     reason:     decision.reason ?? '',
     strategyId: strategy.id,
   };
+
+  return { signal, decision, bars };
 }
 
 // ---------------------------------------------------------------------------
@@ -60,19 +68,29 @@ export function scanSymbol(
  * Run a strategy against stored bars for each symbol and collect signals.
  * Designed for speed: pure DB reads, no network calls.
  */
-export function scan(opts: ScanOpts): Signal[] {
+export interface ScanResult {
+  signals:  Signal[];
+  /** Raw scan results (signal + decision + bars) for building trade ideas downstream. */
+  rawResults: ScanSymbolResult[];
+}
+
+export function scan(opts: ScanOpts): ScanResult {
   const strategy     = getStrategy(opts.strategyId);
   const parsedParams = strategy.params.parse(opts.rawParams ?? {});
   const timeframe    = opts.timeframe ?? '1d';
   const symbols      = opts.symbols ?? getAllSymbols().map((s) => s.symbol);
 
-  const signals: Signal[] = [];
+  const signals:    Signal[]           = [];
+  const rawResults: ScanSymbolResult[] = [];
 
   for (const symbol of symbols) {
     try {
       const bars   = getBars(symbol, timeframe);
-      const signal = scanSymbol(symbol, bars, strategy, parsedParams);
-      if (signal) signals.push(signal);
+      const result = scanSymbol(symbol, bars, strategy, parsedParams);
+      if (result) {
+        signals.push(result.signal);
+        rawResults.push(result);
+      }
     } catch {
       // skip symbol on error; don't abort the whole scan
     }
@@ -82,5 +100,5 @@ export function scan(opts: ScanOpts): Signal[] {
     insertSignals(signals);
   }
 
-  return signals;
+  return { signals, rawResults };
 }
