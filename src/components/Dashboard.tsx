@@ -303,6 +303,10 @@ export default function Dashboard({
 
   return (
     <>
+      {/* Row 5: Market summary strip */}
+      <div className="col-span-12 h-[72px]">
+        <MarketSummaryStrip rows={visibleRows} />
+      </div>
       {gotoOpen && (
         <GoToSymbolOverlay
           allSymbols={allSymbols}
@@ -492,7 +496,7 @@ export default function Dashboard({
             style={{ background: "var(--border)" }}
           >
             {/* Row 1: Scan (7) + Gainers/Losers (5) */}
-            <div className="col-span-7 h-95">
+            <div className="col-span-7 h-[380px]">
               <ScanResultsPanel
                 rows={visibleRows}
                 selected={selected}
@@ -500,17 +504,17 @@ export default function Dashboard({
                 onIngestDone={() => void refreshAll()}
               />
             </div>
-            <div className="col-span-5 h-95">
+            <div className="col-span-5 h-[380px]">
               <GainersLosersPanel rows={visibleRows} />
             </div>
 
             {/* Row 2: Signal dashboard (full width) */}
-            <div className="col-span-12 h-80">
+            <div className="col-span-6 h-[320px]">
               <SignalDashboardPanel rows={visibleRows} signals={signals} />
             </div>
 
             {/* Row 3: Trade ideas (full width) */}
-            <div className="col-span-12 h-80">
+            <div className="col-span-6 h-[320px]">
               <TradeIdeasPanel
                 ideas={ideas}
                 onTake={handleTakeIdea}
@@ -519,13 +523,8 @@ export default function Dashboard({
             </div>
 
             {/* Row 4: Recent trades (full width) */}
-            <div className="col-span-12 h-70">
+            <div className="col-span-12 h-[280px]">
               <TradesPanel trades={trades} />
-            </div>
-
-            {/* Row 5: Market summary strip */}
-            <div className="col-span-12 h-18">
-              <MarketSummaryStrip rows={visibleRows} />
             </div>
           </div>
         </div>
