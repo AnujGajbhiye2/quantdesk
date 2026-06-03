@@ -40,5 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# SQLite database
-data/
+# SQLite database - only ignore the root data/ directory (holds quantdesk.db)
+/data/

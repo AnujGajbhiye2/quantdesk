@@ -9,7 +9,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "ingest": "tsx --conditions=react-server scripts/ingest.ts",
-    "refresh": "tsx --conditions=react-server scripts/refresh.ts"
+    "refresh": "tsx --conditions=react-server scripts/refresh.ts",
+    "poll": "tsx --conditions=react-server scripts/poll.ts",
+    "build-universe": "tsx scripts/build-universe.ts"
   },
   "dependencies": {
     "@ixjb94/indicators": "^1.2.4",
