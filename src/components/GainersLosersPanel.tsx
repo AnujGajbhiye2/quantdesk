@@ -18,7 +18,7 @@ function MiniTable({ items, positive }: { items: MarketRow[]; positive: boolean 
   }
   const color = positive ? 'var(--color-up)' : 'var(--color-down)';
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
       <tbody>
         {items.map((row) => (
           <tr key={row.symbol} style={{ borderBottom: '1px solid var(--border)' }}>

@@ -34,7 +34,7 @@ export default function TradesPanel({ trades }: Props) {
       {recent.length === 0 ? (
         <EmptyState message="— no trades —" hint="open a paper trade via POST /api/paper" />
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
           <thead>
             <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>
               <th style={{ textAlign: 'left', padding: '2px 4px', fontWeight: 400 }}>DATE</th>

@@ -31,7 +31,7 @@ export default function Panel({ title, children, className = '', headerRight }: 
           <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>{headerRight}</span>
         )}
       </div>
-      <div className="flex-1 overflow-auto p-3">
+      <div className="flex-1 overflow-auto p-3" style={{ minHeight: 0 }}>
         {children ?? <EmptyState message="— no data —" />}
       </div>
     </div>

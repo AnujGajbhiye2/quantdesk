@@ -23,7 +23,7 @@ export default function DashboardPage() {
       initialRows={rows}
       initialTrades={trades}
       initialStrategies={strategies}
-      allSymbols={metas.map((m) => ({ symbol: m.symbol, name: m.name }))}
+      allSymbols={metas.map((m) => ({ symbol: m.symbol, name: m.name, assetClass: m.assetClass, exchange: m.exchange }))}
     />
   );
 }

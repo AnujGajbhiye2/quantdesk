@@ -52,8 +52,8 @@ export default function SignalDashboardPanel({ rows, signals }: Props) {
 
   return (
     <Panel title="SIGNAL DASHBOARD" headerRight={<span>RSI(14) · MACD · MA50/200 · SIGNAL</span>}>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+      <div style={{ overflowX: 'auto', overflowY: 'auto', height: '100%' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
           <thead>
             <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>
               <th style={{ textAlign: 'left', padding: '2px 6px', fontWeight: 400 }}>SYMBOL</th>

@@ -10,8 +10,8 @@ interface Props {
 function Row({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px solid var(--border)' }}>
-      <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>{label}</span>
-      <span style={{ color: color ?? 'var(--text-primary)', fontSize: '11px', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+      <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>{label}</span>
+      <span style={{ color: color ?? 'var(--text-primary)', fontSize: 'var(--fs-xs)', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
     </div>
   );
 }
@@ -29,7 +29,7 @@ function num(v: number | null | undefined, dec = 2) {
 export default function MetricsPanel({ metrics, numTrades }: Props) {
   return (
     <div style={{ padding: '8px 12px', overflowY: 'auto', height: '100%' }}>
-      <div style={{ color: 'var(--text-muted)', fontSize: '10px', letterSpacing: '0.08em', marginBottom: 8 }}>
+      <div style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em', marginBottom: 8 }}>
         [ BACKTEST METRICS ]
       </div>
       <Row label="Total return" value={pct(metrics.totalReturnPct)} color={pnlColor(metrics.totalReturnPct)} />

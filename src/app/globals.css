@@ -11,6 +11,11 @@
   --color-accent: #e3b341;
   --border: #30363d;
   --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  /* font-size scale */
+  --fs-xs:   11px;
+  --fs-sm:   12px;
+  --fs-base: 14px;
+  --fs-lg:   16px;
 }
 
 @theme inline {
@@ -41,7 +46,7 @@ body {
   background: var(--bg-base);
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--fs-base);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }

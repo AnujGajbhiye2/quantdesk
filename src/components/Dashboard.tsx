@@ -12,13 +12,14 @@ import MarketSummaryStrip from './MarketSummaryStrip';
 import GoToSymbolOverlay from './GoToSymbolOverlay';
 import { useKeyboardNav } from './useKeyboardNav';
 import type { MarketRow } from '@/core/market/snapshot';
-import type { PaperTrade, Signal } from '@/core/types';
+import type { PaperTrade, Signal, SymbolMeta } from '@/core/types';
+import { marketOf, ALL_MARKETS, type Market } from '@/core/market/markets';
 
 interface Props {
   initialRows:       MarketRow[];
   initialTrades:     PaperTrade[];
   initialStrategies: { id: string; name: string }[];
-  allSymbols:        { symbol: string; name: string }[];
+  allSymbols:        { symbol: string; name: string; assetClass: SymbolMeta['assetClass']; exchange?: string }[];
 }
 
 export default function Dashboard({
@@ -35,8 +36,28 @@ export default function Dashboard({
   const [gotoOpen,   setGotoOpen]  = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [scanStatus, setScanStatus] = useState('');
+  const [marketFilter, setMarketFilter] = useState<Market | 'ALL'>('ALL');
   const cmdRef = useRef<CommandBarHandle>(null);
   const router = useRouter();
+
+  // Build a symbol -> market map from allSymbols (already has assetClass/exchange)
+  const symbolMarketMap = useRef(new Map<string, Market>());
+  useEffect(() => {
+    symbolMarketMap.current.clear();
+    for (const s of allSymbols) {
+      symbolMarketMap.current.set(s.symbol, marketOf({ symbol: s.symbol, assetClass: s.assetClass, exchange: s.exchange }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allSymbols]);
+
+  // Visible markets (only show tabs for markets present in the current data)
+  const presentMarkets = ALL_MARKETS.filter((m) =>
+    rows.some((r) => symbolMarketMap.current.get(r.symbol) === m),
+  );
+
+  const filteredRows = marketFilter === 'ALL'
+    ? rows
+    : rows.filter((r) => symbolMarketMap.current.get(r.symbol) === marketFilter);
 
   const { selected, setSelected } = useKeyboardNav({
     count:        rows.length,
@@ -206,6 +227,34 @@ export default function Dashboard({
           )}
         </div>
 
+        {/* Market filter tabs */}
+        {presentMarkets.length > 0 && (
+          <div
+            className="flex items-center gap-1 px-4 py-1 shrink-0 overflow-x-auto"
+            style={{ background: 'var(--bg-panel-header)', borderBottom: '1px solid var(--border)' }}
+          >
+            {(['ALL', ...presentMarkets] as (Market | 'ALL')[]).map((m) => (
+              <button
+                key={m}
+                onClick={() => { setMarketFilter(m); setSelected(-1); }}
+                style={{
+                  background: marketFilter === m ? 'var(--color-accent)' : 'var(--bg-panel)',
+                  border: '1px solid var(--border)',
+                  color: marketFilter === m ? '#0a0e14' : 'var(--text-muted)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 'var(--fs-xs)',
+                  padding: '1px 10px',
+                  cursor: 'pointer',
+                  fontWeight: marketFilter === m ? 700 : 400,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Main grid */}
         <div
           className="flex-1 grid overflow-hidden"
@@ -218,12 +267,12 @@ export default function Dashboard({
           }}
         >
           {/* Row 1 */}
-          <ScanResultsPanel rows={rows} selected={selected} />
-          <GainersLosersPanel rows={rows} />
+          <ScanResultsPanel rows={filteredRows} selected={selected} />
+          <GainersLosersPanel rows={filteredRows} />
 
           {/* Row 2 - Signal dashboard (full width) */}
           <div className="col-span-2 overflow-hidden" style={{ background: 'var(--bg-panel)' }}>
-            <SignalDashboardPanel rows={rows} signals={signals} />
+            <SignalDashboardPanel rows={filteredRows} signals={signals} />
           </div>
 
           {/* Row 3 - Recent trades (full width) */}
@@ -232,7 +281,7 @@ export default function Dashboard({
           </div>
 
           {/* Row 4 - Market summary */}
-          <MarketSummaryStrip rows={rows} />
+          <MarketSummaryStrip rows={filteredRows} />
         </div>
 
         {/* Disclaimer */}
