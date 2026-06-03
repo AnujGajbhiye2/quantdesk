@@ -6,7 +6,8 @@ import dynamic from 'next/dynamic';
 import DublinClock from '@/components/DublinClock';
 import MetricsPanel from '@/components/MetricsPanel';
 import type { BacktestResult } from '@/core/backtest/engine';
-import type { Bar } from '@/core/types';
+import type { Bar, Timeframe } from '@/core/types';
+import { toWeekly } from '@/core/data/resample';
 
 // Chart must be client-side only (no SSR)
 const PriceChart = dynamic(() => import('@/components/PriceChart'), { ssr: false });
@@ -54,6 +55,8 @@ function BacktestInner() {
   const [bars,        setBars]       = useState<Bar[]>([]);
   const [status,      setStatus]     = useState('');
   const [busy,        setBusy]       = useState(false);
+  const [chartTf,     setChartTf]    = useState<'1d' | '1w'>('1d');
+  const [rawBars,     setRawBars]    = useState<Bar[]>([]);
   const symbolInput = useRef<HTMLInputElement>(null);
 
   // Load strategy list on mount
@@ -80,6 +83,13 @@ function BacktestInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [strategyId]);
 
+  // Re-resample when timeframe toggle changes
+  useEffect(() => {
+    if (rawBars.length === 0) return;
+    setBars(chartTf === '1w' ? toWeekly(rawBars) : rawBars);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartTf]);
+
   async function runBacktest(sym?: string, sid?: string) {
     const s = sym ?? symbol;
     const id = sid ?? strategyId;
@@ -102,10 +112,11 @@ function BacktestInner() {
 
       setResult(data);
       // Re-fetch bars for the chart (they're not in BacktestResult)
-      // Fetch OHLCV bars for the candlestick chart
       const bRes  = await fetch(`/api/bars?symbol=${encodeURIComponent(s)}`);
       const bData = await bRes.json() as { bars: Bar[] };
-      setBars(bData.bars ?? []);
+      const daily = bData.bars ?? [];
+      setRawBars(daily);
+      setBars(chartTf === '1w' ? toWeekly(daily) : daily);
 
       setStatus(`${data.trades.length} trades | return ${data.metrics.totalReturnPct.toFixed(2)}%`);
     } catch (err) {
@@ -187,6 +198,29 @@ function BacktestInner() {
           >
             {busy ? '...' : 'RUN'}
           </button>
+          {/* Timeframe toggle */}
+          <div className="flex items-center gap-1 shrink-0">
+            {(['1d', '1w'] as const).map((tf) => (
+              <button
+                key={tf}
+                type="button"
+                onClick={() => setChartTf(tf)}
+                style={{
+                  background:   chartTf === tf ? 'var(--color-accent)' : 'var(--bg-panel)',
+                  border:       '1px solid var(--border)',
+                  color:        chartTf === tf ? '#0a0e14' : 'var(--text-muted)',
+                  fontFamily:   'var(--font-mono)',
+                  fontSize:     '11px',
+                  padding:      '2px 8px',
+                  cursor:       'pointer',
+                  fontWeight:   chartTf === tf ? 700 : 400,
+                }}
+              >
+                {tf.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
           <span style={{ color: 'var(--text-muted)', fontSize: '11px', flexShrink: 0 }}>{status}</span>
         </form>
 
