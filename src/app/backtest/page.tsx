@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import DublinClock from '@/components/DublinClock';
@@ -55,9 +55,14 @@ function BacktestInner() {
   const [bars,        setBars]       = useState<Bar[]>([]);
   const [status,      setStatus]     = useState('');
   const [busy,        setBusy]       = useState(false);
-  const [chartTf,     setChartTf]    = useState<'1d' | '1w'>('1d');
-  const [rawBars,     setRawBars]    = useState<Bar[]>([]);
-  const symbolInput = useRef<HTMLInputElement>(null);
+  const [chartTf,       setChartTf]       = useState<'1d' | '1w'>('1d');
+  const [rawBars,       setRawBars]       = useState<Bar[]>([]);
+  const [suggestions,   setSuggestions]   = useState<Array<{ symbol: string; name: string }>>([]);
+  const [suggestCursor, setSuggestCursor] = useState(-1);
+  const [suggestOpen,   setSuggestOpen]   = useState(false);
+  const symbolInput   = useRef<HTMLInputElement>(null);
+  const debounceRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suggestRef    = useRef<HTMLDivElement>(null);
 
   // Load strategy list on mount
   useEffect(() => {
@@ -89,6 +94,50 @@ function BacktestInner() {
     setBars(chartTf === '1w' ? toWeekly(rawBars) : rawBars);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chartTf]);
+
+  const fetchSuggestions = useCallback((q: string) => {
+    if (q.length < 1) { setSuggestions([]); setSuggestOpen(false); return; }
+    fetch(`/api/search?q=${encodeURIComponent(q)}&limit=8`)
+      .then((r) => r.json())
+      .then((d: { results?: Array<{ symbol: string; name: string }> }) => {
+        const results = d.results ?? [];
+        setSuggestions(results);
+        setSuggestOpen(results.length > 0);
+        setSuggestCursor(-1);
+      })
+      .catch(() => { setSuggestions([]); setSuggestOpen(false); });
+  }, []);
+
+  function handleSymbolChange(val: string) {
+    const upper = val.toUpperCase();
+    setSymbol(upper);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchSuggestions(upper), 200);
+  }
+
+  function pickSuggestion(sym: string) {
+    setSymbol(sym);
+    setSuggestOpen(false);
+    setSuggestions([]);
+    symbolInput.current?.focus();
+  }
+
+  function handleSymbolKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!suggestOpen) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSuggestCursor((c) => Math.min(c + 1, suggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSuggestCursor((c) => Math.max(c - 1, -1));
+    } else if (e.key === 'Enter' && suggestCursor >= 0) {
+      e.preventDefault();
+      const picked = suggestions[suggestCursor];
+      if (picked) pickSuggestion(picked.symbol);
+    } else if (e.key === 'Escape') {
+      setSuggestOpen(false);
+    }
+  }
 
   async function runBacktest(sym?: string, sid?: string) {
     const s = sym ?? symbol;
@@ -151,22 +200,67 @@ function BacktestInner() {
           className="flex items-center gap-3 flex-1"
           style={{ minWidth: 0 }}
         >
-          <input
-            ref={symbolInput}
-            type="text"
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-            placeholder="SYMBOL"
-            style={{
-              background: 'var(--bg-panel)',
-              border: '1px solid var(--border)',
-              color: 'var(--text-primary)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 'var(--fs-xs)',
-              padding: '3px 8px',
-              width: 100,
-            }}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              ref={symbolInput}
+              type="text"
+              value={symbol}
+              onChange={(e) => handleSymbolChange(e.target.value)}
+              onKeyDown={handleSymbolKeyDown}
+              onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
+              onFocus={() => { if (suggestions.length > 0) setSuggestOpen(true); }}
+              placeholder="SYMBOL"
+              autoComplete="off"
+              style={{
+                background: 'var(--bg-panel)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 'var(--fs-xs)',
+                padding: '3px 8px',
+                width: 120,
+              }}
+            />
+            {suggestOpen && suggestions.length > 0 && (
+              <div
+                ref={suggestRef}
+                style={{
+                  position:   'absolute',
+                  top:        '100%',
+                  left:       0,
+                  zIndex:     200,
+                  background: 'var(--bg-panel)',
+                  border:     '1px solid var(--border)',
+                  minWidth:   260,
+                  maxHeight:  220,
+                  overflowY:  'auto',
+                }}
+              >
+                {suggestions.map((s, i) => (
+                  <div
+                    key={s.symbol}
+                    onMouseDown={() => pickSuggestion(s.symbol)}
+                    style={{
+                      padding:    '4px 10px',
+                      cursor:     'pointer',
+                      background: i === suggestCursor ? 'var(--bg-panel-header)' : 'transparent',
+                      borderBottom: '1px solid var(--border)',
+                      display:    'flex',
+                      gap:        12,
+                      alignItems: 'baseline',
+                    }}
+                  >
+                    <span style={{ color: 'var(--color-accent)', fontWeight: 600, minWidth: 90, fontSize: 'var(--fs-xs)', fontFamily: 'var(--font-mono)' }}>
+                      {s.symbol}
+                    </span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {s.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           <select
             value={strategyId}
             onChange={(e) => setStrategyId(e.target.value)}
