@@ -170,6 +170,119 @@ export function markOpenTrades(timeframe: Timeframe = '1d'): MarkResult[] {
 }
 
 // ---------------------------------------------------------------------------
+// EOD sweep - check all open trades against daily bars for stop/target hits
+// ---------------------------------------------------------------------------
+
+export interface SweepResult {
+  trade:     PaperTrade;
+  action:    'stopped' | 'targeted' | 'still-open';
+  exitPrice?: number;
+  exitTime?:  string;
+}
+
+/**
+ * Check all open paper trades against daily bars stored after the entry date.
+ * For each bar after entry:
+ *   - Long: low <= stopPrice  -> stopped out (conservative: stop before target same bar)
+ *           high >= targetPrice -> target hit
+ *   - Short: high >= stopPrice -> stopped out
+ *            low <= targetPrice -> target hit
+ *
+ * Conservative rule (project invariant): if both stop and target are within the same
+ * bar, assume the stop was hit first (worst outcome).
+ *
+ * Calls closePaperTrade() which books slippage/commission identically to the engine.
+ * Returns a SweepResult per open trade.
+ */
+export function sweepOpenTrades(
+  timeframe:   Timeframe = '1d',
+  commission:  number = 0,
+  slippagePct: number = 0.0005,
+): SweepResult[] {
+  const openTrades = getPaperTrades({ status: 'open' });
+  const results:   SweepResult[] = [];
+
+  for (const trade of openTrades) {
+    // Must have a stop price to sweep (target-only trades stay open until manual close)
+    if (trade.stopPrice == null && trade.targetPrice == null) {
+      results.push({ trade, action: 'still-open' });
+      continue;
+    }
+
+    const allBars   = getBars(trade.symbol, timeframe);
+    // Only look at bars strictly after the entry time
+    const postBars  = allBars.filter((b) => b.time > trade.entryTime);
+
+    let closed = false;
+    for (const bar of postBars) {
+      const { stopPrice, targetPrice } = trade;
+
+      if (trade.side === 'long') {
+        const stopHit   = stopPrice   != null && bar.low  <= stopPrice;
+        const targetHit = targetPrice != null && bar.high >= targetPrice;
+
+        if (stopHit) {
+          // Conservative: stop first even if target also hit
+          const closed_ = closePaperTrade(trade.id, {
+            exitPrice:   stopPrice!,
+            exitTime:    bar.time,
+            commission,
+            slippagePct,
+          });
+          results.push({ trade: closed_, action: 'stopped', exitPrice: stopPrice!, exitTime: bar.time });
+          closed = true;
+          break;
+        }
+        if (targetHit) {
+          const closed_ = closePaperTrade(trade.id, {
+            exitPrice:   targetPrice!,
+            exitTime:    bar.time,
+            commission,
+            slippagePct,
+          });
+          results.push({ trade: closed_, action: 'targeted', exitPrice: targetPrice!, exitTime: bar.time });
+          closed = true;
+          break;
+        }
+      } else {
+        // Short position: stop is above entry, target is below
+        const stopHit   = stopPrice   != null && bar.high >= stopPrice;
+        const targetHit = targetPrice != null && bar.low  <= targetPrice;
+
+        if (stopHit) {
+          const closed_ = closePaperTrade(trade.id, {
+            exitPrice:   stopPrice!,
+            exitTime:    bar.time,
+            commission,
+            slippagePct,
+          });
+          results.push({ trade: closed_, action: 'stopped', exitPrice: stopPrice!, exitTime: bar.time });
+          closed = true;
+          break;
+        }
+        if (targetHit) {
+          const closed_ = closePaperTrade(trade.id, {
+            exitPrice:   targetPrice!,
+            exitTime:    bar.time,
+            commission,
+            slippagePct,
+          });
+          results.push({ trade: closed_, action: 'targeted', exitPrice: targetPrice!, exitTime: bar.time });
+          closed = true;
+          break;
+        }
+      }
+    }
+
+    if (!closed) {
+      results.push({ trade, action: 'still-open' });
+    }
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
 // Project trade (replays history via runBacktest for exact P&L parity)
 // ---------------------------------------------------------------------------
 

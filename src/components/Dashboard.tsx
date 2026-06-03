@@ -123,6 +123,13 @@ export default function Dashboard({
   const refreshAll = useCallback(async () => {
     setRefreshing(true);
     try {
+      // Run EOD sweep first (auto-close stops/targets), then refresh UI
+      await fetch('/api/paper', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'sweep' }),
+      });
+
       const [mRes, tRes] = await Promise.all([
         fetch('/api/market'),
         fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'list' }) }),

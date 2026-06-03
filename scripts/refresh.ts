@@ -17,6 +17,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { refreshUniverse, type UniverseEntry } from '../src/core/data/ingest';
+import { sweepOpenTrades } from '../src/core/paper/broker';
 
 function parseArgs(): { universePath?: string } {
   const args = process.argv.slice(2);
@@ -68,6 +69,21 @@ async function main() {
   }
 
   console.log(`\nDone. ${results.length - errors}/${results.length} symbols checked, ${totalBars} new bars. ${errors} error(s).`);
+
+  // EOD sweep: auto-close paper trades that hit stop or target
+  console.log('\nRunning EOD sweep on open paper trades...');
+  try {
+    const sweepResults = sweepOpenTrades();
+    const closed  = sweepResults.filter((r) => r.action !== 'still-open');
+    const stopped  = closed.filter((r) => r.action === 'stopped').length;
+    const targeted = closed.filter((r) => r.action === 'targeted').length;
+    for (const r of closed) {
+      console.log(`  ${r.action.toUpperCase().padEnd(8)} ${r.trade.symbol}: exit @ ${r.exitPrice?.toFixed(2)} on ${r.exitTime} | P&L ${r.trade.pnl?.toFixed(2) ?? '--'}`);
+    }
+    console.log(`Sweep done. Closed ${closed.length} trade(s): ${stopped} stopped, ${targeted} targeted.`);
+  } catch (err) {
+    console.error(`Sweep error: ${err instanceof Error ? err.message : String(err)}`);
+  }
 
   if (errors > 0) process.exit(1);
 }

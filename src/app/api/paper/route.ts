@@ -4,6 +4,7 @@ import {
   closePaperTrade,
   markOpenTrades,
   projectTrade,
+  sweepOpenTrades,
 } from '@/core/paper/broker';
 import { buildTradeBook } from '@/core/paper/tradebook';
 import { getPaperTrades } from '@/core/db/paper';
@@ -100,6 +101,19 @@ export async function POST(request: Request) {
           slippagePct: body.slippagePct as number | undefined,
         });
         return NextResponse.json(result);
+      }
+
+      case 'sweep': {
+        // EOD auto-close: check all open trades against daily bars for stop/target hits
+        const sweepResults = sweepOpenTrades(
+          body.timeframe as import('@/core/types').Timeframe | undefined,
+          body.commission as number | undefined,
+          body.slippagePct as number | undefined,
+        );
+        const closed  = sweepResults.filter((r) => r.action !== 'still-open');
+        const stopped  = closed.filter((r) => r.action === 'stopped').length;
+        const targeted = closed.filter((r) => r.action === 'targeted').length;
+        return NextResponse.json({ results: sweepResults, closed: closed.length, stopped, targeted });
       }
 
       case 'tradebook': {
