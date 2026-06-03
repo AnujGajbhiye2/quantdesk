@@ -9,6 +9,14 @@ dark, monospace, keyboard-driven. Local SQLite. No cloud. No auto-trading.
 
 ---
 
+## Usage guide
+
+See **[`docs/USAGE.md`](docs/USAGE.md)** for the complete step-by-step guide:
+install, build the database, scan strategies, read trade ideas, take paper trades,
+run EOD refresh for auto-close on stop/target, review the tradebook.
+
+---
+
 ## Quickstart
 
 ```bash
@@ -41,7 +49,9 @@ pull the latest EOD bars.
 | `npm run test`                                  | Run all Vitest unit tests                      |
 | `npm run test:watch -- <file>`                  | Single test file in watch mode                 |
 | `npm run ingest -- --universe <universe.json>`  | Bulk-download history for a universe           |
-| `npm run refresh`                               | Incremental EOD update (new bars since last run) |
+| `npm run refresh`                               | Incremental EOD update + paper trade stop/target sweep |
+| `npm run poll -- --universe <universe.json>`    | Rate-limited resumable poller (run daily to build DB) |
+| `npm run build-universe`                        | Regenerate sp500.json / nifty200.json from live sources |
 
 ---
 
