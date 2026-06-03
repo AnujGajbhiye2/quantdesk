@@ -5,19 +5,35 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "ingest": "tsx --conditions=react-server scripts/ingest.ts",
+    "refresh": "tsx --conditions=react-server scripts/refresh.ts"
   },
   "dependencies": {
+    "@ixjb94/indicators": "^1.2.4",
+    "better-sqlite3": "^12.10.0",
+    "lightweight-charts": "^5.2.0",
     "next": "16.2.7",
+    "node-cron": "^4.2.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "server-only": "^0.0.1",
+    "yahoo-finance2": "^3.15.2",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
+    "@types/node-cron": "^3.0.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.1.8",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.22.4",
+    "typescript": "^5",
+    "vitest": "^4.1.8"
   }
 }

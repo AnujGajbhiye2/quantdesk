@@ -1,0 +1,17 @@
+[
+  { "symbol": "AAPL",  "name": "Apple Inc.",               "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
+  { "symbol": "MSFT",  "name": "Microsoft Corp.",           "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
+  { "symbol": "NVDA",  "name": "NVIDIA Corp.",              "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
+  { "symbol": "GOOGL", "name": "Alphabet Inc. Class A",     "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
+  { "symbol": "AMZN",  "name": "Amazon.com Inc.",           "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
+  { "symbol": "META",  "name": "Meta Platforms Inc.",       "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
+  { "symbol": "TSLA",  "name": "Tesla Inc.",                "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
+  { "symbol": "JPM",   "name": "JPMorgan Chase & Co.",      "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
+  { "symbol": "V",     "name": "Visa Inc.",                 "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
+  { "symbol": "UNH",   "name": "UnitedHealth Group Inc.",   "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
+  { "symbol": "^GSPC", "name": "S&P 500 Index",             "assetClass": "index",  "currency": "USD", "exchange": "SNP",    "providerId": "yahoo" },
+  { "symbol": "^IXIC", "name": "NASDAQ Composite",          "assetClass": "index",  "currency": "USD", "exchange": "NMS",    "providerId": "yahoo" },
+  { "symbol": "BTC-USD","name": "Bitcoin USD",              "assetClass": "crypto", "currency": "USD",                       "providerId": "yahoo" },
+  { "symbol": "EURUSD=X","name": "EUR/USD",                 "assetClass": "forex",  "currency": "USD",                       "providerId": "yahoo" },
+  { "symbol": "GC=F",  "name": "Gold Futures",              "assetClass": "commodity","currency": "USD",                     "providerId": "yahoo" }
+]

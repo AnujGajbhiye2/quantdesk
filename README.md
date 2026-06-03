@@ -1,36 +1,132 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QuantDesk
 
-## Getting Started
+A self-hosted Bloomberg-terminal-style swing-trading research platform. Dense,
+dark, monospace, keyboard-driven. Local SQLite. No cloud. No auto-trading.
 
-First, run the development server:
+> **Research tool. Not financial advice. Backtest results are hypothetical and
+> subject to survivorship bias, look-ahead error, and other limitations. Past
+> performance does not predict future results.**
+
+---
+
+## Quickstart
 
 ```bash
+# 1. Install
+npm install
+
+# 2. Configure
+cp .env.local.example .env.local
+# Edit .env.local if you want future providers (Yahoo needs no key)
+
+# 3. Ingest historical data (creates data/quantdesk.db)
+npm run ingest -- --universe scripts/universe-sample.json
+
+# 4. Start
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Open http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The dashboard populates once the DB has bars. Run `npm run refresh` any time to
+pull the latest EOD bars.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+| Script                                          | Purpose                                        |
+|-------------------------------------------------|------------------------------------------------|
+| `npm run dev`                                   | Next.js dev server on port 3000                |
+| `npm run build`                                 | TypeScript check + production build            |
+| `npm run test`                                  | Run all Vitest unit tests                      |
+| `npm run test:watch -- <file>`                  | Single test file in watch mode                 |
+| `npm run ingest -- --universe <universe.json>`  | Bulk-download history for a universe           |
+| `npm run refresh`                               | Incremental EOD update (new bars since last run) |
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/core/
+  types.ts              - Bar, SymbolMeta, Signal, PaperTrade (shared contracts)
+  db/                   - better-sqlite3 singleton + schema migrations
+  data/
+    DataProvider.ts     - adapter interface (the extensibility contract)
+    registry.ts         - maps provider id -> adapter instance
+    providers/
+      yahoo.ts          - Yahoo Finance adapter (active)
+      _template.ts      - copy-paste stub for new providers
+  indicators/
+    registry.ts         - uniform compute(id, bars, params) + listIndicators()
+  strategy/
+    Strategy.ts         - Strategy interface (StrategyContext, StrategyDecision)
+    registry.ts         - register() + list() + get()
+    validate.ts         - look-ahead probe + smoke backtest (dev/test auto-runs)
+    context.ts          - makeContext(): frozen bars[0..i], no-look-ahead guarantee
+    examples/           - rsi-reversion, ma-crossover, macd-momentum
+  backtest/
+    engine.ts           - bar-by-bar simulator (fills at next bar open, no look-ahead)
+    metrics.ts          - return %, CAGR, win rate, Sharpe, max drawdown, etc.
+  paper/
+    broker.ts           - open/close paper positions, mark-to-market
+    tradebook.ts        - aggregate stats per strategy
+  scan/
+    scanner.ts          - run a strategy across the watchlist -> signals
 
-## Deploy on Vercel
+src/app/
+  page.tsx              - main dashboard (scan results, signals, trades, market strip)
+  backtest/page.tsx     - candlestick chart + backtest metrics
+  paper/page.tsx        - trade book with per-strategy performance
+  api/                  - route handlers (scan, backtest, ingest, paper, bars, strategies, market)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+src/components/         - terminal UI panels (all dark/monospace)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Key invariants:**
+- Adapters (`core/data/providers/`) and strategies (`core/strategy/examples/`) are
+  the only places provider- or strategy-specific logic lives. The engine, DB,
+  indicators, and UI have no knowledge of any specific provider or strategy.
+- `ctx.bars` is a frozen slice `bars[0..i]`. A strategy evaluating bar `i` cannot
+  read bar `i+1` - it is structurally inaccessible.
+- Indicator outputs are left-padded with NaN during warm-up so `output[i]` always
+  maps to `bars[i]`.
+
+---
+
+## How to add a data provider
+
+1. Copy `src/core/data/providers/_template.ts` to `providers/new-provider.ts`.
+2. Implement three methods: `getHistory()`, `toProviderSymbol()`, and optionally
+   `getQuote()` and `search()`.
+3. Add the API key to `.env.local.example` (and `.env.local`).
+4. Register in `src/core/data/registry.ts` - one line.
+5. Run `npm run build` to verify.
+
+That is all. The engine, scanner, and UI require zero changes.
+
+---
+
+## How to add a strategy
+
+See [`docs/AUTHORING_STRATEGIES.md`](docs/AUTHORING_STRATEGIES.md) for the full
+guide including worked examples, the indicator catalogue, and the checklist.
+
+Short version:
+1. Create `src/core/strategy/examples/my-strategy.ts` implementing `Strategy`.
+2. Register in `src/core/strategy/registry.ts` - one line.
+3. Run `npm run build && npm run test` - validation runs automatically.
+
+---
+
+## Environment variables
+
+See `.env.local.example` for the full list. Yahoo Finance requires no key and is
+active by default. All other providers are stubs for future use.
+
+---
+
+## Out of scope
+
+Real-money order routing, auto-trading, user accounts, multi-tenant, in-app
+YouTube transcription. This is a single-user local research tool.
