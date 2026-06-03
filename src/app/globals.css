@@ -12,10 +12,10 @@
   --border: #30363d;
   --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   /* font-size scale */
-  --fs-xs:   11px;
-  --fs-sm:   12px;
-  --fs-base: 14px;
-  --fs-lg:   16px;
+  --fs-xs:   12px;
+  --fs-sm:   14px;
+  --fs-base: 15px;
+  --fs-lg:   18px;
 }
 
 @theme inline {

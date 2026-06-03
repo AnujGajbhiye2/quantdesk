@@ -37,9 +37,29 @@ Get a free key at [twelvedata.com](https://twelvedata.com) (no credit card neede
 ## Step 3: Build the database
 
 QuantDesk stores all bars in a local SQLite file (`data/quantdesk.db`).
-Run this once, then run it daily to keep data fresh.
+Run this once on first setup, then run `npm run refresh` daily.
 
-### Quick start (sample universe - ~15 symbols, fast)
+### First-time full ingest (recommended - all markets, ~700 symbols)
+
+Yahoo Finance requires no API key. This takes a few minutes.
+
+```bash
+# US large-caps + S&P 500 (506 symbols incl. indices)
+npm run ingest -- --universe scripts/universe/sp500.json
+
+# Indian stocks - NIFTY 200 (.NS symbols on Yahoo Finance)
+npm run ingest -- --universe scripts/universe/nifty200.json
+```
+
+After these two commands: the dashboard shows all market tabs (US, NSE, etc.),
+~700 symbols, and 10+ years of daily bars.
+
+> **Data lag note:** Yahoo Finance publishes EOD bars the morning after market close
+> (T+1). The "latest" price shown in the dashboard is the previous trading day's close,
+> not the current price. This is expected for swing trading - entries fill at the next
+> day's open anyway. Run `npm run refresh` after each market close to update bars.
+
+### Quick start (sample - ~15 symbols, fast smoke test)
 
 ```bash
 npm run ingest -- --universe scripts/universe/sp500-sample.json
@@ -92,6 +112,8 @@ The main dashboard shows:
 - **Market Strip** (footer): key tickers with sparklines.
 
 **Market filter tabs**: click US / NSE / BSE / FOREX / GOLD / CRYPTO to filter all panels.
+Curated symbols not yet in the DB appear greyed with a `[+ ingest]` button - click to
+download that symbol's history on the spot without leaving the dashboard.
 
 **Symbol search**: press `g` to open the symbol overlay. Type any symbol or company name.
 Symbols not yet in the DB show a `+ ingest` badge - selecting them auto-downloads history.
@@ -159,6 +181,10 @@ in red as a warning.
 ---
 
 ## Step 8: Take a paper trade
+
+**Rule:** only one open paper trade per symbol at a time. If you try to TAKE a
+second trade on the same symbol, the system rejects it with a clear error. Close
+the existing trade first, then re-enter.
 
 ### From a trade idea (one click)
 Click **TAKE** on any idea in the Trade Ideas panel. The trade opens immediately
@@ -243,6 +269,7 @@ Short version:
 | `npm run refresh` | Incremental EOD update + paper trade sweep |
 | `npm run poll -- --universe <path>` | Rate-limited resumable poller (runs daily) |
 | `npm run build-universe` | Regenerate sp500.json / nifty200.json from live sources |
+| `npm run validate-universe` | Verify S&P/NIFTY universe counts and benchmark symbols |
 
 ---
 

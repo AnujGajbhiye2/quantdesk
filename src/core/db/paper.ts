@@ -112,6 +112,20 @@ export function getPaperTrade(id: string): PaperTrade | undefined {
   return row ? rowToTrade(row) : undefined;
 }
 
+/** Return the currently-open paper trade for a symbol, if one exists. */
+export function getOpenPaperTradeBySymbol(symbol: string): PaperTrade | undefined {
+  const db = getDb();
+  const row = db
+    .prepare(`
+      SELECT * FROM paper_trades
+      WHERE symbol = ? AND status = 'open'
+      ORDER BY entry_time DESC
+      LIMIT 1
+    `)
+    .get(symbol) as PaperTradeRow | undefined;
+  return row ? rowToTrade(row) : undefined;
+}
+
 export interface GetPaperTradesOpts {
   status?:     TradeStatus;
   strategyId?: string;

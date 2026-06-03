@@ -113,7 +113,7 @@ const CommandBar = forwardRef<CommandBarHandle, CommandBarProps>(function Comman
       className="flex items-center gap-3 flex-1"
       style={{ minWidth: 0 }}
     >
-      <span style={{ color: 'var(--color-accent)', flexShrink: 0, fontSize: '12px' }}>
+      <span style={{ color: 'var(--color-accent)', flexShrink: 0, fontSize: 'var(--fs-sm)' }}>
         &gt;
       </span>
       <input
@@ -129,7 +129,7 @@ const CommandBar = forwardRef<CommandBarHandle, CommandBarProps>(function Comman
           outline: 'none',
           color: 'var(--text-primary)',
           fontFamily: 'var(--font-mono)',
-          fontSize: '12px',
+          fontSize: 'var(--fs-sm)',
           flex: 1,
           minWidth: 0,
         }}
@@ -137,7 +137,7 @@ const CommandBar = forwardRef<CommandBarHandle, CommandBarProps>(function Comman
       <span
         style={{
           color: busy ? 'var(--color-accent)' : 'var(--text-muted)',
-          fontSize: '11px',
+          fontSize: 'var(--fs-xs)',
           flexShrink: 0,
           maxWidth: '50%',
           overflow: 'hidden',

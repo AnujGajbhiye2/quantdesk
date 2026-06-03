@@ -135,10 +135,10 @@ function BacktestInner() {
         style={{ background: 'var(--bg-panel-header)', borderBottom: '1px solid var(--border)' }}
       >
         <div className="flex items-center gap-4 shrink-0">
-          <span style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.1em', fontSize: '13px' }}>
+          <span style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.1em', fontSize: 'var(--fs-sm)' }}>
             QUANTDESK
           </span>
-          <nav className="flex gap-3" style={{ fontSize: '11px' }}>
+          <nav className="flex gap-3" style={{ fontSize: 'var(--fs-xs)' }}>
             <a href="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>DASH</a>
             <a href="/backtest" style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>BACKTEST</a>
             <a href="/paper" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>PAPER</a>
@@ -162,7 +162,7 @@ function BacktestInner() {
               border: '1px solid var(--border)',
               color: 'var(--text-primary)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '12px',
+              fontSize: 'var(--fs-xs)',
               padding: '3px 8px',
               width: 100,
             }}
@@ -175,7 +175,7 @@ function BacktestInner() {
               border: '1px solid var(--border)',
               color: 'var(--text-primary)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '12px',
+              fontSize: 'var(--fs-xs)',
               padding: '3px 8px',
             }}
           >
@@ -191,7 +191,7 @@ function BacktestInner() {
               border: '1px solid var(--border)',
               color: 'var(--color-accent)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '12px',
+              fontSize: 'var(--fs-xs)',
               padding: '3px 12px',
               cursor: 'pointer',
             }}
@@ -210,7 +210,7 @@ function BacktestInner() {
                   border:       '1px solid var(--border)',
                   color:        chartTf === tf ? '#0a0e14' : 'var(--text-muted)',
                   fontFamily:   'var(--font-mono)',
-                  fontSize:     '11px',
+                  fontSize:     'var(--fs-xs)',
                   padding:      '2px 8px',
                   cursor:       'pointer',
                   fontWeight:   chartTf === tf ? 700 : 400,
@@ -221,7 +221,7 @@ function BacktestInner() {
             ))}
           </div>
 
-          <span style={{ color: 'var(--text-muted)', fontSize: '11px', flexShrink: 0 }}>{status}</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', flexShrink: 0 }}>{status}</span>
         </form>
 
         <DublinClock />
@@ -246,7 +246,7 @@ function BacktestInner() {
               equityCurve={result.equityCurve}
             />
           ) : (
-            <div style={{ padding: 24, color: 'var(--text-muted)', fontSize: '13px' }}>
+            <div style={{ padding: 24, color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
               {busy ? 'Loading...' : 'Enter a symbol and select a strategy, then click RUN.'}
             </div>
           )}
@@ -267,7 +267,7 @@ function BacktestInner() {
           background: 'var(--bg-base)',
           borderTop: '1px solid var(--border)',
           color: 'var(--text-muted)',
-          fontSize: '10px',
+          fontSize: 'var(--fs-xs)',
           letterSpacing: '0.04em',
         }}
       >

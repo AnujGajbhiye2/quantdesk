@@ -28,6 +28,10 @@ function fmt(n: number) {
   return isFinite(n) ? n.toFixed(2) : '--';
 }
 
+function sourceLabel(row: MarketRow) {
+  return row.priceSource === 'quote' && row.quoteTime ? `Q ${row.quoteTime.slice(11, 16)}` : row.latestTime;
+}
+
 export default function MarketSummaryStrip({ rows }: Props) {
   if (rows.length === 0) {
     return (
@@ -37,8 +41,8 @@ export default function MarketSummaryStrip({ rows }: Props) {
       >
         {['S&P 500', 'NASDAQ', 'VIX', '10Y YIELD', 'BTC/USD', 'EUR/USD', 'XAU/USD'].map((label) => (
           <div key={label} className="flex flex-col shrink-0">
-            <span style={{ color: 'var(--text-muted)', fontSize: '10px', letterSpacing: '0.06em' }}>{label}</span>
-            <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>—</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.06em' }}>{label}</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>—</span>
           </div>
         ))}
       </div>
@@ -57,11 +61,14 @@ export default function MarketSummaryStrip({ rows }: Props) {
         return (
           <div key={row.symbol} className="flex items-center gap-2 shrink-0" style={{ paddingTop: 4, paddingBottom: 4 }}>
             <div className="flex flex-col">
-              <span style={{ color: 'var(--text-muted)', fontSize: '9px', letterSpacing: '0.06em' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.06em' }}>
                 {row.symbol}
               </span>
-              <span style={{ fontSize: '12px', fontVariantNumeric: 'tabular-nums' }}>{fmt(row.last)}</span>
-              <span style={{ color: chgColor, fontSize: '10px', fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ fontSize: 'var(--fs-sm)', fontVariantNumeric: 'tabular-nums' }}>{fmt(row.last)}</span>
+              <span style={{ color: row.priceSource === 'quote' ? 'var(--color-accent)' : 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>
+                {sourceLabel(row)}
+              </span>
+              <span style={{ color: chgColor, fontSize: 'var(--fs-xs)', fontVariantNumeric: 'tabular-nums' }}>
                 {row.changePct >= 0 ? '+' : ''}{fmt(row.changePct)}%
               </span>
             </div>

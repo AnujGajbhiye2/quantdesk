@@ -9,6 +9,7 @@ const mockInsert   = vi.fn();
 const mockUpdate   = vi.fn();
 const mockGetOne   = vi.fn();
 const mockGetAll   = vi.fn();
+const mockGetOpenBySymbol = vi.fn();
 const mockGetClose = vi.fn();
 const mockGetBars  = vi.fn();
 
@@ -17,16 +18,18 @@ vi.mock('@/core/db/paper', () => ({
   updatePaperTrade: (...args: unknown[]) => mockUpdate(...args),
   getPaperTrade:    (...args: unknown[]) => mockGetOne(...args),
   getPaperTrades:   (...args: unknown[]) => mockGetAll(...args),
+  getOpenPaperTradeBySymbol: (...args: unknown[]) => mockGetOpenBySymbol(...args),
 }));
 
 vi.mock('@/core/db/bars', () => ({
   getLatestClose: (...args: unknown[]) => mockGetClose(...args),
+  getLatestBarTime: () => null,
   getBars:        (...args: unknown[]) => mockGetBars(...args),
   getAllSymbols:  () => [],
 }));
 
 // Import broker AFTER mocks are registered
-const { openPaperTrade, closePaperTrade, markOpenTrades, projectTrade } =
+const { openPaperTrade, closePaperTrade, markOpenTrades, projectTrade, DuplicateOpenTradeError } =
   await import('./broker');
 
 // ---------------------------------------------------------------------------
@@ -50,6 +53,7 @@ function makeBars(n: number) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockGetOpenBySymbol.mockReturnValue(undefined);
 });
 
 // ---------------------------------------------------------------------------
@@ -118,6 +122,22 @@ describe('openPaperTrade', () => {
       entryPrice: 100, entryTime: '2024-01-01',
     });
     expect(mockInsert).toHaveBeenCalledOnce();
+  });
+
+  it('rejects a duplicate open trade for the same symbol', () => {
+    mockGetOpenBySymbol.mockReturnValue({
+      id: 'open-1', strategyId: 'macd', symbol: 'AAPL', side: 'long',
+      qty: 1, entryTime: '2024-01-01', entryPrice: 100, status: 'open', costs: 0,
+    });
+
+    expect(() =>
+      openPaperTrade({
+        strategyId: 'rsi', symbol: 'aapl', side: 'short',
+        entryPrice: 100, entryTime: '2024-01-02',
+      }),
+    ).toThrow(DuplicateOpenTradeError);
+    expect(mockGetOpenBySymbol).toHaveBeenCalledWith('AAPL');
+    expect(mockInsert).not.toHaveBeenCalled();
   });
 });
 

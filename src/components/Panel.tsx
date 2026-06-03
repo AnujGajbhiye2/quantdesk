@@ -24,11 +24,11 @@ export default function Panel({ title, children, className = '', headerRight }: 
           borderBottom: '1px solid var(--border)',
         }}
       >
-        <span style={{ color: 'var(--text-muted)', fontSize: '11px', letterSpacing: '0.08em' }}>
+        <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em' }}>
           [ {title} ]
         </span>
         {headerRight && (
-          <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>{headerRight}</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>{headerRight}</span>
         )}
       </div>
       <div className="flex-1 overflow-auto p-3" style={{ minHeight: 0 }}>

@@ -2,8 +2,11 @@ import { getDb } from '@/core/db/client';
 import { getMarketSnapshot } from '@/core/market/snapshot';
 import { getPaperTrades } from '@/core/db/paper';
 import { getAllSymbols } from '@/core/db/bars';
+import { mergeKnownSymbols } from '@/core/data/universe';
 import { list as listStrategies } from '@/core/strategy/registry';
 import Dashboard from '@/components/Dashboard';
+
+export const dynamic = 'force-dynamic';
 
 // Initialise DB (creates tables if they don't exist) on the first server render.
 function initDb() {
@@ -16,6 +19,7 @@ export default function DashboardPage() {
   const rows       = getMarketSnapshot({ timeframe: '1d' });
   const trades     = getPaperTrades();
   const metas      = getAllSymbols();
+  const allSymbols = mergeKnownSymbols(metas);
   const strategies = listStrategies();
 
   return (
@@ -23,7 +27,7 @@ export default function DashboardPage() {
       initialRows={rows}
       initialTrades={trades}
       initialStrategies={strategies}
-      allSymbols={metas.map((m) => ({ symbol: m.symbol, name: m.name, assetClass: m.assetClass, exchange: m.exchange }))}
+      allSymbols={allSymbols}
     />
   );
 }

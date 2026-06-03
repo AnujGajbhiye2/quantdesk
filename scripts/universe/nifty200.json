@@ -1,97 +1,1650 @@
 [
-  { "symbol": "RELIANCE.NS",    "name": "Reliance Industries Ltd.",              "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "TCS.NS",         "name": "Tata Consultancy Services Ltd.",        "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "HDFCBANK.NS",    "name": "HDFC Bank Ltd.",                        "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "BHARTIARTL.NS",  "name": "Bharti Airtel Ltd.",                   "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "ICICIBANK.NS",   "name": "ICICI Bank Ltd.",                       "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "INFOSYS.NS",     "name": "Infosys Ltd.",                          "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "SBIN.NS",        "name": "State Bank of India",                   "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "HINDUNILVR.NS",  "name": "Hindustan Unilever Ltd.",               "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "LT.NS",          "name": "Larsen & Toubro Ltd.",                  "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "ITC.NS",         "name": "ITC Ltd.",                              "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "KOTAKBANK.NS",   "name": "Kotak Mahindra Bank Ltd.",              "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "AXISBANK.NS",    "name": "Axis Bank Ltd.",                        "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "MARUTI.NS",      "name": "Maruti Suzuki India Ltd.",              "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "BAJFINANCE.NS",  "name": "Bajaj Finance Ltd.",                    "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "SUNPHARMA.NS",   "name": "Sun Pharmaceutical Industries Ltd.",    "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "HCLTECH.NS",     "name": "HCL Technologies Ltd.",                 "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "TATAMOTORS.NS",  "name": "Tata Motors Ltd.",                      "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "WIPRO.NS",       "name": "Wipro Ltd.",                            "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "ONGC.NS",        "name": "Oil & Natural Gas Corp. Ltd.",          "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "ADANIENT.NS",    "name": "Adani Enterprises Ltd.",                "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "TITAN.NS",       "name": "Titan Company Ltd.",                    "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "ULTRACEMCO.NS",  "name": "UltraTech Cement Ltd.",                 "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "NESTLEIND.NS",   "name": "Nestle India Ltd.",                     "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "POWERGRID.NS",   "name": "Power Grid Corp. of India Ltd.",        "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "NTPC.NS",        "name": "NTPC Ltd.",                             "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "ASIANPAINT.NS",  "name": "Asian Paints Ltd.",                     "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "JSWSTEEL.NS",    "name": "JSW Steel Ltd.",                        "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "TATASTEEL.NS",   "name": "Tata Steel Ltd.",                       "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "BAJAJFINSV.NS",  "name": "Bajaj Finserv Ltd.",                    "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "TECHM.NS",       "name": "Tech Mahindra Ltd.",                    "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "DRREDDY.NS",     "name": "Dr. Reddy's Laboratories Ltd.",         "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "GRASIM.NS",      "name": "Grasim Industries Ltd.",                "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "HINDALCO.NS",    "name": "Hindalco Industries Ltd.",              "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "CIPLA.NS",       "name": "Cipla Ltd.",                            "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "EICHERMOT.NS",   "name": "Eicher Motors Ltd.",                    "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "BPCL.NS",        "name": "Bharat Petroleum Corp. Ltd.",           "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "DIVISLAB.NS",    "name": "Divi's Laboratories Ltd.",              "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "COALINDIA.NS",   "name": "Coal India Ltd.",                       "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "SHREECEM.NS",    "name": "Shree Cement Ltd.",                     "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "APOLLOHOSP.NS",  "name": "Apollo Hospitals Enterprise Ltd.",      "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "HEROMOTOCO.NS",  "name": "Hero MotoCorp Ltd.",                    "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "BRITANNIA.NS",   "name": "Britannia Industries Ltd.",             "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "ADANIPORTS.NS",  "name": "Adani Ports and SEZ Ltd.",              "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "TATACONSUM.NS",  "name": "Tata Consumer Products Ltd.",           "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "INDUSINDBK.NS",  "name": "IndusInd Bank Ltd.",                    "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "HDFCLIFE.NS",    "name": "HDFC Life Insurance Co. Ltd.",          "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "SBILIFE.NS",     "name": "SBI Life Insurance Co. Ltd.",           "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "SBICARD.NS",     "name": "SBI Cards and Payment Services Ltd.",   "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "PIDILITIND.NS",  "name": "Pidilite Industries Ltd.",              "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "SIEMENS.NS",     "name": "Siemens Ltd.",                          "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "MUTHOOTFIN.NS",  "name": "Muthoot Finance Ltd.",                  "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "HAVELLS.NS",     "name": "Havells India Ltd.",                    "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "DLF.NS",         "name": "DLF Ltd.",                              "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "BANKBARODA.NS",  "name": "Bank of Baroda",                        "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "PNB.NS",         "name": "Punjab National Bank",                  "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "TATAPOWER.NS",   "name": "Tata Power Co. Ltd.",                   "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "VEDL.NS",        "name": "Vedanta Ltd.",                          "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "ABB.NS",         "name": "ABB India Ltd.",                        "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "GODREJCP.NS",    "name": "Godrej Consumer Products Ltd.",         "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "MCDOWELL-N.NS",  "name": "United Spirits Ltd.",                   "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "BAJAJ-AUTO.NS",  "name": "Bajaj Auto Ltd.",                       "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "AUROPHARMA.NS",  "name": "Aurobindo Pharma Ltd.",                 "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "MOTHERSON.NS",   "name": "Samvardhana Motherson International Ltd.", "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "TRENT.NS",       "name": "Trent Ltd.",                            "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "ZOMATO.NS",      "name": "Zomato Ltd.",                           "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "PAYTM.NS",       "name": "One97 Communications Ltd.",             "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "NYKAA.NS",       "name": "FSN E-Commerce Ventures Ltd.",          "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "PERSISTENT.NS",  "name": "Persistent Systems Ltd.",               "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "MPHASIS.NS",     "name": "Mphasis Ltd.",                          "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "COFORGE.NS",     "name": "Coforge Ltd.",                          "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "LTIM.NS",        "name": "LTIMindtree Ltd.",                      "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "POLYCAB.NS",     "name": "Polycab India Ltd.",                    "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "RECLTD.NS",      "name": "REC Ltd.",                              "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "PFC.NS",         "name": "Power Finance Corp. Ltd.",              "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "RVNL.NS",        "name": "Rail Vikas Nigam Ltd.",                 "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "IOC.NS",         "name": "Indian Oil Corp. Ltd.",                 "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "SAIL.NS",        "name": "Steel Authority of India Ltd.",         "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "VBL.NS",         "name": "Varun Beverages Ltd.",                  "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "DABUR.NS",       "name": "Dabur India Ltd.",                      "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "MARICO.NS",      "name": "Marico Ltd.",                           "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "TORNTPHARM.NS",  "name": "Torrent Pharmaceuticals Ltd.",          "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "AMBUJACEM.NS",   "name": "Ambuja Cements Ltd.",                   "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "ACC.NS",         "name": "ACC Ltd.",                              "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "LUPIN.NS",       "name": "Lupin Ltd.",                            "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "IDFCFIRSTB.NS",  "name": "IDFC First Bank Ltd.",                  "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "TATAELXSI.NS",   "name": "Tata Elxsi Ltd.",                       "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "IRFC.NS",        "name": "Indian Railway Finance Corp. Ltd.",     "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "HINDPETRO.NS",   "name": "Hindustan Petroleum Corp. Ltd.",        "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "CGPOWER.NS",     "name": "CG Power and Industrial Solutions Ltd.","assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "COLPAL.NS",      "name": "Colgate-Palmolive (India) Ltd.",        "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "MAXHEALTH.NS",   "name": "Max Healthcare Institute Ltd.",         "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "SUZLON.NS",      "name": "Suzlon Energy Ltd.",                    "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "ZYDUSLIFE.NS",   "name": "Zydus Lifesciences Ltd.",               "assetClass": "equity", "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "^NSEI",          "name": "NIFTY 50 Index",                        "assetClass": "index",  "currency": "INR", "exchange": "NSE", "providerId": "yahoo" },
-  { "symbol": "^NSEMDCP50.NS",  "name": "NIFTY Midcap 50",                       "assetClass": "index",  "currency": "INR", "exchange": "NSE", "providerId": "yahoo" }
+  {
+    "symbol": "360ONE.NS",
+    "name": "360 ONE WAM Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ABB.NS",
+    "name": "ABB India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "APLAPOLLO.NS",
+    "name": "APL Apollo Tubes Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AUBANK.NS",
+    "name": "AU Small Finance Bank Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADANIENSOL.NS",
+    "name": "Adani Energy Solutions Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADANIENT.NS",
+    "name": "Adani Enterprises Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADANIGREEN.NS",
+    "name": "Adani Green Energy Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADANIPORTS.NS",
+    "name": "Adani Ports and Special Economic Zone Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADANIPOWER.NS",
+    "name": "Adani Power Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ATGL.NS",
+    "name": "Adani Total Gas Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ABCAPITAL.NS",
+    "name": "Aditya Birla Capital Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ALKEM.NS",
+    "name": "Alkem Laboratories Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AMBUJACEM.NS",
+    "name": "Ambuja Cements Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "APOLLOHOSP.NS",
+    "name": "Apollo Hospitals Enterprise Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ASHOKLEY.NS",
+    "name": "Ashok Leyland Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ASIANPAINT.NS",
+    "name": "Asian Paints Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ASTRAL.NS",
+    "name": "Astral Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AUROPHARMA.NS",
+    "name": "Aurobindo Pharma Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DMART.NS",
+    "name": "Avenue Supermarts Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AXISBANK.NS",
+    "name": "Axis Bank Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BSE.NS",
+    "name": "BSE Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BAJAJ-AUTO.NS",
+    "name": "Bajaj Auto Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BAJFINANCE.NS",
+    "name": "Bajaj Finance Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BAJAJFINSV.NS",
+    "name": "Bajaj Finserv Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BAJAJHLDNG.NS",
+    "name": "Bajaj Holdings & Investment Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BANKBARODA.NS",
+    "name": "Bank of Baroda",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BANKINDIA.NS",
+    "name": "Bank of India",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BDL.NS",
+    "name": "Bharat Dynamics Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BEL.NS",
+    "name": "Bharat Electronics Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BHARATFORG.NS",
+    "name": "Bharat Forge Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BHEL.NS",
+    "name": "Bharat Heavy Electricals Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BPCL.NS",
+    "name": "Bharat Petroleum Corporation Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BHARTIARTL.NS",
+    "name": "Bharti Airtel Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GROWW.NS",
+    "name": "Billionbrains Garage Ventures Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BIOCON.NS",
+    "name": "Biocon Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BLUESTARCO.NS",
+    "name": "Blue Star Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BOSCHLTD.NS",
+    "name": "Bosch Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BRITANNIA.NS",
+    "name": "Britannia Industries Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CGPOWER.NS",
+    "name": "CG Power and Industrial Solutions Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CANBK.NS",
+    "name": "Canara Bank",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CHOLAFIN.NS",
+    "name": "Cholamandalam Investment and Finance Company Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CIPLA.NS",
+    "name": "Cipla Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "COALINDIA.NS",
+    "name": "Coal India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "COCHINSHIP.NS",
+    "name": "Cochin Shipyard Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "COFORGE.NS",
+    "name": "Coforge Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "COLPAL.NS",
+    "name": "Colgate Palmolive (India) Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CONCOR.NS",
+    "name": "Container Corporation of India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "COROMANDEL.NS",
+    "name": "Coromandel International Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CUMMINSIND.NS",
+    "name": "Cummins India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DLF.NS",
+    "name": "DLF Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DABUR.NS",
+    "name": "Dabur India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DIVISLAB.NS",
+    "name": "Divi's Laboratories Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DIXON.NS",
+    "name": "Dixon Technologies (India) Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DRREDDY.NS",
+    "name": "Dr. Reddy's Laboratories Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DUMMYVEDL1.NS",
+    "name": "Dummy Vedanta Ltd. 1",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DUMMYVEDL2.NS",
+    "name": "Dummy Vedanta Ltd. 2",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DUMMYVEDL3.NS",
+    "name": "Dummy Vedanta Ltd. 3",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DUMMYVEDL4.NS",
+    "name": "Dummy Vedanta Ltd. 4",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EICHERMOT.NS",
+    "name": "Eicher Motors Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ETERNAL.NS",
+    "name": "Eternal Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EXIDEIND.NS",
+    "name": "Exide Industries Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NYKAA.NS",
+    "name": "FSN E-Commerce Ventures Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FEDERALBNK.NS",
+    "name": "Federal Bank Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FORTIS.NS",
+    "name": "Fortis Healthcare Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GAIL.NS",
+    "name": "GAIL (India) Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GVT&D.NS",
+    "name": "GE Vernova T&D India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GMRAIRPORT.NS",
+    "name": "GMR Airports Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GLENMARK.NS",
+    "name": "Glenmark Pharmaceuticals Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GODFRYPHLP.NS",
+    "name": "Godfrey Phillips India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GODREJCP.NS",
+    "name": "Godrej Consumer Products Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GODREJPROP.NS",
+    "name": "Godrej Properties Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GRASIM.NS",
+    "name": "Grasim Industries Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HCLTECH.NS",
+    "name": "HCL Technologies Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HDFCAMC.NS",
+    "name": "HDFC Asset Management Company Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HDFCBANK.NS",
+    "name": "HDFC Bank Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HDFCLIFE.NS",
+    "name": "HDFC Life Insurance Company Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HAVELLS.NS",
+    "name": "Havells India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HEROMOTOCO.NS",
+    "name": "Hero MotoCorp Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HINDALCO.NS",
+    "name": "Hindalco Industries Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HAL.NS",
+    "name": "Hindustan Aeronautics Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HINDPETRO.NS",
+    "name": "Hindustan Petroleum Corporation Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HINDUNILVR.NS",
+    "name": "Hindustan Unilever Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HINDZINC.NS",
+    "name": "Hindustan Zinc Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "POWERINDIA.NS",
+    "name": "Hitachi Energy India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HUDCO.NS",
+    "name": "Housing & Urban Development Corporation Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HYUNDAI.NS",
+    "name": "Hyundai Motor India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ICICIBANK.NS",
+    "name": "ICICI Bank Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ICICIGI.NS",
+    "name": "ICICI Lombard General Insurance Company Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ICICIAMC.NS",
+    "name": "ICICI Prudential Asset Management Company Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IDFCFIRSTB.NS",
+    "name": "IDFC First Bank Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ITC.NS",
+    "name": "ITC Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INDIANB.NS",
+    "name": "Indian Bank",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INDHOTEL.NS",
+    "name": "Indian Hotels Co. Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IOC.NS",
+    "name": "Indian Oil Corporation Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IRCTC.NS",
+    "name": "Indian Railway Catering And Tourism Corporation Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IRFC.NS",
+    "name": "Indian Railway Finance Corporation Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IREDA.NS",
+    "name": "Indian Renewable Energy Development Agency Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INDUSTOWER.NS",
+    "name": "Indus Towers Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INDUSINDBK.NS",
+    "name": "IndusInd Bank Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NAUKRI.NS",
+    "name": "Info Edge (India) Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INFY.NS",
+    "name": "Infosys Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INDIGO.NS",
+    "name": "InterGlobe Aviation Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JSWENERGY.NS",
+    "name": "JSW Energy Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JSWSTEEL.NS",
+    "name": "JSW Steel Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JINDALSTEL.NS",
+    "name": "Jindal Steel Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JIOFIN.NS",
+    "name": "Jio Financial Services Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JUBLFOOD.NS",
+    "name": "Jubilant Foodworks Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KEI.NS",
+    "name": "KEI Industries Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KPITTECH.NS",
+    "name": "KPIT Technologies Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KALYANKJIL.NS",
+    "name": "Kalyan Jewellers India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KOTAKBANK.NS",
+    "name": "Kotak Mahindra Bank Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LTF.NS",
+    "name": "L&T Finance Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LGEINDIA.NS",
+    "name": "LG Electronics India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LICHSGFIN.NS",
+    "name": "LIC Housing Finance Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LTM.NS",
+    "name": "LTM Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LT.NS",
+    "name": "Larsen & Toubro Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LAURUSLABS.NS",
+    "name": "Laurus Labs Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LENSKART.NS",
+    "name": "Lenskart Solutions Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LODHA.NS",
+    "name": "Lodha Developers Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LUPIN.NS",
+    "name": "Lupin Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MRF.NS",
+    "name": "MRF Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "M&MFIN.NS",
+    "name": "Mahindra & Mahindra Financial Services Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "M&M.NS",
+    "name": "Mahindra & Mahindra Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MANKIND.NS",
+    "name": "Mankind Pharma Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MARICO.NS",
+    "name": "Marico Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MARUTI.NS",
+    "name": "Maruti Suzuki India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MFSL.NS",
+    "name": "Max Financial Services Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MAXHEALTH.NS",
+    "name": "Max Healthcare Institute Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MAZDOCK.NS",
+    "name": "Mazagoan Dock Shipbuilders Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MOTILALOFS.NS",
+    "name": "Motilal Oswal Financial Services Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MPHASIS.NS",
+    "name": "MphasiS Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MCX.NS",
+    "name": "Multi Commodity Exchange of India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MUTHOOTFIN.NS",
+    "name": "Muthoot Finance Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NHPC.NS",
+    "name": "NHPC Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NMDC.NS",
+    "name": "NMDC Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NTPC.NS",
+    "name": "NTPC Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NATIONALUM.NS",
+    "name": "National Aluminium Co. Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NESTLEIND.NS",
+    "name": "Nestle India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "OBEROIRLTY.NS",
+    "name": "Oberoi Realty Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ONGC.NS",
+    "name": "Oil & Natural Gas Corporation Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "OIL.NS",
+    "name": "Oil India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PAYTM.NS",
+    "name": "One 97 Communications Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "OFSS.NS",
+    "name": "Oracle Financial Services Software Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "POLICYBZR.NS",
+    "name": "PB Fintech Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PIIND.NS",
+    "name": "PI Industries Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PAGEIND.NS",
+    "name": "Page Industries Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PATANJALI.NS",
+    "name": "Patanjali Foods Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PERSISTENT.NS",
+    "name": "Persistent Systems Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PHOENIXLTD.NS",
+    "name": "Phoenix Mills Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PIDILITIND.NS",
+    "name": "Pidilite Industries Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "POLYCAB.NS",
+    "name": "Polycab India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PFC.NS",
+    "name": "Power Finance Corporation Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "POWERGRID.NS",
+    "name": "Power Grid Corporation of India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PREMIERENE.NS",
+    "name": "Premier Energies Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PRESTIGE.NS",
+    "name": "Prestige Estates Projects Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PNB.NS",
+    "name": "Punjab National Bank",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RECLTD.NS",
+    "name": "REC Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RADICO.NS",
+    "name": "Radico Khaitan Ltd",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RVNL.NS",
+    "name": "Rail Vikas Nigam Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RELIANCE.NS",
+    "name": "Reliance Industries Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SBICARD.NS",
+    "name": "SBI Cards and Payment Services Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SBILIFE.NS",
+    "name": "SBI Life Insurance Company Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SRF.NS",
+    "name": "SRF Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MOTHERSON.NS",
+    "name": "Samvardhana Motherson International Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SHREECEM.NS",
+    "name": "Shree Cement Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SHRIRAMFIN.NS",
+    "name": "Shriram Finance Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ENRIN.NS",
+    "name": "Siemens Energy India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SIEMENS.NS",
+    "name": "Siemens Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SOLARINDS.NS",
+    "name": "Solar Industries India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SBIN.NS",
+    "name": "State Bank of India",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SAIL.NS",
+    "name": "Steel Authority of India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SUNPHARMA.NS",
+    "name": "Sun Pharmaceutical Industries Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SUPREMEIND.NS",
+    "name": "Supreme Industries Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SUZLON.NS",
+    "name": "Suzlon Energy Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SWIGGY.NS",
+    "name": "Swiggy Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TVSMOTOR.NS",
+    "name": "TVS Motor Company Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TATACAP.NS",
+    "name": "Tata Capital Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TATACOMM.NS",
+    "name": "Tata Communications Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TCS.NS",
+    "name": "Tata Consultancy Services Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TATACONSUM.NS",
+    "name": "Tata Consumer Products Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TATAELXSI.NS",
+    "name": "Tata Elxsi Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TATAINVEST.NS",
+    "name": "Tata Investment Corporation Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TMCV.NS",
+    "name": "Tata Motors Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TMPV.NS",
+    "name": "Tata Motors Passenger Vehicles Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TATAPOWER.NS",
+    "name": "Tata Power Co. Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TATASTEEL.NS",
+    "name": "Tata Steel Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TECHM.NS",
+    "name": "Tech Mahindra Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TITAN.NS",
+    "name": "Titan Company Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TORNTPHARM.NS",
+    "name": "Torrent Pharmaceuticals Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TRENT.NS",
+    "name": "Trent Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TIINDIA.NS",
+    "name": "Tube Investments of India Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UPL.NS",
+    "name": "UPL Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ULTRACEMCO.NS",
+    "name": "UltraTech Cement Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UNIONBANK.NS",
+    "name": "Union Bank of India",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UNITDSPR.NS",
+    "name": "United Spirits Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VBL.NS",
+    "name": "Varun Beverages Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VEDL.NS",
+    "name": "Vedanta Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VMM.NS",
+    "name": "Vishal Mega Mart Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IDEA.NS",
+    "name": "Vodafone Idea Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VOLTAS.NS",
+    "name": "Voltas Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WAAREEENER.NS",
+    "name": "Waaree Energies Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WIPRO.NS",
+    "name": "Wipro Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "YESBANK.NS",
+    "name": "Yes Bank Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ZYDUSLIFE.NS",
+    "name": "Zydus Lifesciences Ltd.",
+    "assetClass": "equity",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "^NSEI",
+    "name": "NIFTY 50 Index",
+    "assetClass": "index",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "^NSEMDCP50.NS",
+    "name": "NIFTY Midcap 50 Index",
+    "assetClass": "index",
+    "currency": "INR",
+    "exchange": "NSE",
+    "providerId": "yahoo"
+  }
 ]

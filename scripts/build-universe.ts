@@ -41,14 +41,19 @@ async function buildSP500(): Promise<UniverseEntry[]> {
   const tableMatch = html.match(/<table[^>]*id="constituents"[^>]*>([\s\S]*?)<\/table>/);
   if (!tableMatch) throw new Error('Could not find S&P 500 constituents table in Wikipedia HTML');
 
-  const rows = tableMatch[1].match(/<tr>([\s\S]*?)<\/tr>/g) ?? [];
+  const rows = tableMatch[1].match(/<tr[^>]*>([\s\S]*?)<\/tr>/g) ?? [];
   const entries: UniverseEntry[] = [];
 
   for (const row of rows.slice(1)) { // skip header
     const cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/g) ?? [];
     if (cells.length < 2) continue;
 
-    const extractText = (cell: string) => cell.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#160;/g, ' ').trim();
+    const extractText = (cell: string) => cell
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&#160;/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .trim();
 
     const rawSymbol = extractText(cells[0] ?? '').replace(/\n/g, '').trim();
     const name      = extractText(cells[1] ?? '').trim();
@@ -71,6 +76,10 @@ async function buildSP500(): Promise<UniverseEntry[]> {
   entries.push({ symbol: '^GSPC', name: 'S&P 500 Index',           assetClass: 'index', currency: 'USD', exchange: 'SNP', providerId: 'yahoo' });
   entries.push({ symbol: '^IXIC', name: 'NASDAQ Composite',         assetClass: 'index', currency: 'USD', exchange: 'NMS', providerId: 'yahoo' });
   entries.push({ symbol: '^DJI',  name: 'Dow Jones Industrial Avg', assetClass: 'index', currency: 'USD', exchange: 'DJI', providerId: 'yahoo' });
+
+  if (entries.length < 503) {
+    throw new Error(`Expected at least 500 S&P constituents + 3 benchmarks, got ${entries.length}`);
+  }
 
   console.log(`  Found ${entries.length - 3} S&P 500 stocks + 3 index benchmarks`);
   return entries;
@@ -113,7 +122,7 @@ async function buildNifty200(): Promise<UniverseEntry[]> {
   const entries: UniverseEntry[] = [];
 
   for (const line of lines.slice(1)) { // skip header
-    const cols = line.split(',').map((c) => c.replace(/^"|"$/g, '').trim());
+    const cols = parseCsvLine(line);
     if (cols.length < 3) continue;
     const name   = cols[0];
     const symbol = cols[2];
@@ -129,11 +138,40 @@ async function buildNifty200(): Promise<UniverseEntry[]> {
     });
   }
 
+  if (entries.length < 200) {
+    throw new Error(`Expected 200 NIFTY 200 constituents, got ${entries.length}`);
+  }
+
   // Add NIFTY indices
   entries.push({ symbol: '^NSEI', name: 'NIFTY 50 Index', assetClass: 'index', currency: 'INR', exchange: 'NSE', providerId: 'yahoo' });
+  entries.push({ symbol: '^NSEMDCP50.NS', name: 'NIFTY Midcap 50 Index', assetClass: 'index', currency: 'INR', exchange: 'NSE', providerId: 'yahoo' });
 
-  console.log(`  Found ${entries.length - 1} NIFTY 200 stocks + 1 index benchmark`);
+  console.log(`  Found ${entries.length - 2} NIFTY 200 stocks + 2 index benchmarks`);
   return entries;
+}
+
+function parseCsvLine(line: string): string[] {
+  const cols: string[] = [];
+  let cur = '';
+  let quoted = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    const next = line[i + 1];
+    if (ch === '"' && quoted && next === '"') {
+      cur += '"';
+      i++;
+    } else if (ch === '"') {
+      quoted = !quoted;
+    } else if (ch === ',' && !quoted) {
+      cols.push(cur.trim());
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  cols.push(cur.trim());
+  return cols.map((c) => c.replace(/^"|"$/g, '').trim());
 }
 
 // ---------------------------------------------------------------------------

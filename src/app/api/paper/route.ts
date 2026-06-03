@@ -3,8 +3,10 @@ import {
   openPaperTrade,
   closePaperTrade,
   markOpenTrades,
+  markOpenTradesWithQuotes,
   projectTrade,
   sweepOpenTrades,
+  DuplicateOpenTradeError,
 } from '@/core/paper/broker';
 import { buildTradeBook } from '@/core/paper/tradebook';
 import { getPaperTrades } from '@/core/db/paper';
@@ -87,7 +89,10 @@ export async function POST(request: Request) {
       }
 
       case 'mark': {
-        const marks = markOpenTrades(body.timeframe as import('@/core/types').Timeframe | undefined);
+        const useQuotes = body.useQuotes !== false;
+        const marks = useQuotes
+          ? await markOpenTradesWithQuotes(body.timeframe as import('@/core/types').Timeframe | undefined)
+          : markOpenTrades(body.timeframe as import('@/core/types').Timeframe | undefined);
         return NextResponse.json({ marks });
       }
 
@@ -137,6 +142,16 @@ export async function POST(request: Request) {
     }
   } catch (err) {
     console.error('[POST /api/paper]', err);
+    if (err instanceof DuplicateOpenTradeError) {
+      return NextResponse.json(
+        {
+          error: err.message,
+          symbol: err.symbol,
+          existingTradeId: err.existingTradeId,
+        },
+        { status: 409 },
+      );
+    }
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 },

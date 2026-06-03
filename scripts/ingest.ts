@@ -2,8 +2,8 @@
  * Bulk ingestion script.
  *
  * Usage:
- *   npm run ingest -- --universe scripts/universe/sp500-sample.json
- *   npm run ingest -- --universe scripts/universe/sp500-sample.json --from 2020-01-01
+ *   npm run ingest -- --universe scripts/universe/sp500.json
+ *   npm run ingest -- --universe scripts/universe/nifty200.json --from 2020-01-01
  *
  * Fetches full daily history for every symbol in the universe JSON file
  * and upserts it into the local SQLite DB.

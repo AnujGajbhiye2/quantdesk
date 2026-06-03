@@ -3,7 +3,7 @@
  *
  * Usage:
  *   npm run refresh
- *   npm run refresh -- --universe scripts/universe/sp500-sample.json
+ *   npm run refresh -- --universe scripts/universe/sp500.json
  *
  * Fetches only bars newer than the latest stored time for each symbol.
  * Runs in seconds for daily updates; only new rows are added.

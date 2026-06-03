@@ -64,7 +64,7 @@ export default function DublinClock() {
     <span style={{ fontVariantNumeric: 'tabular-nums' }}>
       <span style={{ color: 'var(--text-primary)' }}>{timeStr} IE</span>
       {' '}
-      <span style={{ color, fontSize: '11px' }}>[{session}]</span>
+      <span style={{ color, fontSize: 'var(--fs-xs)' }}>[{session}]</span>
     </span>
   );
 }

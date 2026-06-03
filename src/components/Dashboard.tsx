@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DublinClock from './DublinClock';
 import CommandBar, { type CommandBarHandle } from './CommandBar';
-import ScanResultsPanel from './ScanResultsPanel';
+import ScanResultsPanel, { type PlaceholderSymbol } from './ScanResultsPanel';
 import GainersLosersPanel from './GainersLosersPanel';
 import SignalDashboardPanel from './SignalDashboardPanel';
 import TradesPanel from './TradesPanel';
@@ -16,11 +16,25 @@ import type { MarketRow } from '@/core/market/snapshot';
 import type { PaperTrade, Signal, TradeIdea, SymbolMeta } from '@/core/types';
 import { marketOf, ALL_MARKETS, type Market } from '@/core/market/markets';
 
+interface QuoteRow {
+  symbol: string;
+  price:  number;
+  time:   string;
+}
+
 interface Props {
   initialRows:       MarketRow[];
   initialTrades:     PaperTrade[];
   initialStrategies: { id: string; name: string }[];
-  allSymbols:        { symbol: string; name: string; assetClass: SymbolMeta['assetClass']; exchange?: string }[];
+  allSymbols:        {
+    symbol: string;
+    name: string;
+    assetClass: SymbolMeta['assetClass'];
+    currency: string;
+    exchange?: string;
+    providerId: string;
+    inDb: boolean;
+  }[];
 }
 
 export default function Dashboard({
@@ -40,6 +54,7 @@ export default function Dashboard({
   const [refreshing, setRefreshing] = useState(false);
   const [scanStatus, setScanStatus] = useState('');
   const [marketFilter, setMarketFilter] = useState<Market | 'ALL'>('ALL');
+  const [quotes, setQuotes] = useState(new Map<string, QuoteRow>());
   const cmdRef = useRef<CommandBarHandle>(null);
   const router = useRouter();
 
@@ -53,19 +68,60 @@ export default function Dashboard({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allSymbols]);
 
-  // Visible markets (only show tabs for markets present in the current data)
+  // Show tabs for any market that has at least one curated symbol (ingested or not).
+  // This ensures NSE/BSE/etc. always appear even before data is fetched.
   const presentMarkets = ALL_MARKETS.filter((m) =>
-    rows.some((r) => symbolMarketMap.current.get(r.symbol) === m),
+    allSymbols.some((s) => symbolMarketMap.current.get(s.symbol) === m),
   );
 
-  const filteredRows = marketFilter === 'ALL'
-    ? rows
-    : rows.filter((r) => symbolMarketMap.current.get(r.symbol) === marketFilter);
+  const filteredRows = useMemo(() => (
+    marketFilter === 'ALL'
+      ? rows
+      : rows.filter((r) => symbolMarketMap.current.get(r.symbol) === marketFilter)
+  ), [marketFilter, rows]);
+
+  // Curated symbols not yet in DB, for the current market filter.
+  // These are shown greyed in ScanResultsPanel with a one-click ingest button.
+  const inDbSet = useMemo(() => new Set(rows.map((r) => r.symbol)), [rows]);
+  const filteredPlaceholders = useMemo((): PlaceholderSymbol[] => {
+    return allSymbols
+      .filter((s) =>
+        !s.inDb &&
+        !inDbSet.has(s.symbol) &&
+        (marketFilter === 'ALL' || symbolMarketMap.current.get(s.symbol) === marketFilter),
+      )
+      .map((s) => ({
+        symbol:     s.symbol,
+        name:       s.name,
+        assetClass: s.assetClass as string,
+        currency:   s.currency,
+        exchange:   s.exchange,
+        providerId: s.providerId,
+      }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allSymbols, inDbSet, marketFilter]);
+
+  const visibleRows = useMemo(() => (
+    filteredRows.map((row) => {
+      const quote = quotes.get(row.symbol);
+      if (!quote || quote.time.slice(0, 10) < row.latestTime || !isFinite(quote.price)) return row;
+      const changePct = row.prevClose !== 0
+        ? (quote.price - row.prevClose) / row.prevClose * 100
+        : 0;
+      return {
+        ...row,
+        last: quote.price,
+        changePct,
+        priceSource: 'quote' as const,
+        quoteTime: quote.time,
+      };
+    })
+  ), [filteredRows, quotes]);
 
   const { selected, setSelected } = useKeyboardNav({
-    count:        rows.length,
+    count:        visibleRows.length,
     onActivate:   (i) => {
-      if (rows[i]) router.push(`/backtest?symbol=${rows[i].symbol}`);
+      if (visibleRows[i]) router.push(`/backtest?symbol=${visibleRows[i].symbol}`);
     },
     onCommand:    () => cmdRef.current?.focus(),
     onGoToSymbol: () => setGotoOpen(true),
@@ -76,6 +132,23 @@ export default function Dashboard({
     setRows(newRows);
     setSelected(-1);
   }, [setSelected]);
+
+  const refreshQuotes = useCallback(async (sourceRows: MarketRow[]) => {
+    const symbols = sourceRows.slice(0, 100).map((r) => r.symbol);
+    if (symbols.length === 0) return;
+    try {
+      const res = await fetch(`/api/quotes?symbols=${encodeURIComponent(symbols.join(','))}`);
+      if (!res.ok) return;
+      const data = await res.json() as { quotes?: QuoteRow[] };
+      setQuotes(new Map((data.quotes ?? []).map((q) => [q.symbol, q])));
+    } catch {
+      setQuotes(new Map());
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshQuotes(filteredRows);
+  }, [filteredRows, refreshQuotes]);
 
   const handleSignals = useCallback((sigs: Signal[], newIdeas?: TradeIdea[]) => {
     setSignals(sigs);
@@ -137,6 +210,7 @@ export default function Dashboard({
       if (mRes.ok) {
         const { rows: newRows } = await mRes.json() as { rows: MarketRow[] };
         setRows(newRows);
+        void refreshQuotes(newRows);
         setSelected(-1);
       }
       if (tRes.ok) {
@@ -193,10 +267,10 @@ export default function Dashboard({
           }}
         >
           <div className="flex items-center gap-4 shrink-0">
-            <span style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.1em', fontSize: '13px' }}>
+            <span style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.1em', fontSize: 'var(--fs-sm)' }}>
               QUANTDESK
             </span>
-            <nav className="flex gap-3" style={{ fontSize: '11px' }}>
+            <nav className="flex gap-3" style={{ fontSize: 'var(--fs-xs)' }}>
               <a href="/" style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>DASH</a>
               <a href="/backtest" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>BACKTEST</a>
               <a href="/paper" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>PAPER</a>
@@ -219,7 +293,7 @@ export default function Dashboard({
                 border: '1px solid var(--border)',
                 color: refreshing ? 'var(--color-accent)' : 'var(--text-muted)',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '10px',
+                fontSize: 'var(--fs-xs)',
                 padding: '2px 8px',
                 cursor: 'pointer',
                 letterSpacing: '0.04em',
@@ -227,7 +301,7 @@ export default function Dashboard({
             >
               {refreshing ? 'REFRESHING...' : 'REFRESH'}
             </button>
-            <span style={{ color: 'var(--text-muted)', fontSize: '10px', whiteSpace: 'nowrap' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', whiteSpace: 'nowrap' }}>
               [/] cmd &nbsp; [g] symbol &nbsp; [j/k] nav
             </span>
             <DublinClock />
@@ -239,7 +313,7 @@ export default function Dashboard({
           className="flex items-center gap-3 px-4 py-1 shrink-0"
           style={{ background: 'var(--bg-panel-header)', borderBottom: '1px solid var(--border)' }}
         >
-          <span style={{ color: 'var(--text-muted)', fontSize: '10px', letterSpacing: '0.06em' }}>SIGNAL SCAN:</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.06em' }}>SIGNAL SCAN:</span>
           <select
             value={scanStratId}
             onChange={(e) => setScanStratId(e.target.value)}
@@ -248,7 +322,7 @@ export default function Dashboard({
               border: '1px solid var(--border)',
               color: 'var(--text-primary)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
+              fontSize: 'var(--fs-xs)',
               padding: '1px 6px',
             }}
           >
@@ -264,7 +338,7 @@ export default function Dashboard({
               border: '1px solid var(--border)',
               color: 'var(--color-accent)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '10px',
+              fontSize: 'var(--fs-xs)',
               padding: '1px 10px',
               cursor: 'pointer',
             }}
@@ -272,7 +346,7 @@ export default function Dashboard({
             SCAN
           </button>
           {scanStatus && (
-            <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>{scanStatus}</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>{scanStatus}</span>
           )}
         </div>
 
@@ -316,12 +390,17 @@ export default function Dashboard({
           }}
         >
           {/* Row 1 */}
-          <ScanResultsPanel rows={filteredRows} selected={selected} />
-          <GainersLosersPanel rows={filteredRows} />
+          <ScanResultsPanel
+            rows={visibleRows}
+            selected={selected}
+            placeholders={filteredPlaceholders}
+            onIngestDone={() => void refreshAll()}
+          />
+          <GainersLosersPanel rows={visibleRows} />
 
           {/* Row 2 - Signal dashboard (full width) */}
           <div className="col-span-2 overflow-hidden" style={{ background: 'var(--bg-panel)' }}>
-            <SignalDashboardPanel rows={filteredRows} signals={signals} />
+            <SignalDashboardPanel rows={visibleRows} signals={signals} />
           </div>
 
           {/* Row 3 - Trade ideas (full width) */}
@@ -335,7 +414,7 @@ export default function Dashboard({
           </div>
 
           {/* Row 4 - Market summary */}
-          <MarketSummaryStrip rows={filteredRows} />
+          <MarketSummaryStrip rows={visibleRows} />
         </div>
 
         {/* Disclaimer */}
@@ -345,7 +424,7 @@ export default function Dashboard({
             background: 'var(--bg-base)',
             borderTop: '1px solid var(--border)',
             color: 'var(--text-muted)',
-            fontSize: '10px',
+            fontSize: 'var(--fs-xs)',
             letterSpacing: '0.04em',
           }}
         >

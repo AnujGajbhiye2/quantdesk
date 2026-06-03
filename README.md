@@ -27,8 +27,10 @@ npm install
 cp .env.local.example .env.local
 # Edit .env.local if you want future providers (Yahoo needs no key)
 
-# 3. Ingest historical data (creates data/quantdesk.db)
-npm run ingest -- --universe scripts/universe-sample.json
+# 3. Validate symbol universes, then build the DB incrementally
+npm run validate-universe
+npm run poll -- --universe scripts/universe/sp500.json
+npm run poll -- --universe scripts/universe/nifty200.json
 
 # 4. Start
 npm run dev
@@ -36,7 +38,8 @@ npm run dev
 ```
 
 The dashboard populates once the DB has bars. Run `npm run refresh` any time to
-pull the latest EOD bars.
+pull the latest EOD bars. The dashboard overlays current quotes for displayed
+prices when the provider returns a newer quote than the stored daily bar.
 
 ---
 
@@ -52,6 +55,7 @@ pull the latest EOD bars.
 | `npm run refresh`                               | Incremental EOD update + paper trade stop/target sweep |
 | `npm run poll -- --universe <universe.json>`    | Rate-limited resumable poller (run daily to build DB) |
 | `npm run build-universe`                        | Regenerate sp500.json / nifty200.json from live sources |
+| `npm run validate-universe`                     | Verify S&P/NIFTY universe counts and required benchmarks |
 
 ---
 

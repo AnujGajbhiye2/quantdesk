@@ -216,11 +216,18 @@ export default function PaperPage() {
     // Close at latest stored close for this symbol
     const trade = trades.find((t) => t.id === id);
     if (!trade) return;
-    // Fetch latest quote via bars API for exit price
+    // Prefer latest quote, then fall back to latest stored close.
     let exitPrice = trade.entryPrice;
     try {
-      const bRes = await fetch(`/api/bars?symbol=${encodeURIComponent(trade.symbol)}`);
-      if (bRes.ok) {
+      const qRes = await fetch(`/api/quotes?symbols=${encodeURIComponent(trade.symbol)}`);
+      if (qRes.ok) {
+        const { quotes } = await qRes.json() as { quotes?: { price: number }[] };
+        if (quotes?.[0]?.price != null) exitPrice = quotes[0].price;
+      }
+      const bRes = exitPrice === trade.entryPrice
+        ? await fetch(`/api/bars?symbol=${encodeURIComponent(trade.symbol)}`)
+        : null;
+      if (bRes?.ok) {
         const { bars } = await bRes.json() as { bars: { close: number }[] };
         if (bars && bars.length > 0) exitPrice = bars[bars.length - 1].close;
       }

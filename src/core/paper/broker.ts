@@ -15,8 +15,10 @@ import {
   updatePaperTrade,
   getPaperTrade,
   getPaperTrades,
+  getOpenPaperTradeBySymbol,
 } from '@/core/db/paper';
-import { getBars, getLatestClose } from '@/core/db/bars';
+import { getAllSymbols, getBars, getLatestBarTime, getLatestClose } from '@/core/db/bars';
+import { get as getProvider } from '@/core/data/registry';
 import { runBacktest } from '@/core/backtest/engine';
 import type { Strategy, StrategyContext, StrategyDecision } from '@/core/strategy/Strategy';
 
@@ -44,6 +46,18 @@ export interface OpenTradeInput {
   _overrideQty?: number;
 }
 
+export class DuplicateOpenTradeError extends Error {
+  readonly symbol: string;
+  readonly existingTradeId: string;
+
+  constructor(symbol: string, existingTradeId: string) {
+    super(`An open paper trade already exists for ${symbol}. Close it before opening another.`);
+    this.name = 'DuplicateOpenTradeError';
+    this.symbol = symbol;
+    this.existingTradeId = existingTradeId;
+  }
+}
+
 /**
  * Open a paper trade. Applies entry slippage. Commission is booked at close
  * (round-trip = 2 * commission) to match the backtest engine's convention.
@@ -51,7 +65,7 @@ export interface OpenTradeInput {
 export function openPaperTrade(input: OpenTradeInput): PaperTrade {
   const {
     strategyId,
-    symbol,
+    symbol: rawSymbol,
     side,
     entryPrice:  rawEntryPrice,
     entryTime,
@@ -63,6 +77,12 @@ export function openPaperTrade(input: OpenTradeInput): PaperTrade {
     slippagePct = 0.0005,
     notes,
   } = input;
+
+  const symbol = rawSymbol.toUpperCase();
+  const existing = getOpenPaperTradeBySymbol(symbol);
+  if (existing) {
+    throw new DuplicateOpenTradeError(symbol, existing.id);
+  }
 
   void commission; // stored at close; declared here for interface completeness
 
@@ -167,6 +187,42 @@ export function markOpenTrades(timeframe: Timeframe = '1d'): MarkResult[] {
 
     return { trade, markPrice, unrealizedPnl, unrealizedPnlPct };
   });
+}
+
+/**
+ * Mark open trades against current provider quotes when available; otherwise
+ * fall back to the latest stored bar close.
+ */
+export async function markOpenTradesWithQuotes(timeframe: Timeframe = '1d'): Promise<MarkResult[]> {
+  const deterministic = markOpenTrades(timeframe);
+  const metaBySymbol = new Map(getAllSymbols().map((m) => [m.symbol, m]));
+
+  return Promise.all(deterministic.map(async (mark) => {
+    const meta = metaBySymbol.get(mark.trade.symbol);
+    if (!meta) return mark;
+    const provider = getProvider(meta.providerId);
+    if (typeof provider.getQuote !== 'function') return mark;
+
+    const quote = await provider.getQuote(mark.trade.symbol);
+    const latestBarTime = getLatestBarTime(mark.trade.symbol, timeframe);
+    if (!quote || !isFinite(quote.price) || (latestBarTime && quote.time.slice(0, 10) < latestBarTime)) {
+      return mark;
+    }
+
+    const positionValue = markToMarket(mark.trade.side, 0, mark.trade.qty, quote.price);
+    const entryCost = mark.trade.side === 'long'
+      ? mark.trade.entryPrice * mark.trade.qty
+      : -(mark.trade.entryPrice * mark.trade.qty);
+    const unrealizedPnl = positionValue - entryCost;
+    const unrealizedPnlPct = (unrealizedPnl / (mark.trade.entryPrice * mark.trade.qty)) * 100;
+
+    return {
+      trade: mark.trade,
+      markPrice: quote.price,
+      unrealizedPnl,
+      unrealizedPnlPct,
+    };
+  }));
 }
 
 // ---------------------------------------------------------------------------

@@ -18,6 +18,9 @@ export interface MarketRow {
   last:       number;
   prevClose:  number;
   changePct:  number;    // (last - prevClose) / prevClose * 100
+  latestTime: string;
+  priceSource?: 'eod' | 'quote';
+  quoteTime?:  string;
   volume:     number;
   spark:      number[];  // last 20 closes (oldest first)
   rsi14:      number;    // NaN if insufficient bars
@@ -127,6 +130,8 @@ export function getMarketSnapshot(opts: SnapshotOpts = {}): MarketRow[] {
         last:      last.close,
         prevClose: prev.close,
         changePct,
+        latestTime: last.time,
+        priceSource: 'eod',
         volume:    last.volume,
         spark,
         rsi14,

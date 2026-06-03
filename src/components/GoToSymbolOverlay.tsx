@@ -8,7 +8,10 @@ interface LocalSymbol {
   symbol: string;
   name: string;
   assetClass?: SymbolMeta['assetClass'];
+  currency?: string;
   exchange?: string;
+  providerId?: string;
+  inDb?: boolean;
 }
 
 interface Props {
@@ -22,6 +25,9 @@ interface DisplayItem {
   symbol:   string;
   name:     string;
   inDb:     boolean;
+  assetClass?: SymbolMeta['assetClass'];
+  currency?: string;
+  exchange?: string;
   providerId?: string;
 }
 
@@ -50,7 +56,15 @@ export default function GoToSymbolOverlay({ allSymbols, onClose }: Props) {
   const remoteOnly  = remote.filter((r) => !localSymSet.has(r.symbol.toLowerCase()));
 
   const items: DisplayItem[] = [
-    ...localMatches.map((s) => ({ symbol: s.symbol, name: s.name, inDb: true })),
+    ...localMatches.map((s) => ({
+      symbol:     s.symbol,
+      name:       s.name,
+      inDb:       s.inDb ?? true,
+      assetClass: s.assetClass,
+      currency:   s.currency,
+      exchange:   s.exchange,
+      providerId: s.providerId,
+    })),
     ...remoteOnly.slice(0, Math.max(0, 12 - localMatches.length)).map((r) => ({
       symbol:     r.symbol,
       name:       r.name,
@@ -93,8 +107,9 @@ export default function GoToSymbolOverlay({ allSymbols, onClose }: Props) {
           universe: [{
             symbol:     item.symbol,
             name:       item.name,
-            assetClass: 'equity',
-            currency:   'USD',
+            assetClass: item.assetClass ?? 'equity',
+            currency:   item.currency ?? 'USD',
+            exchange:   item.exchange,
             providerId: item.providerId ?? 'yahoo',
           }],
         }),

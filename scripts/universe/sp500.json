@@ -1,105 +1,4050 @@
 [
-  { "symbol": "AAPL",  "name": "Apple Inc.",                     "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "MSFT",  "name": "Microsoft Corp.",                 "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "NVDA",  "name": "NVIDIA Corp.",                    "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "GOOGL", "name": "Alphabet Inc. Class A",           "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "GOOG",  "name": "Alphabet Inc. Class C",           "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "AMZN",  "name": "Amazon.com Inc.",                 "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "META",  "name": "Meta Platforms Inc.",             "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "TSLA",  "name": "Tesla Inc.",                      "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "BRK-B", "name": "Berkshire Hathaway Inc. Class B", "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "JPM",   "name": "JPMorgan Chase & Co.",            "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "LLY",   "name": "Eli Lilly & Co.",                 "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "V",     "name": "Visa Inc.",                       "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "UNH",   "name": "UnitedHealth Group Inc.",         "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "XOM",   "name": "Exxon Mobil Corp.",               "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "MA",    "name": "Mastercard Inc.",                  "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "AVGO",  "name": "Broadcom Inc.",                   "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "JNJ",   "name": "Johnson & Johnson",               "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "PG",    "name": "Procter & Gamble Co.",            "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "HD",    "name": "Home Depot Inc.",                  "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "COST",  "name": "Costco Wholesale Corp.",          "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "ABBV",  "name": "AbbVie Inc.",                     "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "WMT",   "name": "Walmart Inc.",                    "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "NFLX",  "name": "Netflix Inc.",                    "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "BAC",   "name": "Bank of America Corp.",           "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "KO",    "name": "Coca-Cola Co.",                   "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "CRM",   "name": "Salesforce Inc.",                 "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "AMD",   "name": "Advanced Micro Devices Inc.",     "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "PEP",   "name": "PepsiCo Inc.",                    "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "MRK",   "name": "Merck & Co. Inc.",                "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "TMO",   "name": "Thermo Fisher Scientific Inc.",   "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "ORCL",  "name": "Oracle Corp.",                    "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "CSCO",  "name": "Cisco Systems Inc.",              "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "WFC",   "name": "Wells Fargo & Co.",               "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "ACN",   "name": "Accenture plc",                   "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "IBM",   "name": "International Business Machines", "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "NOW",   "name": "ServiceNow Inc.",                  "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "GE",    "name": "GE Aerospace",                    "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "INTU",  "name": "Intuit Inc.",                     "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "CAT",   "name": "Caterpillar Inc.",                "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "DIS",   "name": "Walt Disney Co.",                  "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "GS",    "name": "Goldman Sachs Group Inc.",        "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "QCOM",  "name": "Qualcomm Inc.",                   "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "T",     "name": "AT&T Inc.",                       "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "VZ",    "name": "Verizon Communications Inc.",     "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "INTC",  "name": "Intel Corp.",                     "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "AMGN",  "name": "Amgen Inc.",                      "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "MS",    "name": "Morgan Stanley",                   "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "TXN",   "name": "Texas Instruments Inc.",          "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "HON",   "name": "Honeywell International Inc.",    "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "RTX",   "name": "RTX Corp.",                       "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "SPGI",  "name": "S&P Global Inc.",                 "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "NEE",   "name": "NextEra Energy Inc.",             "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "LOW",   "name": "Lowe's Companies Inc.",           "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "AXP",   "name": "American Express Co.",            "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "ISRG",  "name": "Intuitive Surgical Inc.",         "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "BKNG",  "name": "Booking Holdings Inc.",           "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "MDT",   "name": "Medtronic plc",                   "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "SCHW",  "name": "Charles Schwab Corp.",            "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "UBER",  "name": "Uber Technologies Inc.",          "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "BLK",   "name": "BlackRock Inc.",                  "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "BMY",   "name": "Bristol-Myers Squibb Co.",        "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "LMT",   "name": "Lockheed Martin Corp.",           "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "AMAT",  "name": "Applied Materials Inc.",          "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "C",     "name": "Citigroup Inc.",                  "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "GILD",  "name": "Gilead Sciences Inc.",            "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "DE",    "name": "Deere & Co.",                     "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "REGN",  "name": "Regeneron Pharmaceuticals Inc.",  "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "ADP",   "name": "Automatic Data Processing Inc.",  "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "ADI",   "name": "Analog Devices Inc.",             "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "MMC",   "name": "Marsh & McLennan Companies Inc.", "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "VRTX",  "name": "Vertex Pharmaceuticals Inc.",     "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "SYK",   "name": "Stryker Corp.",                   "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "PLD",   "name": "Prologis Inc.",                   "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "ETN",   "name": "Eaton Corp. plc",                 "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "PANW",  "name": "Palo Alto Networks Inc.",         "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "CB",    "name": "Chubb Ltd.",                      "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "LRCX",  "name": "Lam Research Corp.",              "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "MU",    "name": "Micron Technology Inc.",          "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "BA",    "name": "Boeing Co.",                      "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "SO",    "name": "Southern Co.",                    "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "PFE",   "name": "Pfizer Inc.",                     "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "CI",    "name": "Cigna Group",                     "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "ICE",   "name": "Intercontinental Exchange Inc.",  "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "KLAC",  "name": "KLA Corp.",                       "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "ABNB",  "name": "Airbnb Inc.",                     "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "SNPS",  "name": "Synopsys Inc.",                   "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "USB",   "name": "U.S. Bancorp",                    "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "CME",   "name": "CME Group Inc.",                  "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "MMM",   "name": "3M Co.",                          "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "ZTS",   "name": "Zoetis Inc.",                     "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "PH",    "name": "Parker-Hannifin Corp.",           "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "CDNS",  "name": "Cadence Design Systems Inc.",     "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "TJX",   "name": "TJX Companies Inc.",              "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "EOG",   "name": "EOG Resources Inc.",              "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "MCO",   "name": "Moody's Corp.",                   "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "BSX",   "name": "Boston Scientific Corp.",         "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "NOC",   "name": "Northrop Grumman Corp.",          "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "MSI",   "name": "Motorola Solutions Inc.",         "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "SHW",   "name": "Sherwin-Williams Co.",            "assetClass": "equity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
-  { "symbol": "MELI",  "name": "MercadoLibre Inc.",               "assetClass": "equity", "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
-  { "symbol": "^GSPC", "name": "S&P 500 Index",                   "assetClass": "index",  "currency": "USD", "exchange": "SNP",    "providerId": "yahoo" },
-  { "symbol": "^IXIC", "name": "NASDAQ Composite",                "assetClass": "index",  "currency": "USD", "exchange": "NMS",    "providerId": "yahoo" },
-  { "symbol": "^DJI",  "name": "Dow Jones Industrial Average",    "assetClass": "index",  "currency": "USD", "exchange": "DJI",    "providerId": "yahoo" }
+  {
+    "symbol": "MMM",
+    "name": "3M",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AOS",
+    "name": "A. O. Smith",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ABT",
+    "name": "Abbott Laboratories",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ABBV",
+    "name": "AbbVie",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ACN",
+    "name": "Accenture",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADBE",
+    "name": "Adobe Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AMD",
+    "name": "Advanced Micro Devices",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AES",
+    "name": "AES Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AFL",
+    "name": "Aflac",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "A",
+    "name": "Agilent Technologies",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "APD",
+    "name": "Air Products",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ABNB",
+    "name": "Airbnb",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AKAM",
+    "name": "Akamai Technologies",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ALB",
+    "name": "Albemarle Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ARE",
+    "name": "Alexandria Real Estate Equities",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ALGN",
+    "name": "Align Technology",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ALLE",
+    "name": "Allegion",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LNT",
+    "name": "Alliant Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ALL",
+    "name": "Allstate",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GOOGL",
+    "name": "Alphabet Inc. (Class A)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GOOG",
+    "name": "Alphabet Inc. (Class C)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MO",
+    "name": "Altria",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AMZN",
+    "name": "Amazon",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AMCR",
+    "name": "Amcor",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AEE",
+    "name": "Ameren",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AEP",
+    "name": "American Electric Power",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AXP",
+    "name": "American Express",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AIG",
+    "name": "American International Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AMT",
+    "name": "American Tower",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AWK",
+    "name": "American Water Works",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AMP",
+    "name": "Ameriprise Financial",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AME",
+    "name": "Ametek",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AMGN",
+    "name": "Amgen",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "APH",
+    "name": "Amphenol",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADI",
+    "name": "Analog Devices",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AON",
+    "name": "Aon plc",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "APA",
+    "name": "APA Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "APO",
+    "name": "Apollo Global Management",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AAPL",
+    "name": "Apple Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AMAT",
+    "name": "Applied Materials",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "APP",
+    "name": "AppLovin",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "APTV",
+    "name": "Aptiv",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ACGL",
+    "name": "Arch Capital Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADM",
+    "name": "Archer Daniels Midland",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ARES",
+    "name": "Ares Management",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ANET",
+    "name": "Arista Networks",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AJG",
+    "name": "Arthur J. Gallagher & Co.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AIZ",
+    "name": "Assurant",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "T",
+    "name": "AT&T",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ATO",
+    "name": "Atmos Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADSK",
+    "name": "Autodesk",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADP",
+    "name": "Automatic Data Processing",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AZO",
+    "name": "AutoZone",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AVB",
+    "name": "AvalonBay Communities",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AVY",
+    "name": "Avery Dennison",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AXON",
+    "name": "Axon Enterprise",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BKR",
+    "name": "Baker Hughes",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BALL",
+    "name": "Ball Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BAC",
+    "name": "Bank of America",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BAX",
+    "name": "Baxter International",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BDX",
+    "name": "Becton Dickinson",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BRK-B",
+    "name": "Berkshire Hathaway",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BBY",
+    "name": "Best Buy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TECH",
+    "name": "Bio-Techne",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BIIB",
+    "name": "Biogen",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BLK",
+    "name": "BlackRock",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BX",
+    "name": "Blackstone Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "XYZ",
+    "name": "Block, Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BNY",
+    "name": "BNY Mellon",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BA",
+    "name": "Boeing",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BKNG",
+    "name": "Booking Holdings",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BSX",
+    "name": "Boston Scientific",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BMY",
+    "name": "Bristol Myers Squibb",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AVGO",
+    "name": "Broadcom",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BR",
+    "name": "Broadridge Financial Solutions",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BRO",
+    "name": "Brown & Brown",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BF-B",
+    "name": "Brown–Forman",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BLDR",
+    "name": "Builders FirstSource",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BG",
+    "name": "Bunge Global",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BXP",
+    "name": "BXP, Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CHRW",
+    "name": "C.H. Robinson",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CDNS",
+    "name": "Cadence Design Systems",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CPT",
+    "name": "Camden Property Trust",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CPB",
+    "name": "Campbell's Company (The)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "COF",
+    "name": "Capital One",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CAH",
+    "name": "Cardinal Health",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CCL",
+    "name": "Carnival Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CARR",
+    "name": "Carrier Global",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CVNA",
+    "name": "Carvana",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CASY",
+    "name": "Casey's",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CAT",
+    "name": "Caterpillar Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CBOE",
+    "name": "Cboe Global Markets",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CBRE",
+    "name": "CBRE Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CDW",
+    "name": "CDW Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "COR",
+    "name": "Cencora",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CNC",
+    "name": "Centene Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CNP",
+    "name": "CenterPoint Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CF",
+    "name": "CF Industries",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CRL",
+    "name": "Charles River Laboratories",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SCHW",
+    "name": "Charles Schwab Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CHTR",
+    "name": "Charter Communications",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CVX",
+    "name": "Chevron Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CMG",
+    "name": "Chipotle Mexican Grill",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CB",
+    "name": "Chubb Limited",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CHD",
+    "name": "Church & Dwight",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CIEN",
+    "name": "Ciena",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CI",
+    "name": "Cigna",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CINF",
+    "name": "Cincinnati Financial",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CTAS",
+    "name": "Cintas",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CSCO",
+    "name": "Cisco",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "C",
+    "name": "Citigroup",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CFG",
+    "name": "Citizens Financial Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CLX",
+    "name": "Clorox",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CME",
+    "name": "CME Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CMS",
+    "name": "CMS Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KO",
+    "name": "Coca-Cola Company (The)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CTSH",
+    "name": "Cognizant",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "COHR",
+    "name": "Coherent Corp.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "COIN",
+    "name": "Coinbase",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CL",
+    "name": "Colgate-Palmolive",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CMCSA",
+    "name": "Comcast",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FIX",
+    "name": "Comfort Systems USA",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CAG",
+    "name": "Conagra Brands",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "COP",
+    "name": "ConocoPhillips",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ED",
+    "name": "Consolidated Edison",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "STZ",
+    "name": "Constellation Brands",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CEG",
+    "name": "Constellation Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "COO",
+    "name": "Cooper Companies (The)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CPRT",
+    "name": "Copart",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GLW",
+    "name": "Corning Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CPAY",
+    "name": "Corpay",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CTVA",
+    "name": "Corteva",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CSGP",
+    "name": "CoStar Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "COST",
+    "name": "Costco",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CRH",
+    "name": "CRH plc",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CRWD",
+    "name": "CrowdStrike",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CCI",
+    "name": "Crown Castle",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CSX",
+    "name": "CSX Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CMI",
+    "name": "Cummins",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CVS",
+    "name": "CVS Health",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DHR",
+    "name": "Danaher Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DRI",
+    "name": "Darden Restaurants",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DDOG",
+    "name": "Datadog",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DVA",
+    "name": "DaVita",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DECK",
+    "name": "Deckers Brands",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DE",
+    "name": "Deere & Company",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DELL",
+    "name": "Dell Technologies",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DAL",
+    "name": "Delta Air Lines",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DVN",
+    "name": "Devon Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DXCM",
+    "name": "Dexcom",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FANG",
+    "name": "Diamondback Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DLR",
+    "name": "Digital Realty",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DG",
+    "name": "Dollar General",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DLTR",
+    "name": "Dollar Tree",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "D",
+    "name": "Dominion Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DPZ",
+    "name": "Domino's",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DASH",
+    "name": "DoorDash",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DOV",
+    "name": "Dover Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DOW",
+    "name": "Dow Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DHI",
+    "name": "D. R. Horton",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DTE",
+    "name": "DTE Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DUK",
+    "name": "Duke Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DD",
+    "name": "DuPont",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ETN",
+    "name": "Eaton Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EBAY",
+    "name": "eBay Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SATS",
+    "name": "EchoStar",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ECL",
+    "name": "Ecolab",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EIX",
+    "name": "Edison International",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EW",
+    "name": "Edwards Lifesciences",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EA",
+    "name": "Electronic Arts",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ELV",
+    "name": "Elevance Health",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EME",
+    "name": "Emcor",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EMR",
+    "name": "Emerson Electric",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ETR",
+    "name": "Entergy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EOG",
+    "name": "EOG Resources",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EPAM",
+    "name": "EPAM Systems",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EQT",
+    "name": "EQT Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EFX",
+    "name": "Equifax",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EQIX",
+    "name": "Equinix",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EQR",
+    "name": "Equity Residential",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ERIE",
+    "name": "Erie Indemnity",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ESS",
+    "name": "Essex Property Trust",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EL",
+    "name": "Estée Lauder Companies (The)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EG",
+    "name": "Everest Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EVRG",
+    "name": "Evergy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ES",
+    "name": "Eversource Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EXC",
+    "name": "Exelon",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EXE",
+    "name": "Expand Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EXPE",
+    "name": "Expedia Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EXPD",
+    "name": "Expeditors International",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EXR",
+    "name": "Extra Space Storage",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "XOM",
+    "name": "ExxonMobil",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FFIV",
+    "name": "F5, Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FDS",
+    "name": "FactSet",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FICO",
+    "name": "Fair Isaac",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FAST",
+    "name": "Fastenal",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FRT",
+    "name": "Federal Realty Investment Trust",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FDX",
+    "name": "FedEx",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FIS",
+    "name": "Fidelity National Information Services",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FITB",
+    "name": "Fifth Third Bancorp",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FSLR",
+    "name": "First Solar",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FE",
+    "name": "FirstEnergy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FISV",
+    "name": "Fiserv",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "F",
+    "name": "Ford Motor Company",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FTNT",
+    "name": "Fortinet",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FTV",
+    "name": "Fortive",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FOXA",
+    "name": "Fox Corporation (Class A)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FOX",
+    "name": "Fox Corporation (Class B)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BEN",
+    "name": "Franklin Resources",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FCX",
+    "name": "Freeport-McMoRan",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GRMN",
+    "name": "Garmin",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IT",
+    "name": "Gartner",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GE",
+    "name": "GE Aerospace",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GEHC",
+    "name": "GE HealthCare",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GEV",
+    "name": "GE Vernova",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GEN",
+    "name": "Gen Digital",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GNRC",
+    "name": "Generac",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GD",
+    "name": "General Dynamics",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GIS",
+    "name": "General Mills",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GM",
+    "name": "General Motors",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GPC",
+    "name": "Genuine Parts Company",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GILD",
+    "name": "Gilead Sciences",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GPN",
+    "name": "Global Payments",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GL",
+    "name": "Globe Life",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GDDY",
+    "name": "GoDaddy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GS",
+    "name": "Goldman Sachs",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HAL",
+    "name": "Halliburton",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HIG",
+    "name": "Hartford (The)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HAS",
+    "name": "Hasbro",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HCA",
+    "name": "HCA Healthcare",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DOC",
+    "name": "Healthpeak Properties",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HSIC",
+    "name": "Henry Schein",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HSY",
+    "name": "Hershey Company (The)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HPE",
+    "name": "Hewlett Packard Enterprise",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HLT",
+    "name": "Hilton Worldwide",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HD",
+    "name": "Home Depot (The)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HON",
+    "name": "Honeywell",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HRL",
+    "name": "Hormel Foods",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HST",
+    "name": "Host Hotels & Resorts",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HWM",
+    "name": "Howmet Aerospace",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HPQ",
+    "name": "HP Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HUBB",
+    "name": "Hubbell Incorporated",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HUM",
+    "name": "Humana",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HBAN",
+    "name": "Huntington Bancshares",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HII",
+    "name": "Huntington Ingalls Industries",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IBM",
+    "name": "IBM",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IEX",
+    "name": "IDEX Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IDXX",
+    "name": "Idexx Laboratories",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ITW",
+    "name": "Illinois Tool Works",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INCY",
+    "name": "Incyte",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IR",
+    "name": "Ingersoll Rand",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PODD",
+    "name": "Insulet Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INTC",
+    "name": "Intel",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IBKR",
+    "name": "Interactive Brokers",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ICE",
+    "name": "Intercontinental Exchange",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IFF",
+    "name": "International Flavors & Fragrances",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IP",
+    "name": "International Paper",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INTU",
+    "name": "Intuit",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ISRG",
+    "name": "Intuitive Surgical",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IVZ",
+    "name": "Invesco",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INVH",
+    "name": "Invitation Homes",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IQV",
+    "name": "IQVIA",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IRM",
+    "name": "Iron Mountain",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JBHT",
+    "name": "J.B. Hunt",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JBL",
+    "name": "Jabil",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JKHY",
+    "name": "Jack Henry & Associates",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "J",
+    "name": "Jacobs Solutions",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JNJ",
+    "name": "Johnson & Johnson",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JCI",
+    "name": "Johnson Controls",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JPM",
+    "name": "JPMorgan Chase",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KVUE",
+    "name": "Kenvue",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KDP",
+    "name": "Keurig Dr Pepper",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KEY",
+    "name": "KeyCorp",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KEYS",
+    "name": "Keysight Technologies",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KMB",
+    "name": "Kimberly-Clark",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KIM",
+    "name": "Kimco Realty",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KMI",
+    "name": "Kinder Morgan",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KKR",
+    "name": "KKR & Co.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KLAC",
+    "name": "KLA Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KHC",
+    "name": "Kraft Heinz",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KR",
+    "name": "Kroger",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LHX",
+    "name": "L3Harris",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LH",
+    "name": "Labcorp",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LRCX",
+    "name": "Lam Research",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LVS",
+    "name": "Las Vegas Sands",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LDOS",
+    "name": "Leidos",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LEN",
+    "name": "Lennar",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LII",
+    "name": "Lennox International",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LLY",
+    "name": "Lilly (Eli)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LIN",
+    "name": "Linde plc",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LYV",
+    "name": "Live Nation Entertainment",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LMT",
+    "name": "Lockheed Martin",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "L",
+    "name": "Loews Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LOW",
+    "name": "Lowe's",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LULU",
+    "name": "Lululemon Athletica",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LITE",
+    "name": "Lumentum",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LYB",
+    "name": "LyondellBasell",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MTB",
+    "name": "M&T Bank",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MPC",
+    "name": "Marathon Petroleum",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MAR",
+    "name": "Marriott International",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MRSH",
+    "name": "Marsh McLennan",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MLM",
+    "name": "Martin Marietta Materials",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MAS",
+    "name": "Masco",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MA",
+    "name": "Mastercard",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MKC",
+    "name": "McCormick & Company",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MCD",
+    "name": "McDonald's",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MCK",
+    "name": "McKesson Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MDT",
+    "name": "Medtronic",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MRK",
+    "name": "Merck & Co.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "META",
+    "name": "Meta Platforms",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MET",
+    "name": "MetLife",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MTD",
+    "name": "Mettler Toledo",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MGM",
+    "name": "MGM Resorts",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MCHP",
+    "name": "Microchip Technology",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MU",
+    "name": "Micron Technology",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MSFT",
+    "name": "Microsoft",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MAA",
+    "name": "Mid-America Apartment Communities",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MRNA",
+    "name": "Moderna",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TAP",
+    "name": "Molson Coors Beverage Company",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MDLZ",
+    "name": "Mondelez International",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MPWR",
+    "name": "Monolithic Power Systems",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MNST",
+    "name": "Monster Beverage",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MCO",
+    "name": "Moody's Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MS",
+    "name": "Morgan Stanley",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MOS",
+    "name": "Mosaic Company (The)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MSI",
+    "name": "Motorola Solutions",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MSCI",
+    "name": "MSCI Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NDAQ",
+    "name": "Nasdaq, Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NTAP",
+    "name": "NetApp",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NFLX",
+    "name": "Netflix",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NEM",
+    "name": "Newmont",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NWSA",
+    "name": "News Corp (Class A)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NWS",
+    "name": "News Corp (Class B)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NEE",
+    "name": "NextEra Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NKE",
+    "name": "Nike, Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NI",
+    "name": "NiSource",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NDSN",
+    "name": "Nordson Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NSC",
+    "name": "Norfolk Southern",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NTRS",
+    "name": "Northern Trust",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NOC",
+    "name": "Northrop Grumman",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NCLH",
+    "name": "Norwegian Cruise Line Holdings",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NRG",
+    "name": "NRG Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NUE",
+    "name": "Nucor",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NVDA",
+    "name": "Nvidia",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NVR",
+    "name": "NVR, Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NXPI",
+    "name": "NXP Semiconductors",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ORLY",
+    "name": "O’Reilly Automotive",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "OXY",
+    "name": "Occidental Petroleum",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ODFL",
+    "name": "Old Dominion",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "OMC",
+    "name": "Omnicom Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ON",
+    "name": "ON Semiconductor",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "OKE",
+    "name": "Oneok",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ORCL",
+    "name": "Oracle Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "OTIS",
+    "name": "Otis Worldwide",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PCAR",
+    "name": "Paccar",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PKG",
+    "name": "Packaging Corporation of America",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PLTR",
+    "name": "Palantir Technologies",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PANW",
+    "name": "Palo Alto Networks",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PSKY",
+    "name": "Paramount Skydance Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PH",
+    "name": "Parker Hannifin",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PAYX",
+    "name": "Paychex",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PYPL",
+    "name": "PayPal",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PNR",
+    "name": "Pentair",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PEP",
+    "name": "PepsiCo",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PFE",
+    "name": "Pfizer",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PCG",
+    "name": "PG&E Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PM",
+    "name": "Philip Morris International",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PSX",
+    "name": "Phillips 66",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PNW",
+    "name": "Pinnacle West Capital",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PNC",
+    "name": "PNC Financial Services",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "POOL",
+    "name": "Pool Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PPG",
+    "name": "PPG Industries",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PPL",
+    "name": "PPL Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PFG",
+    "name": "Principal Financial Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PG",
+    "name": "Procter & Gamble",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PGR",
+    "name": "Progressive Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PLD",
+    "name": "Prologis",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PRU",
+    "name": "Prudential Financial",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PEG",
+    "name": "Public Service Enterprise Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PTC",
+    "name": "PTC Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PSA",
+    "name": "Public Storage",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PHM",
+    "name": "PulteGroup",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PWR",
+    "name": "Quanta Services",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "QCOM",
+    "name": "Qualcomm",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DGX",
+    "name": "Quest Diagnostics",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "Q",
+    "name": "Qnity Electronics",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RL",
+    "name": "Ralph Lauren Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RJF",
+    "name": "Raymond James Financial",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RTX",
+    "name": "RTX Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "O",
+    "name": "Realty Income",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "REG",
+    "name": "Regency Centers",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "REGN",
+    "name": "Regeneron Pharmaceuticals",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RF",
+    "name": "Regions Financial Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RSG",
+    "name": "Republic Services",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RMD",
+    "name": "ResMed",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RVTY",
+    "name": "Revvity",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HOOD",
+    "name": "Robinhood Markets",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ROK",
+    "name": "Rockwell Automation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ROL",
+    "name": "Rollins, Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ROP",
+    "name": "Roper Technologies",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ROST",
+    "name": "Ross Stores",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RCL",
+    "name": "Royal Caribbean Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SPGI",
+    "name": "S&P Global",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CRM",
+    "name": "Salesforce",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SNDK",
+    "name": "Sandisk",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SBAC",
+    "name": "SBA Communications",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SLB",
+    "name": "Schlumberger",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "STX",
+    "name": "Seagate Technology",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SRE",
+    "name": "Sempra",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NOW",
+    "name": "ServiceNow",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SHW",
+    "name": "Sherwin-Williams",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SPG",
+    "name": "Simon Property Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SWKS",
+    "name": "Skyworks Solutions",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SJM",
+    "name": "J.M. Smucker Company (The)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SW",
+    "name": "Smurfit Westrock",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SNA",
+    "name": "Snap-on",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SOLV",
+    "name": "Solventum",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SO",
+    "name": "Southern Company",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LUV",
+    "name": "Southwest Airlines",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SWK",
+    "name": "Stanley Black & Decker",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SBUX",
+    "name": "Starbucks",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "STT",
+    "name": "State Street Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "STLD",
+    "name": "Steel Dynamics",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "STE",
+    "name": "Steris",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SYK",
+    "name": "Stryker Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SMCI",
+    "name": "Supermicro",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SYF",
+    "name": "Synchrony Financial",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SNPS",
+    "name": "Synopsys",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SYY",
+    "name": "Sysco",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TMUS",
+    "name": "T-Mobile US",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TROW",
+    "name": "T. Rowe Price",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TTWO",
+    "name": "Take-Two Interactive",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TPR",
+    "name": "Tapestry, Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TRGP",
+    "name": "Targa Resources",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TGT",
+    "name": "Target Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TEL",
+    "name": "TE Connectivity",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TDY",
+    "name": "Teledyne Technologies",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TER",
+    "name": "Teradyne",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TSLA",
+    "name": "Tesla, Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TXN",
+    "name": "Texas Instruments",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TPL",
+    "name": "Texas Pacific Land Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TXT",
+    "name": "Textron",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TMO",
+    "name": "Thermo Fisher Scientific",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TJX",
+    "name": "TJX Companies",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TKO",
+    "name": "TKO Group Holdings",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TTD",
+    "name": "Trade Desk (The)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TSCO",
+    "name": "Tractor Supply",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TT",
+    "name": "Trane Technologies",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TDG",
+    "name": "TransDigm Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TRV",
+    "name": "Travelers Companies (The)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TRMB",
+    "name": "Trimble Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TFC",
+    "name": "Truist Financial",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TYL",
+    "name": "Tyler Technologies",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TSN",
+    "name": "Tyson Foods",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "USB",
+    "name": "U.S. Bancorp",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UBER",
+    "name": "Uber",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UDR",
+    "name": "UDR, Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ULTA",
+    "name": "Ulta Beauty",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UNP",
+    "name": "Union Pacific Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UAL",
+    "name": "United Airlines Holdings",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UPS",
+    "name": "United Parcel Service",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "URI",
+    "name": "United Rentals",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UNH",
+    "name": "UnitedHealth Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UHS",
+    "name": "Universal Health Services",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VLO",
+    "name": "Valero Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VEEV",
+    "name": "Veeva Systems",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VTR",
+    "name": "Ventas",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VLTO",
+    "name": "Veralto",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VRSN",
+    "name": "Verisign",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VRSK",
+    "name": "Verisk Analytics",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VZ",
+    "name": "Verizon",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VRTX",
+    "name": "Vertex Pharmaceuticals",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VRT",
+    "name": "Vertiv",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VTRS",
+    "name": "Viatris",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VICI",
+    "name": "Vici Properties",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "V",
+    "name": "Visa Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VST",
+    "name": "Vistra Corp.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VMC",
+    "name": "Vulcan Materials Company",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WRB",
+    "name": "W. R. Berkley Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GWW",
+    "name": "W. W. Grainger",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WAB",
+    "name": "Wabtec",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WMT",
+    "name": "Walmart",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DIS",
+    "name": "Walt Disney Company (The)",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WBD",
+    "name": "Warner Bros. Discovery",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WM",
+    "name": "Waste Management",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WAT",
+    "name": "Waters Corporation",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WEC",
+    "name": "WEC Energy Group",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WFC",
+    "name": "Wells Fargo",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WELL",
+    "name": "Welltower",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WST",
+    "name": "West Pharmaceutical Services",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WDC",
+    "name": "Western Digital",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WY",
+    "name": "Weyerhaeuser",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WSM",
+    "name": "Williams-Sonoma, Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WMB",
+    "name": "Williams Companies",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WTW",
+    "name": "Willis Towers Watson",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WDAY",
+    "name": "Workday, Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WYNN",
+    "name": "Wynn Resorts",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "XEL",
+    "name": "Xcel Energy",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "XYL",
+    "name": "Xylem Inc.",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "YUM",
+    "name": "Yum! Brands",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ZBRA",
+    "name": "Zebra Technologies",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ZBH",
+    "name": "Zimmer Biomet",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ZTS",
+    "name": "Zoetis",
+    "assetClass": "equity",
+    "currency": "USD",
+    "exchange": "NYSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "^GSPC",
+    "name": "S&P 500 Index",
+    "assetClass": "index",
+    "currency": "USD",
+    "exchange": "SNP",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "^IXIC",
+    "name": "NASDAQ Composite",
+    "assetClass": "index",
+    "currency": "USD",
+    "exchange": "NMS",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "^DJI",
+    "name": "Dow Jones Industrial Avg",
+    "assetClass": "index",
+    "currency": "USD",
+    "exchange": "DJI",
+    "providerId": "yahoo"
+  }
 ]
