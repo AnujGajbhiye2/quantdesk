@@ -57,3 +57,71 @@ CREATE TABLE IF NOT EXISTS signals (
   reason      TEXT NOT NULL,
   strategy_id TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS watchlist (
+  symbol    TEXT PRIMARY KEY,
+  pinned_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS strategy_edge (
+  strategy_id          TEXT NOT NULL,
+  scope                TEXT NOT NULL,
+  symbol               TEXT,
+  asset_class          TEXT,
+  win_rate             REAL NOT NULL,
+  avg_win_pct          REAL NOT NULL,
+  avg_loss_pct         REAL NOT NULL,
+  profit_factor        REAL NOT NULL,
+  num_trades           INTEGER NOT NULL,
+  median_win_hold_bars REAL NOT NULL,
+  tested_from          TEXT NOT NULL,
+  tested_to            TEXT NOT NULL,
+  computed_at          TEXT NOT NULL,
+  PRIMARY KEY (strategy_id, scope)
+);
+
+-- Alert dedupe log for the stop/target proximity monitor (core/notify/monitor.ts).
+-- One row per (trade, level) remembers the last alert state so a hovering
+-- price does not spam Telegram every cron tick.
+CREATE TABLE IF NOT EXISTS alert_log (
+  trade_id TEXT NOT NULL,
+  level    TEXT NOT NULL CHECK (level IN ('stop', 'target')),
+  state    TEXT NOT NULL CHECK (state IN ('near', 'hit')),
+  sent_at  TEXT NOT NULL,
+  PRIMARY KEY (trade_id, level)
+);
+
+-- Paper trading budget (single row). Balance is always DERIVED from
+-- starting_balance + the paper_trades table - never stored, so it cannot drift.
+CREATE TABLE IF NOT EXISTS account (
+  id               INTEGER PRIMARY KEY CHECK (id = 1),
+  starting_balance REAL NOT NULL,
+  currency         TEXT NOT NULL DEFAULT 'USD',
+  created_at       TEXT NOT NULL,
+  updated_at       TEXT NOT NULL
+);
+
+-- Dossier caches: provider fundamentals and news, stored as JSON payloads
+-- with a fetched_at TTL so the dossier never hammers the provider.
+CREATE TABLE IF NOT EXISTS fundamentals_cache (
+  symbol     TEXT PRIMARY KEY,
+  payload    TEXT NOT NULL,
+  fetched_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS news_cache (
+  symbol     TEXT PRIMARY KEY,
+  payload    TEXT NOT NULL,
+  fetched_at TEXT NOT NULL
+);
+
+-- Trade journal: WHY snapshot at open, outcome reflection at close.
+-- One row per paper trade. Payloads are JSON (display-only, never re-parsed
+-- into trading logic).
+CREATE TABLE IF NOT EXISTS journal (
+  trade_id  TEXT PRIMARY KEY,
+  opened_at TEXT NOT NULL,
+  why       TEXT NOT NULL,
+  closed_at TEXT,
+  outcome   TEXT
+);

@@ -15,8 +15,8 @@ import YahooFinance from 'yahoo-finance2';
 // yahoo-finance2 v3 changed the default export to the class constructor.
 // Must instantiate before calling any methods.
 const yahooFinance = new YahooFinance();
-import type { DataProvider } from '../DataProvider';
-import { validateBars, validateSymbolMetas } from '../schemas';
+import type { DataProvider, Fundamentals, NewsItem } from '../DataProvider';
+import { validateBars, validateSymbolMetas, validateNewsItems, FundamentalsSchema } from '../schemas';
 import type { AssetClass, Bar, SymbolMeta, Timeframe } from '@/core/types';
 
 // Local type aliases for yahoo-finance2 chart internals.
@@ -223,6 +223,66 @@ export class YahooProvider implements DataProvider {
     }
 
     return validateSymbolMetas(metas);
+  }
+
+  async getFundamentals(symbol: string): Promise<Fundamentals | null> {
+    const providerSym = this.toProviderSymbol(symbol);
+    let qs: Record<string, Record<string, unknown> | undefined>;
+    try {
+      qs = await this._withRetry(() =>
+        yahooFinance.quoteSummary(providerSym, {
+          modules: ['summaryDetail', 'defaultKeyStatistics', 'financialData'],
+        }),
+      ) as Record<string, Record<string, unknown> | undefined>;
+    } catch {
+      return null; // unknown symbol or module unavailable - dossier degrades gracefully
+    }
+
+    const sd = qs.summaryDetail ?? {};
+    const ks = qs.defaultKeyStatistics ?? {};
+    const fd = qs.financialData ?? {};
+    const num = (v: unknown): number | null =>
+      typeof v === 'number' && Number.isFinite(v) ? v : null;
+
+    const raw: Fundamentals = {
+      symbol,
+      trailingPE:       num(sd.trailingPE),
+      forwardPE:        num(sd.forwardPE),
+      marketCap:        num(sd.marketCap),
+      epsGrowth:        num(ks.earningsQuarterlyGrowth),
+      profitMargin:     num(fd.profitMargins),
+      revenueGrowth:    num(fd.revenueGrowth),
+      fiftyTwoWeekLow:  num(sd.fiftyTwoWeekLow),
+      fiftyTwoWeekHigh: num(sd.fiftyTwoWeekHigh),
+      recommendation:   typeof fd.recommendationKey === 'string' ? fd.recommendationKey : null,
+      targetMeanPrice:  num(fd.targetMeanPrice),
+    };
+    const parsed = FundamentalsSchema.safeParse(raw);
+    return parsed.success ? parsed.data : null;
+  }
+
+  async getNews(symbol: string, count = 8): Promise<NewsItem[]> {
+    const providerSym = this.toProviderSymbol(symbol);
+    let result: { news?: Array<Record<string, unknown>> };
+    try {
+      result = await this._withRetry(() =>
+        yahooFinance.search(providerSym, { newsCount: count }),
+      ) as { news?: Array<Record<string, unknown>> };
+    } catch {
+      return [];
+    }
+
+    const items = (result.news ?? []).map((n) => ({
+      title:       typeof n.title === 'string' ? n.title : '',
+      publisher:   typeof n.publisher === 'string' ? n.publisher : '',
+      publishedAt: n.providerPublishTime instanceof Date
+        ? n.providerPublishTime.toISOString()
+        : typeof n.providerPublishTime === 'number'
+          ? new Date(n.providerPublishTime * 1000).toISOString()
+          : '',
+      link:        typeof n.link === 'string' ? n.link : '',
+    }));
+    return validateNewsItems(items).slice(0, count);
   }
 
   // ---------------------------------------------------------------------------

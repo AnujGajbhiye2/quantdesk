@@ -9,6 +9,7 @@ import { markOpenTrades, type MarkResult } from '@/core/paper/broker';
 
 export interface StrategyStats {
   trades:            number;
+  closedTrades:      number;   // sample size behind winRate - verdicts need it
   winRate:           number;   // closed trades only; 0 if none closed
   totalPnl:          number;   // realized (closed) P&L only
   avgPnlPct:         number;   // average of closed pnlPct; 0 if none closed
@@ -104,6 +105,7 @@ export function buildTradeBook(): TradeBook {
 
     byStrategy[id] = {
       trades:            trades.length,
+      closedTrades:      trades.filter((t) => t.status === 'closed').length,
       winRate:           winRate(trades),
       totalPnl:          totalPnl(trades),
       avgPnlPct:         avgPnlPct(trades),

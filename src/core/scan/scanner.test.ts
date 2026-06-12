@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { scanSymbol } from './scanner';
+import { scanSymbol, dropPartialToday } from './scanner';
 import type { Strategy, StrategyDecision } from '@/core/strategy/Strategy';
 import type { Bar } from '@/core/types';
 
@@ -112,5 +112,70 @@ describe('scanSymbol', () => {
     const bars = makeBars(3);
     const result = scanSymbol('X', bars, strategy, {});
     expect(result!.signal.reason).toBe('');
+  });
+
+  it('shared indicator cache produces identical signals to fresh caches', () => {
+    // Two strategies that both read RSI(14) and decide off its latest value
+    const mkRsiStrategy = (id: string, threshold: number): Strategy => ({
+      id, name: id, description: '',
+      params: z.object({}),
+      onBar(ctx) {
+        const rsi = ctx.indicator('rsi', { period: 14 }) as number[];
+        const last = rsi[rsi.length - 1];
+        if (!isFinite(last)) return { action: 'hold' };
+        return last < threshold
+          ? { action: 'enter_long', reason: `RSI ${last.toFixed(1)}` }
+          : { action: 'hold' };
+      },
+    });
+    // Falling closes -> low RSI
+    const bars = makeBars(40, (i) => ({ close: 200 - i * 2 }));
+    const sA = mkRsiStrategy('a', 50);
+    const sB = mkRsiStrategy('b', 60);
+
+    const fresh  = [scanSymbol('X', bars, sA, {}), scanSymbol('X', bars, sB, {})];
+    const shared = new Map();
+    const cached = [
+      scanSymbol('X', bars, sA, {}, shared),
+      scanSymbol('X', bars, sB, {}, shared),
+    ];
+
+    expect(cached[0]?.signal).toEqual(fresh[0]?.signal);
+    expect(cached[1]?.signal).toEqual(fresh[1]?.signal);
+    // The shared cache was actually populated and reused (one RSI entry, not two)
+    expect(shared.size).toBe(1);
+  });
+});
+
+describe('dropPartialToday', () => {
+  it('drops the final bar when it is dated today', () => {
+    const bars = [
+      makeBar(0, { time: '2026-06-10' }),
+      makeBar(1, { time: '2026-06-11' }),
+    ];
+    const trimmed = dropPartialToday(bars, '2026-06-11');
+    expect(trimmed.length).toBe(1);
+    expect(trimmed[0].time).toBe('2026-06-10');
+  });
+
+  it('returns the SAME array reference when the last bar is older', () => {
+    const bars = [
+      makeBar(0, { time: '2026-06-09' }),
+      makeBar(1, { time: '2026-06-10' }),
+    ];
+    expect(dropPartialToday(bars, '2026-06-11')).toBe(bars);
+  });
+
+  it('handles intraday ISO timestamps on the final bar', () => {
+    const bars = [
+      makeBar(0, { time: '2026-06-10' }),
+      makeBar(1, { time: '2026-06-11T14:30:00.000Z' }),
+    ];
+    expect(dropPartialToday(bars, '2026-06-11').length).toBe(1);
+  });
+
+  it('returns empty input unchanged', () => {
+    const bars: Bar[] = [];
+    expect(dropPartialToday(bars, '2026-06-11')).toBe(bars);
   });
 });

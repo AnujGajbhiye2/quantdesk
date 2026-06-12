@@ -8,6 +8,9 @@ import { DonchianBreakoutStrategy }   from './examples/donchian-breakout';
 import { RocMomentumStrategy }        from './examples/roc-momentum';
 import { AtrTrendStrategy }           from './examples/atr-trend';
 import { StochReversalStrategy }      from './examples/stoch-reversal';
+import { Rsi2PullbackStrategy }       from './examples/rsi2-pullback';
+import { DownStreakStrategy }         from './examples/down-streak';
+import { EmaPullbackStrategy }        from './examples/ema-pullback';
 
 /**
  * Strategy registry.
@@ -59,3 +62,6 @@ register(new DonchianBreakoutStrategy());
 register(new RocMomentumStrategy());
 register(new AtrTrendStrategy());
 register(new StochReversalStrategy());
+register(new Rsi2PullbackStrategy());
+register(new DownStreakStrategy());
+register(new EmaPullbackStrategy());

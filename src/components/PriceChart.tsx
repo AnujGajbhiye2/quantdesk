@@ -5,16 +5,17 @@ import EmptyState from './EmptyState';
 import {
   createChart,
   CandlestickSeries,
-  LineSeries,
   ColorType,
+  LineStyle,
   createSeriesMarkers,
   type IChartApi,
   type ISeriesApi,
   type SeriesOptionsMap,
-  type LineData,
+  type ISeriesMarkersPluginApi,
+  type IPriceLine,
 } from 'lightweight-charts';
 import type { Bar } from '@/core/types';
-import type { TradeRecord, EquityPoint } from '@/core/backtest/engine';
+import type { TradeRecord } from '@/core/backtest/engine';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -23,7 +24,10 @@ import type { TradeRecord, EquityPoint } from '@/core/backtest/engine';
 interface Props {
   bars:        Bar[];
   trades?:     TradeRecord[];
-  equityCurve?: EquityPoint[];
+  /** Horizontal reference lines for the current trade idea. */
+  entryPrice?:  number;
+  stopPrice?:   number;
+  targetPrice?: number;
   className?:  string;
 }
 
@@ -53,10 +57,19 @@ const overlayStyle: CSSProperties = {
   pointerEvents:   'none',
 };
 
-export default function PriceChart({ bars, trades = [], equityCurve = [], className }: Props) {
+export default function PriceChart({
+  bars,
+  trades = [],
+  entryPrice,
+  stopPrice,
+  targetPrice,
+  className,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef     = useRef<IChartApi | null>(null);
   const candlesRef   = useRef<ISeriesApi<keyof SeriesOptionsMap, string> | null>(null);
+  const markersRef   = useRef<ISeriesMarkersPluginApi<string> | null>(null);
+  const priceLinesRef = useRef<IPriceLine[]>([]);
 
   // Create chart on mount
   useEffect(() => {
@@ -96,6 +109,8 @@ export default function PriceChart({ bars, trades = [], equityCurve = [], classN
     chartRef.current   = chart;
     // Cast to the wider generic so createSeriesMarkers accepts it
     candlesRef.current = candleSeries as ISeriesApi<keyof SeriesOptionsMap, string>;
+    // One markers primitive for the chart's lifetime - data set via setMarkers
+    markersRef.current = createSeriesMarkers(candlesRef.current, []);
 
     const ro = new ResizeObserver(() => {
       chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
@@ -105,8 +120,10 @@ export default function PriceChart({ bars, trades = [], equityCurve = [], classN
     return () => {
       ro.disconnect();
       chart.remove();
-      chartRef.current   = null;
-      candlesRef.current = null;
+      chartRef.current    = null;
+      candlesRef.current  = null;
+      markersRef.current  = null;
+      priceLinesRef.current = [];
     };
   }, []);
 
@@ -125,7 +142,7 @@ export default function PriceChart({ bars, trades = [], equityCurve = [], classN
     }));
     candles.setData(candleData);
 
-    // Entry/exit markers
+    // Entry/exit markers - update in place, never re-create the primitive
     {
       type Marker = {
         time:     string;
@@ -150,23 +167,39 @@ export default function PriceChart({ bars, trades = [], equityCurve = [], classN
           text:     `X ${t.exitReason}`,
         },
       ]);
-      createSeriesMarkers(candles, markers);
-    }
-
-    // Equity curve as a second series (right price scale)
-    if (equityCurve.length > 0) {
-      const eqSeries = chart.addSeries(LineSeries, {
-        color:     '#e3b341',
-        lineWidth: 1,
-        priceScaleId: 'equity',
-      });
-      chart.priceScale('equity').applyOptions({ visible: false });
-      const eqData: LineData[] = equityCurve.map((p) => ({ time: p.time, value: p.equity }));
-      eqSeries.setData(eqData);
+      markersRef.current?.setMarkers(markers);
     }
 
     chart.timeScale().fitContent();
-  }, [bars, trades, equityCurve]);
+  }, [bars, trades]);
+
+  // Price lines for the current trade idea (entry / stop / target)
+  useEffect(() => {
+    const candles = candlesRef.current;
+    if (!candles) return;
+
+    for (const line of priceLinesRef.current) candles.removePriceLine(line);
+    priceLinesRef.current = [];
+
+    const lines: Array<{ price: number | undefined; color: string; title: string }> = [
+      { price: entryPrice,  color: '#e3b341', title: 'entry' },
+      { price: stopPrice,   color: '#f85149', title: 'stop' },
+      { price: targetPrice, color: '#26a641', title: 'target' },
+    ];
+    for (const { price, color, title } of lines) {
+      if (price === undefined || !isFinite(price)) continue;
+      priceLinesRef.current.push(
+        candles.createPriceLine({
+          price,
+          color,
+          lineWidth: 1,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: true,
+          title,
+        }),
+      );
+    }
+  }, [entryPrice, stopPrice, targetPrice, bars]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }} className={className}>

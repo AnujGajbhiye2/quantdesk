@@ -2,7 +2,9 @@
 
 import { useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import type { MarketRow } from '@/core/market/snapshot';
-import type { Signal, TradeIdea } from '@/core/types';
+import type { EdgeSummary } from '@/core/edge/context';
+import type { EnrichedTradeIdea } from '@/core/signals/gate';
+import type { Signal } from '@/core/types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -14,7 +16,11 @@ export interface CommandBarHandle {
 
 interface CommandBarProps {
   onMarketRefresh: (rows: MarketRow[]) => void;
-  onSignals:       (signals: Signal[], ideas?: TradeIdea[]) => void;
+  onSignals: (
+    signals: Signal[],
+    ideas?:  EnrichedTradeIdea[],
+    edges?:  Record<string, EdgeSummary | null>,
+  ) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -83,8 +89,14 @@ const CommandBar = forwardRef<CommandBarHandle, CommandBarProps>(function Comman
           body:    JSON.stringify({ strategyId, symbols }),
         });
         if (!res.ok) throw new Error(await res.text());
-        const data = await res.json() as { signals: Signal[]; ideas?: TradeIdea[]; scanned: number; durationMs: number };
-        onSignals(data.signals, data.ideas);
+        const data = await res.json() as {
+          signals:    Signal[];
+          ideas?:     EnrichedTradeIdea[];
+          edges?:     Record<string, EdgeSummary | null>;
+          scanned:    number;
+          durationMs: number;
+        };
+        onSignals(data.signals, data.ideas, data.edges);
 
         // Refresh market data
         const mRes  = await fetch('/api/market');

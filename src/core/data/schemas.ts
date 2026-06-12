@@ -37,6 +37,37 @@ export const SymbolMetaSchema = z.object({
   providerId: z.string().min(1),
 });
 
+const nullableFiniteNumber = z.number().finite().nullable();
+
+export const FundamentalsSchema = z.object({
+  symbol:           z.string().min(1),
+  trailingPE:       nullableFiniteNumber,
+  forwardPE:        nullableFiniteNumber,
+  marketCap:        nullableFiniteNumber,
+  epsGrowth:        nullableFiniteNumber,
+  profitMargin:     nullableFiniteNumber,
+  revenueGrowth:    nullableFiniteNumber,
+  fiftyTwoWeekLow:  nullableFiniteNumber,
+  fiftyTwoWeekHigh: nullableFiniteNumber,
+  recommendation:   z.string().nullable(),
+  targetMeanPrice:  nullableFiniteNumber,
+});
+
+export const NewsItemSchema = z.object({
+  title:       z.string().min(1),
+  publisher:   z.string(),
+  publishedAt: z.string(),
+  link:        z.string(),
+});
+
+export function validateNewsItems(raw: unknown[]): z.infer<typeof NewsItemSchema>[] {
+  return raw.flatMap((n) => {
+    const result = NewsItemSchema.safeParse(n);
+    // News is best-effort decoration - drop malformed items instead of failing the dossier
+    return result.success ? [result.data] : [];
+  });
+}
+
 /** Parse and validate an array of raw bar objects; throws ZodError on failure. */
 export function validateBars(raw: unknown[]): z.infer<typeof BarSchema>[] {
   return raw.map((b, i) => {

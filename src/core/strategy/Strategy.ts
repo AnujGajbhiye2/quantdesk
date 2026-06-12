@@ -50,6 +50,12 @@ export interface StrategyDecision {
   targetPct?: number;
   /** Fraction of current equity to allocate (0..1]. Default 1.0. */
   sizePct?: number;
+  /**
+   * Maximum bars to hold this position before a forced time exit (fills at
+   * the next bar's open). The engine takes min(this, config.maxHoldBars).
+   * Only read on entry decisions.
+   */
+  maxHoldBars?: number;
   /** Human-readable reason surfaced in the trade record and signal UI. */
   reason?: string;
 }

@@ -14,6 +14,26 @@ export interface ScanOpts {
   rawParams?: unknown;
   /** Persist signals to the DB. Default true. */
   persist?:   boolean;
+  /**
+   * Drop the final bar when it is dated today. Default true - a daily bar
+   * fetched while the market is still open is partial and must not feed
+   * signal generation. Only post-close paths (EOD cron) may pass false.
+   */
+  excludeToday?: boolean;
+}
+
+/**
+ * Return the series without its final bar when that bar is dated today.
+ * Returns the SAME array reference when nothing is trimmed, so callers can
+ * cheaply detect whether cached indicator outputs (aligned to the full
+ * series) are still valid.
+ */
+export function dropPartialToday(
+  bars:  readonly Bar[],
+  today: string = new Date().toISOString().slice(0, 10),
+): readonly Bar[] {
+  const last = bars[bars.length - 1];
+  return last && last.time.slice(0, 10) === today ? bars.slice(0, -1) : bars;
 }
 
 // ---------------------------------------------------------------------------
@@ -29,16 +49,19 @@ export interface ScanSymbolResult {
 /**
  * Evaluate a strategy on the latest bar of the given series.
  * Returns null if there are fewer than 2 bars or the decision is 'hold'.
+ * Pass a shared cache to reuse indicator outputs across strategies on the
+ * same bar series (the cache key includes indicator id + params, so sharing
+ * across strategies is safe as long as the bars are identical).
  */
 export function scanSymbol(
   symbol:       string,
   bars:         readonly Bar[],
   strategy:     Strategy,
   parsedParams: unknown,
+  cache:        IndicatorCache = new Map(),
 ): ScanSymbolResult | null {
   if (bars.length < 2) return null;
 
-  const cache: IndicatorCache = new Map();
   const ctx      = makeContext(bars as Bar[], bars.length - 1, 'flat', cache);
   const decision = strategy.onBar(ctx, parsedParams);
 
@@ -85,7 +108,8 @@ export function scan(opts: ScanOpts): ScanResult {
 
   for (const symbol of symbols) {
     try {
-      const bars   = getBars(symbol, timeframe);
+      const stored = getBars(symbol, timeframe);
+      const bars   = opts.excludeToday === false ? stored : dropPartialToday(stored);
       const result = scanSymbol(symbol, bars, strategy, parsedParams);
       if (result) {
         signals.push(result.signal);

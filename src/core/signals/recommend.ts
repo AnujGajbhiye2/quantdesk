@@ -131,3 +131,23 @@ export function recommendTrade(
     time:         signal.time,
   };
 }
+
+/**
+ * Scale an idea down so its entry cost never exceeds available cash
+ * (budget mode). Risk and reward scale with qty; prices and R:R unchanged.
+ * cashInCurrency is the spendable cash converted to the idea's own currency.
+ */
+export function capIdeaToCash(idea: TradeIdea, cashInCurrency: number): TradeIdea {
+  if (!(cashInCurrency > 0) || idea.entryPrice <= 0) {
+    return { ...idea, qty: 0, riskAmount: 0, rewardAmount: 0 };
+  }
+  const maxQty = cashInCurrency / idea.entryPrice;
+  if (idea.qty <= maxQty) return idea;
+  const scale = maxQty / idea.qty;
+  return {
+    ...idea,
+    qty:          maxQty,
+    riskAmount:   idea.riskAmount * scale,
+    rewardAmount: idea.rewardAmount * scale,
+  };
+}

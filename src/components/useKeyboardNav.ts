@@ -7,6 +7,11 @@ interface UseKeyboardNavOpts {
   onActivate?:    (i: number) => void;
   onCommand?:     () => void;     // '/' pressed
   onGoToSymbol?:  () => void;     // 'g' pressed
+  onScanAll?:     () => void;     // 's' pressed
+  onWatchlist?:   () => void;     // 'w' pressed
+  onPin?:         (i: number) => void; // 'p' pressed with a row selected
+  onFocusIdeas?:  () => void;     // 'i' pressed
+  onEscape?:      () => void;     // Escape pressed (after deselect)
   enabled?:       boolean;        // default true
 }
 
@@ -18,7 +23,14 @@ interface UseKeyboardNavOpts {
  * Enter          - activate selected
  * /              - open command bar
  * g              - open go-to-symbol overlay
- * Escape         - deselect
+ * s              - run all-strategies scan
+ * w              - toggle watchlist sidebar
+ * p              - pin/unpin selected row to watchlist
+ * i              - toggle trade-ideas panel focus
+ * Escape         - deselect (then onEscape, e.g. to exit a focus zone)
+ *
+ * Multiple instances may be mounted at once (one per focusable panel);
+ * exactly one should have enabled=true so a single j/k/Enter handler is live.
  *
  * Returns: { selected, setSelected }
  */
@@ -27,6 +39,11 @@ export function useKeyboardNav({
   onActivate,
   onCommand,
   onGoToSymbol,
+  onScanAll,
+  onWatchlist,
+  onPin,
+  onFocusIdeas,
+  onEscape,
   enabled = true,
 }: UseKeyboardNavOpts) {
   const [selected, setSelected] = useState(-1);
@@ -65,12 +82,37 @@ export function useKeyboardNav({
             onGoToSymbol?.();
           }
           break;
+        case 's':
+          if (!inInput) {
+            e.preventDefault();
+            onScanAll?.();
+          }
+          break;
+        case 'w':
+          if (!inInput) {
+            e.preventDefault();
+            onWatchlist?.();
+          }
+          break;
+        case 'p':
+          if (!inInput && selected >= 0) {
+            e.preventDefault();
+            onPin?.(selected);
+          }
+          break;
+        case 'i':
+          if (!inInput) {
+            e.preventDefault();
+            onFocusIdeas?.();
+          }
+          break;
         case 'Escape':
           setSelected(-1);
+          onEscape?.();
           break;
       }
     },
-    [count, enabled, onActivate, onCommand, onGoToSymbol, selected],
+    [count, enabled, onActivate, onCommand, onGoToSymbol, onScanAll, onWatchlist, onPin, onFocusIdeas, onEscape, selected],
   );
 
   useEffect(() => {

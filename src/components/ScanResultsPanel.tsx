@@ -17,11 +17,15 @@ export interface PlaceholderSymbol {
   providerId: string;
 }
 
+export type ScanSortKey = 'symbol' | 'name' | 'last' | 'chg' | 'vol';
+
 interface ScanResultsPanelProps {
   rows:         MarketRow[];
   selected:     number;
   placeholders?: PlaceholderSymbol[];
   onIngestDone?: () => void;
+  /** Header-click sorting handlers (state lives in Dashboard so j/k stays aligned). */
+  sort?: { click: (key: ScanSortKey) => void; indicator: (key: ScanSortKey) => string };
 }
 
 function fmt(n: number, dec = 2) {
@@ -42,7 +46,28 @@ function fmtAsOf(row: MarketRow): string {
   return row.latestTime;
 }
 
-export default function ScanResultsPanel({ rows, selected, placeholders = [], onIngestDone }: ScanResultsPanelProps) {
+/** A stored daily bar dated today is still forming while the market is open. */
+function isLiveBar(row: MarketRow): boolean {
+  return row.latestTime.slice(0, 10) === new Date().toISOString().slice(0, 10);
+}
+
+export default function ScanResultsPanel({ rows, selected, placeholders = [], onIngestDone, sort }: ScanResultsPanelProps) {
+  const sortableTh = (key: ScanSortKey, label: string, align: 'left' | 'right') => (
+    <th
+      onClick={sort ? () => sort.click(key) : undefined}
+      title={sort ? 'click to sort' : undefined}
+      style={{
+        textAlign: align,
+        padding: '2px 6px',
+        fontWeight: sort && sort.indicator(key) ? 700 : 400,
+        cursor: sort ? 'pointer' : undefined,
+        userSelect: 'none',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label}{sort ? sort.indicator(key) : ''}
+    </th>
+  );
   const router = useRouter();
   const [ingesting, setIngesting] = useState<string | null>(null);
   const [ingestError, setIngestError] = useState<string | null>(null);
@@ -89,6 +114,8 @@ export default function ScanResultsPanel({ rows, selected, placeholders = [], on
     <Panel
       title="TOP MOMENTUM / SCAN RESULTS"
       className="h-full"
+      subtitle="Your tracked universe with latest prices. Click any row to backtest it. Click headers to sort."
+      info="Your tracked universe: latest close, day change and volume per symbol. LIVE = today's bar still forming (signals only use closed bars). Click a row to backtest it; greyed rows are curated but not ingested yet - one click loads their history."
       headerRight={<span>{rows.length} ingested{placeholders.length > 0 ? ` + ${placeholders.length} available` : ''}</span>}
     >
       {ingestError && (
@@ -99,12 +126,12 @@ export default function ScanResultsPanel({ rows, selected, placeholders = [], on
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
         <thead>
           <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>
-            <th style={{ textAlign: 'left', padding: '2px 6px', fontWeight: 400 }}>SYMBOL</th>
-            <th style={{ textAlign: 'left', padding: '2px 6px', fontWeight: 400 }}>NAME</th>
-            <th style={{ textAlign: 'right', padding: '2px 6px', fontWeight: 400 }}>LAST</th>
+            {sortableTh('symbol', 'SYMBOL', 'left')}
+            {sortableTh('name', 'NAME', 'left')}
+            {sortableTh('last', 'LAST', 'right')}
             <th style={{ textAlign: 'left', padding: '2px 6px', fontWeight: 400 }}>AS OF</th>
-            <th style={{ textAlign: 'right', padding: '2px 6px', fontWeight: 400 }}>CHG%</th>
-            <th style={{ textAlign: 'right', padding: '2px 6px', fontWeight: 400 }}>VOL</th>
+            {sortableTh('chg', 'CHG%', 'right')}
+            {sortableTh('vol', 'VOL', 'right')}
             <th style={{ textAlign: 'right', padding: '2px 6px', fontWeight: 400 }}>SPARK</th>
           </tr>
         </thead>
@@ -143,6 +170,20 @@ export default function ScanResultsPanel({ rows, selected, placeholders = [], on
                 </td>
                 <td style={{ padding: '3px 6px', color: row.priceSource === 'quote' ? 'var(--color-accent)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                   {fmtAsOf(row)}
+                  {isLiveBar(row) && (
+                    <span
+                      title="today's bar is still forming - signals use closed bars only"
+                      style={{
+                        marginLeft: 4,
+                        color: 'var(--color-accent)',
+                        fontSize: 'var(--fs-xs)',
+                        fontWeight: 700,
+                        letterSpacing: '0.06em',
+                      }}
+                    >
+                      LIVE
+                    </span>
+                  )}
                 </td>
                 <td style={{ padding: '3px 6px', textAlign: 'right', color: chgColor }}>
                   {row.changePct >= 0 ? '+' : ''}{fmt(row.changePct)}%

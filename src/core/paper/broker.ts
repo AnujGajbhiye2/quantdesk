@@ -20,6 +20,12 @@ import {
 import { getAllSymbols, getBars, getLatestBarTime, getLatestClose } from '@/core/db/bars';
 import { get as getProvider } from '@/core/data/registry';
 import { runBacktest } from '@/core/backtest/engine';
+import { maxHoldBars } from '@/core/config';
+import { computeCashAccount, buildAccountSummary } from './account';
+import { insertJournalWhy, recordJournalOutcome } from '@/core/db/journal';
+import { checkRisk, riskLimitsFromEnv, type RiskRule } from '@/core/risk/checks';
+import { openPositionsUSD } from '@/core/risk/exposure';
+import { toUSD } from '@/core/format/fx';
 import type { Strategy, StrategyContext, StrategyDecision } from '@/core/strategy/Strategy';
 
 // ---------------------------------------------------------------------------
@@ -44,6 +50,11 @@ export interface OpenTradeInput {
   notes?:       string;
   /** Directly override qty (skips sizePct/equity-based sizing). */
   _overrideQty?: number;
+  /**
+   * Optional WHY snapshot for the trade journal (signal reason, conviction,
+   * edge stats...). Display-only - never read back into trading logic.
+   */
+  journalWhy?:  Record<string, unknown>;
 }
 
 export class DuplicateOpenTradeError extends Error {
@@ -55,6 +66,35 @@ export class DuplicateOpenTradeError extends Error {
     this.name = 'DuplicateOpenTradeError';
     this.symbol = symbol;
     this.existingTradeId = existingTradeId;
+  }
+}
+
+export class InsufficientFundsError extends Error {
+  constructor(costUSD: number, cashUSD: number) {
+    super(
+      `Insufficient funds: this trade needs $${costUSD.toFixed(2)} but only ` +
+      `$${cashUSD.toFixed(2)} cash is available. Reduce size or close a position.`,
+    );
+    this.name = 'InsufficientFundsError';
+  }
+}
+
+export class BankruptError extends Error {
+  constructor(equityUSD: number) {
+    super(
+      `BANKRUPT: account equity is $${equityUSD.toFixed(2)}. The system failed ` +
+      `with this budget - set a new budget to restart.`,
+    );
+    this.name = 'BankruptError';
+  }
+}
+
+export class RiskCheckError extends Error {
+  readonly rule: RiskRule;
+  constructor(rule: RiskRule, message: string) {
+    super(message);
+    this.name = 'RiskCheckError';
+    this.rule = rule;
   }
 }
 
@@ -92,6 +132,45 @@ export function openPaperTrade(input: OpenTradeInput): PaperTrade {
     : qtyForCash(equity, sizePct, fillPrice);
   const { stopPrice, targetPrice } = stopTargetPrices(side, fillPrice, stopPct, targetPct);
 
+  // Budget enforcement (only when a budget is set): the entry notional is
+  // reserved from cash for BOTH sides (no margin model); equity <= 0 blocks
+  // everything - that is the bankruptcy signal the user asked for.
+  const cashAccount = computeCashAccount();
+  if (cashAccount) {
+    const unrealizedUSD = markOpenTrades().reduce(
+      (sum, m) => sum + toUSD(m.unrealizedPnl, m.trade.currency),
+      0,
+    );
+    const summary = buildAccountSummary(cashAccount, unrealizedUSD);
+    if (summary.bankrupt) {
+      throw new BankruptError(summary.equity);
+    }
+    const currency = getAllSymbols().find((m) => m.symbol === symbol)?.currency;
+    const costUSD  = toUSD(fillPrice * qty, currency);
+    if (costUSD > summary.cash) {
+      throw new InsufficientFundsError(costUSD, summary.cash);
+    }
+
+    // Risk management rules (concentration, open risk, trade count, drawdown halt)
+    const candidateStop = stopTargetPrices(side, fillPrice, stopPct, targetPct).stopPrice;
+    const risk = checkRisk(
+      { startingBalance: summary.startingBalance, equity: summary.equity },
+      openPositionsUSD(),
+      {
+        symbol,
+        costUSD,
+        stopRiskUSD:
+          candidateStop != null
+            ? toUSD(Math.abs(fillPrice - candidateStop) * qty, currency)
+            : null,
+      },
+      riskLimitsFromEnv(),
+    );
+    if (!risk.ok) {
+      throw new RiskCheckError(risk.rule, risk.message);
+    }
+  }
+
   const trade: PaperTrade = {
     id:          randomUUID(),
     strategyId,
@@ -108,6 +187,20 @@ export function openPaperTrade(input: OpenTradeInput): PaperTrade {
   };
 
   insertPaperTrade(trade);
+
+  // Journal the WHY at the moment of decision - hindsight cannot edit this
+  insertJournalWhy(trade.id, {
+    symbol,
+    strategyId,
+    side,
+    entryPrice: fillPrice,
+    qty,
+    stopPrice,
+    targetPrice,
+    notes,
+    ...input.journalWhy,
+  });
+
   return trade;
 }
 
@@ -121,6 +214,8 @@ export interface CloseTradeInput {
   exitTime:     string;
   commission?:  number;
   slippagePct?: number;
+  /** How the exit happened - journaled with the outcome. Default 'manual'. */
+  exitReason?:  'manual' | 'stop' | 'target' | 'time';
 }
 
 /** Close an open paper trade. Applies exit slippage and books commission. */
@@ -151,6 +246,20 @@ export function closePaperTrade(id: string, exit: CloseTradeInput): PaperTrade {
   };
 
   updatePaperTrade(updated);
+
+  // Journal the outcome - completes the open-time WHY snapshot
+  const heldDays = Math.round(
+    (new Date(exitTime).getTime() - new Date(trade.entryTime).getTime()) / 86_400_000,
+  );
+  recordJournalOutcome(trade.id, {
+    exitReason: exit.exitReason ?? 'manual',
+    exitPrice:  fillPrice,
+    exitTime,
+    pnl,
+    pnlPct,
+    heldDays,
+  });
+
   return updated;
 }
 
@@ -231,7 +340,7 @@ export async function markOpenTradesWithQuotes(timeframe: Timeframe = '1d'): Pro
 
 export interface SweepResult {
   trade:     PaperTrade;
-  action:    'stopped' | 'targeted' | 'still-open';
+  action:    'stopped' | 'targeted' | 'expired' | 'still-open';
   exitPrice?: number;
   exitTime?:  string;
 }
@@ -254,23 +363,21 @@ export function sweepOpenTrades(
   timeframe:   Timeframe = '1d',
   commission:  number = 0,
   slippagePct: number = 0.0005,
+  /** Force-close trades held more than this many post-entry bars. Default: global swing cap. */
+  holdCapBars: number = maxHoldBars(),
 ): SweepResult[] {
   const openTrades = getPaperTrades({ status: 'open' });
   const results:   SweepResult[] = [];
 
   for (const trade of openTrades) {
-    // Must have a stop price to sweep (target-only trades stay open until manual close)
-    if (trade.stopPrice == null && trade.targetPrice == null) {
-      results.push({ trade, action: 'still-open' });
-      continue;
-    }
-
     const allBars   = getBars(trade.symbol, timeframe);
     // Only look at bars strictly after the entry time
     const postBars  = allBars.filter((b) => b.time > trade.entryTime);
 
     let closed = false;
+    let barsHeld = 0;
     for (const bar of postBars) {
+      barsHeld += 1;
       const { stopPrice, targetPrice } = trade;
 
       if (trade.side === 'long') {
@@ -284,6 +391,7 @@ export function sweepOpenTrades(
             exitTime:    bar.time,
             commission,
             slippagePct,
+            exitReason:  'stop',
           });
           results.push({ trade: closed_, action: 'stopped', exitPrice: stopPrice!, exitTime: bar.time });
           closed = true;
@@ -295,6 +403,7 @@ export function sweepOpenTrades(
             exitTime:    bar.time,
             commission,
             slippagePct,
+            exitReason:  'target',
           });
           results.push({ trade: closed_, action: 'targeted', exitPrice: targetPrice!, exitTime: bar.time });
           closed = true;
@@ -311,6 +420,7 @@ export function sweepOpenTrades(
             exitTime:    bar.time,
             commission,
             slippagePct,
+            exitReason:  'stop',
           });
           results.push({ trade: closed_, action: 'stopped', exitPrice: stopPrice!, exitTime: bar.time });
           closed = true;
@@ -322,11 +432,27 @@ export function sweepOpenTrades(
             exitTime:    bar.time,
             commission,
             slippagePct,
+            exitReason:  'target',
           });
           results.push({ trade: closed_, action: 'targeted', exitPrice: targetPrice!, exitTime: bar.time });
           closed = true;
           break;
         }
+      }
+
+      // Time stop: held past the swing cap - close at this bar's close.
+      // Checked after stop/target so a same-bar level hit keeps precedence.
+      if (holdCapBars > 0 && barsHeld >= holdCapBars) {
+        const closed_ = closePaperTrade(trade.id, {
+          exitPrice:   bar.close,
+          exitTime:    bar.time,
+          commission,
+          slippagePct,
+          exitReason:  'time',
+        });
+        results.push({ trade: closed_, action: 'expired', exitPrice: bar.close, exitTime: bar.time });
+        closed = true;
+        break;
       }
     }
 

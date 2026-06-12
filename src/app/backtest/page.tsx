@@ -5,18 +5,28 @@ import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import DublinClock from '@/components/DublinClock';
 import MetricsPanel from '@/components/MetricsPanel';
+import TradesTable from '@/components/TradesTable';
+import MonthlyReturnsHeatmap from '@/components/MonthlyReturnsHeatmap';
+import ExitProjection, { type ExitProjectionData } from '@/components/ExitProjection';
+import SignalTimeline from '@/components/SignalTimeline';
 import type { BacktestResult } from '@/core/backtest/engine';
-import type { Bar, Timeframe } from '@/core/types';
+import type { Bar, TradeIdea } from '@/core/types';
 import { toWeekly } from '@/core/data/resample';
 
-// Chart must be client-side only (no SSR)
-const PriceChart = dynamic(() => import('@/components/PriceChart'), { ssr: false });
+// Charts must be client-side only (no SSR)
+const PriceChart       = dynamic(() => import('@/components/PriceChart'), { ssr: false });
+const EquityCurveChart = dynamic(() => import('@/components/EquityCurveChart'), { ssr: false });
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 interface Strategy { id: string; name: string; description: string }
+
+type BacktestResponse = BacktestResult & {
+  currentIdea: TradeIdea | null;
+  projection:  ExitProjectionData | null;
+};
 
 // ---------------------------------------------------------------------------
 // Error message classifier
@@ -51,15 +61,16 @@ function BacktestInner() {
   const [symbol,      setSymbol]     = useState(searchParams.get('symbol') ?? '');
   const [strategies,  setStrategies] = useState<Strategy[]>([]);
   const [strategyId,  setStrategyId] = useState('');
-  const [result,      setResult]     = useState<BacktestResult | null>(null);
+  const [result,      setResult]     = useState<BacktestResponse | null>(null);
   const [bars,        setBars]       = useState<Bar[]>([]);
   const [status,      setStatus]     = useState('');
   const [busy,        setBusy]       = useState(false);
   const [chartTf,       setChartTf]       = useState<'1d' | '1w'>('1d');
   const [rawBars,       setRawBars]       = useState<Bar[]>([]);
-  const [suggestions,   setSuggestions]   = useState<Array<{ symbol: string; name: string }>>([]);
+  const [suggestions,   setSuggestions]   = useState<Array<{ symbol: string; name: string; inDb?: boolean }>>([]);
   const [suggestCursor, setSuggestCursor] = useState(-1);
   const [suggestOpen,   setSuggestOpen]   = useState(false);
+  const [searching,     setSearching]     = useState(false);
   const symbolInput   = useRef<HTMLInputElement>(null);
   const debounceRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suggestRef    = useRef<HTMLDivElement>(null);
@@ -70,9 +81,11 @@ function BacktestInner() {
       .then((r) => r.json())
       .then((d: { strategies: Strategy[] }) => {
         setStrategies(d.strategies);
-        if (d.strategies.length > 0 && !strategyId) {
-          setStrategyId(d.strategies[0].id);
-        }
+        // ?strategy=<id> (e.g. from the /compare table) preselects a strategy
+        const urlStrat = searchParams.get('strategy');
+        const preferred = d.strategies.find((s) => s.id === urlStrat)?.id
+          ?? d.strategies[0]?.id;
+        if (preferred && !strategyId) setStrategyId(preferred);
       })
       .catch(() => setStatus('could not load strategies'));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -96,16 +109,19 @@ function BacktestInner() {
   }, [chartTf]);
 
   const fetchSuggestions = useCallback((q: string) => {
-    if (q.length < 1) { setSuggestions([]); setSuggestOpen(false); return; }
+    if (q.length < 1) { setSuggestions([]); setSuggestOpen(false); setSearching(false); return; }
+    setSearching(true);
+    setSuggestOpen(true);
     fetch(`/api/search?q=${encodeURIComponent(q)}&limit=8`)
       .then((r) => r.json())
-      .then((d: { results?: Array<{ symbol: string; name: string }> }) => {
+      .then((d: { results?: Array<{ symbol: string; name: string; inDb?: boolean }> }) => {
         const results = d.results ?? [];
         setSuggestions(results);
         setSuggestOpen(results.length > 0);
         setSuggestCursor(-1);
       })
-      .catch(() => { setSuggestions([]); setSuggestOpen(false); });
+      .catch(() => { setSuggestions([]); setSuggestOpen(false); })
+      .finally(() => setSearching(false));
   }, []);
 
   function handleSymbolChange(val: string) {
@@ -156,7 +172,7 @@ function BacktestInner() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ strategyId: id, symbol: s }),
       });
-      const data = await res.json() as BacktestResult & { error?: string };
+      const data = await res.json() as BacktestResponse & { error?: string };
       if (!res.ok) throw new Error(data.error ?? res.statusText);
 
       setResult(data);
@@ -190,7 +206,9 @@ function BacktestInner() {
           <nav className="flex gap-3" style={{ fontSize: 'var(--fs-xs)' }}>
             <a href="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>DASH</a>
             <a href="/backtest" style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>BACKTEST</a>
+            <a href="/compare" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>COMPARE</a>
             <a href="/paper" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>PAPER</a>
+            <a href="/journal" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>JOURNAL</a>
           </nav>
         </div>
 
@@ -207,7 +225,7 @@ function BacktestInner() {
               value={symbol}
               onChange={(e) => handleSymbolChange(e.target.value)}
               onKeyDown={handleSymbolKeyDown}
-              onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
+              onBlur={() => setTimeout(() => setSuggestOpen(false), 200)}
               onFocus={() => { if (suggestions.length > 0) setSuggestOpen(true); }}
               placeholder="SYMBOL"
               autoComplete="off"
@@ -221,6 +239,25 @@ function BacktestInner() {
                 width: 120,
               }}
             />
+            {suggestOpen && searching && suggestions.length === 0 && (
+              <div
+                style={{
+                  position:   'absolute',
+                  top:        '100%',
+                  left:       0,
+                  zIndex:     200,
+                  background: 'var(--bg-panel)',
+                  border:     '1px solid var(--border)',
+                  minWidth:   260,
+                  padding:    '4px 10px',
+                  color:      'var(--text-muted)',
+                  fontSize:   'var(--fs-xs)',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                searching...
+              </div>
+            )}
             {suggestOpen && suggestions.length > 0 && (
               <div
                 ref={suggestRef}
@@ -253,9 +290,17 @@ function BacktestInner() {
                     <span style={{ color: 'var(--color-accent)', fontWeight: 600, minWidth: 90, fontSize: 'var(--fs-xs)', fontFamily: 'var(--font-mono)' }}>
                       {s.symbol}
                     </span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                       {s.name}
                     </span>
+                    {s.inDb === false && (
+                      <span
+                        title="not ingested yet - backtest will fail until data is loaded"
+                        style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', fontFamily: 'var(--font-mono)' }}
+                      >
+                        no data
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -292,6 +337,22 @@ function BacktestInner() {
           >
             {busy ? '...' : 'RUN'}
           </button>
+          {symbol && (
+            <a
+              href={`/symbol/${encodeURIComponent(symbol)}`}
+              title="full decision dossier: bull/bear case, edge history, fundamentals, news"
+              style={{
+                color: 'var(--color-accent)',
+                fontSize: 'var(--fs-xs)',
+                textDecoration: 'none',
+                border: '1px solid var(--border)',
+                padding: '3px 10px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              DOSSIER
+            </a>
+          )}
           {/* Timeframe toggle */}
           <div className="flex items-center gap-1 shrink-0">
             {(['1d', '1w'] as const).map((tf) => (
@@ -321,35 +382,82 @@ function BacktestInner() {
         <DublinClock />
       </div>
 
-      {/* Body */}
-      <div
-        className="flex-1 grid overflow-hidden"
-        style={{
-          gridTemplateColumns: result ? '1fr 220px' : '1fr',
-          gap: '1px',
-          background: 'var(--border)',
-          minHeight: 0,
-        }}
-      >
-        {/* Chart */}
-        <div style={{ background: 'var(--bg-panel)', overflow: 'hidden', position: 'relative' }}>
-          {result ? (
-            <PriceChart
-              bars={bars}
-              trades={result.trades}
-              equityCurve={result.equityCurve}
-            />
-          ) : (
-            <div style={{ padding: 24, color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
-              {busy ? 'Loading...' : 'Enter a symbol and select a strategy, then click RUN.'}
+      {/* Body - page scrolls; chart row on top, result detail below */}
+      <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns: result ? '1fr 240px' : '1fr',
+            gap: '1px',
+            background: 'var(--border)',
+          }}
+        >
+          {/* Chart with current-idea price lines */}
+          <div
+            style={{
+              background: 'var(--bg-panel)',
+              overflow: 'hidden',
+              position: 'relative',
+              height: 440,
+            }}
+          >
+            {result ? (
+              <PriceChart
+                bars={bars}
+                trades={result.trades}
+                entryPrice={result.currentIdea?.entryPrice}
+                stopPrice={result.currentIdea?.stopPrice}
+                targetPrice={result.currentIdea?.targetPrice}
+              />
+            ) : (
+              <div style={{ padding: 24, color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
+                {busy ? 'Loading...' : 'Enter a symbol and select a strategy, then click RUN.'}
+              </div>
+            )}
+          </div>
+
+          {/* Right column: metrics + current signal projection */}
+          {result && (
+            <div
+              style={{
+                background: 'var(--bg-panel)',
+                overflow: 'auto',
+                height: 440,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <MetricsPanel metrics={result.metrics} numTrades={result.trades.length} />
+              {result.currentIdea && (
+                <ExitProjection idea={result.currentIdea} projection={result.projection} />
+              )}
             </div>
           )}
         </div>
 
-        {/* Metrics */}
+        {/* Signal history timeline: every stored signal from every strategy */}
         {result && (
-          <div style={{ background: 'var(--bg-panel)', overflow: 'auto' }}>
-            <MetricsPanel metrics={result.metrics} numTrades={result.trades.length} />
+          <SignalTimeline
+            symbol={result.symbol}
+            strategyNames={Object.fromEntries(strategies.map((s) => [s.id, s.name]))}
+          />
+        )}
+
+        {/* Result detail: trades + equity curve, then monthly heatmap */}
+        {result && (
+          <div
+            className="grid grid-cols-12 gap-px"
+            style={{ background: 'var(--border)', borderTop: '1px solid var(--border)' }}
+          >
+            <div className="col-span-7" style={{ background: 'var(--bg-panel)', height: 300 }}>
+              <TradesTable trades={result.trades} />
+            </div>
+            <div className="col-span-5" style={{ background: 'var(--bg-panel)', height: 300 }}>
+              <EquityCurveChart equityCurve={result.equityCurve} />
+            </div>
+            <div className="col-span-12" style={{ background: 'var(--bg-panel)' }}>
+              <MonthlyReturnsHeatmap equityCurve={result.equityCurve} />
+            </div>
           </div>
         )}
       </div>

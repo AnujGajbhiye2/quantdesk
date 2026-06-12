@@ -55,7 +55,7 @@ export interface TradeRecord {
   pnlPct: number;        // pnl / (entryPrice * qty) * 100
   costs: number;         // 2 * commission (explicit costs; slippage implicit in prices)
   holdingBars: number;   // exitBar - entryBar
-  exitReason: 'stop' | 'target' | 'signal' | 'end-of-series';
+  exitReason: 'stop' | 'target' | 'signal' | 'time' | 'end-of-series';
   entryReason: string;
 }
 
@@ -102,6 +102,12 @@ export interface BacktestConfig {
   initialEquity?: number;
   /** Bars per year for Sharpe/CAGR annualisation. Default 252 (daily). */
   barsPerYear?: number;
+  /**
+   * Force-exit any position held this many bars (fills at the next bar's
+   * open, exitReason 'time'). Combined with a strategy decision's own
+   * maxHoldBars via min(). Default: none.
+   */
+  maxHoldBars?: number;
   timeframe?: Timeframe;
 }
 
@@ -117,6 +123,7 @@ interface OpenTrade {
   qty: number;
   stopPrice?: number;
   targetPrice?: number;
+  maxHoldBars?: number;
   entryReason: string;
 }
 
@@ -125,10 +132,12 @@ interface PendingEntry {
   sizePct: number;
   stopPct?: number;
   targetPct?: number;
+  maxHoldBars?: number;
   reason: string;
 }
 
 interface PendingExit {
+  kind: 'signal' | 'time';
   reason: string;
 }
 
@@ -147,6 +156,7 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     slippagePct  = 0.0005,
     initialEquity = 10_000,
     barsPerYear  = 252,
+    maxHoldBars,
   } = config;
 
   const n = bars.length;
@@ -193,6 +203,7 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       qty,
       stopPrice,
       targetPrice,
+      maxHoldBars: pending.maxHoldBars,
       entryReason: pending.reason,
     };
     position = 'long';
@@ -218,6 +229,7 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       qty,
       stopPrice,
       targetPrice,
+      maxHoldBars: pending.maxHoldBars,
       entryReason: pending.reason,
     };
     position = 'short';
@@ -318,10 +330,11 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       const trade = openTrade as OpenTrade; // cast: closures prevent TS narrowing here
       const exit  = pendingExit as PendingExit;
       const rawOpen = fillOn === 'next_open' ? bar.open : bar.close;
+      const exitReason = exit.kind === 'time' ? 'time' : 'signal';
       if (trade.side === 'long') {
-        closeLong(exitFillPrice('long', rawOpen, slippagePct), i, bar.time, 'signal', exit.reason);
+        closeLong(exitFillPrice('long', rawOpen, slippagePct), i, bar.time, exitReason, exit.reason);
       } else {
-        closeShort(exitFillPrice('short', rawOpen, slippagePct), i, bar.time, 'signal', exit.reason);
+        closeShort(exitFillPrice('short', rawOpen, slippagePct), i, bar.time, exitReason, exit.reason);
       }
       pendingExit = null;
     }
@@ -358,6 +371,23 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       }
     }
 
+    // C2. Time stop: position has reached its max hold - queue a forced exit
+    // that fills at the NEXT bar's open (same mechanics as a signal exit).
+    // Runs after the intrabar stop/target check so a stop or target hit on
+    // this same bar keeps precedence (conservative invariant).
+    // Uses only i - entryBar: no look-ahead surface.
+    if (openTrade !== null && pendingExit === null) {
+      const trade = openTrade as OpenTrade; // cast: closures prevent TS narrowing here
+      // Queue one bar early: the exit fills at the NEXT bar's open, so the
+      // realized holdingBars (exitBar - entryBar) lands exactly at the cap.
+      if (trade.maxHoldBars != null && i - trade.entryBar >= trade.maxHoldBars - 1) {
+        pendingExit = {
+          kind:   'time',
+          reason: `max hold ${trade.maxHoldBars} bars reached`,
+        };
+      }
+    }
+
     // D. Mark-to-market equity at bar close
     let equityNow: number;
     if (openTrade) {
@@ -381,18 +411,23 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
         (decision.action === 'enter_long' || decision.action === 'enter_short') &&
         position === 'flat'
       ) {
+        // Effective hold cap = the tighter of strategy decision and engine config
+        const capCandidates = [decision.maxHoldBars, maxHoldBars]
+          .filter((v): v is number => v != null && v > 0);
         pendingEntry = {
           side:      decision.action === 'enter_long' ? 'long' : 'short',
           sizePct:   decision.sizePct   ?? 1,
           stopPct:   decision.stopPct,
           targetPct: decision.targetPct,
+          maxHoldBars: capCandidates.length > 0 ? Math.min(...capCandidates) : undefined,
           reason:    decision.reason ?? '',
         };
       }
     }
 
     if (decision.action === 'exit' && position !== 'flat') {
-      pendingExit = { reason: decision.reason ?? '' };
+      // A strategy exit overrides a queued time exit - same fill, clearer reason
+      pendingExit = { kind: 'signal', reason: decision.reason ?? '' };
     }
   }
 

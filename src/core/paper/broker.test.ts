@@ -28,6 +28,19 @@ vi.mock('@/core/db/bars', () => ({
   getAllSymbols:  () => [],
 }));
 
+// No budget set in these tests - broker takes the legacy (uncapped) path
+vi.mock('@/core/db/account', () => ({
+  getAccountRow:      () => null,
+  setStartingBalance: () => { throw new Error('not used in broker tests'); },
+}));
+
+// Journal writes are fire-and-forget side effects - swallow them in tests
+vi.mock('@/core/db/journal', () => ({
+  insertJournalWhy:     () => {},
+  recordJournalOutcome: () => {},
+  getJournalEntries:    () => [],
+}));
+
 // Import broker AFTER mocks are registered
 const { openPaperTrade, closePaperTrade, markOpenTrades, projectTrade, DuplicateOpenTradeError } =
   await import('./broker');

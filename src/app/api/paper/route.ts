@@ -7,8 +7,15 @@ import {
   projectTrade,
   sweepOpenTrades,
   DuplicateOpenTradeError,
+  InsufficientFundsError,
+  BankruptError,
+  RiskCheckError,
 } from '@/core/paper/broker';
+import { currentExposure } from '@/core/risk/exposure';
 import { buildTradeBook } from '@/core/paper/tradebook';
+import { withEstHold } from '@/core/paper/hold';
+import { accountSummary } from '@/core/paper/summary';
+import { setStartingBalance } from '@/core/db/account';
 import { getPaperTrades } from '@/core/db/paper';
 
 /**
@@ -74,6 +81,9 @@ export async function POST(request: Request) {
           slippagePct: body.slippagePct as number | undefined,
           notes:       body.notes       as string | undefined,
           _overrideQty: preQty,
+          journalWhy:  (typeof body.journal === 'object' && body.journal !== null
+            ? body.journal
+            : undefined) as Record<string, unknown> | undefined,
         });
         return NextResponse.json({ trade });
       }
@@ -84,6 +94,7 @@ export async function POST(request: Request) {
           exitTime:    body.exitTime    as string,
           commission:  body.commission  as number | undefined,
           slippagePct: body.slippagePct as number | undefined,
+          exitReason:  'manual',
         });
         return NextResponse.json({ trade });
       }
@@ -118,7 +129,8 @@ export async function POST(request: Request) {
         const closed  = sweepResults.filter((r) => r.action !== 'still-open');
         const stopped  = closed.filter((r) => r.action === 'stopped').length;
         const targeted = closed.filter((r) => r.action === 'targeted').length;
-        return NextResponse.json({ results: sweepResults, closed: closed.length, stopped, targeted });
+        const expired  = closed.filter((r) => r.action === 'expired').length;
+        return NextResponse.json({ results: sweepResults, closed: closed.length, stopped, targeted, expired });
       }
 
       case 'tradebook': {
@@ -126,22 +138,44 @@ export async function POST(request: Request) {
         return NextResponse.json({ book });
       }
 
+      case 'account': {
+        return NextResponse.json({ account: accountSummary() });
+      }
+
+      case 'risk': {
+        return NextResponse.json({ exposure: currentExposure(), account: accountSummary() });
+      }
+
+      case 'account-set': {
+        const amount = body.startingBalance as number;
+        setStartingBalance(amount);
+        return NextResponse.json({ account: accountSummary() });
+      }
+
       case 'list': {
         const trades = getPaperTrades({
           status:     body.status     as import('@/core/types').TradeStatus | undefined,
           strategyId: body.strategyId as string | undefined,
         });
-        return NextResponse.json({ trades });
+        // Open trades carry estHold - historical median winner hold time
+        return NextResponse.json({ trades: withEstHold(trades) });
       }
 
       default:
         return NextResponse.json(
-          { error: `Unknown action '${action}'. Valid: open, close, mark, project, tradebook, list` },
+          { error: `Unknown action '${action}'. Valid: open, close, mark, project, tradebook, list, account, account-set` },
           { status: 400 },
         );
     }
   } catch (err) {
     console.error('[POST /api/paper]', err);
+    if (
+      err instanceof InsufficientFundsError ||
+      err instanceof BankruptError ||
+      err instanceof RiskCheckError
+    ) {
+      return NextResponse.json({ error: err.message }, { status: 409 });
+    }
     if (err instanceof DuplicateOpenTradeError) {
       return NextResponse.json(
         {

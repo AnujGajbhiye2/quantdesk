@@ -1,6 +1,37 @@
 import type { AssetClass, Bar, SymbolMeta, Timeframe } from '@/core/types';
 
 /**
+ * Fundamentals snapshot for the decision dossier. All fields nullable -
+ * indices, crypto and thin tickers simply lack them.
+ */
+export interface Fundamentals {
+  symbol: string;
+  trailingPE: number | null;
+  forwardPE: number | null;
+  marketCap: number | null;
+  /** Year-over-year quarterly earnings growth, fraction (0.5 = +50%). */
+  epsGrowth: number | null;
+  /** Net profit margin, fraction. */
+  profitMargin: number | null;
+  /** Revenue growth, fraction. */
+  revenueGrowth: number | null;
+  fiftyTwoWeekLow: number | null;
+  fiftyTwoWeekHigh: number | null;
+  /** Provider analyst consensus, e.g. 'buy', 'strong_buy', 'hold'. */
+  recommendation: string | null;
+  /** Provider analyst mean price target. */
+  targetMeanPrice: number | null;
+}
+
+export interface NewsItem {
+  title: string;
+  publisher: string;
+  /** ISO timestamp. */
+  publishedAt: string;
+  link: string;
+}
+
+/**
  * The contract every data adapter must implement.
  *
  * Rules for adapter authors:
@@ -53,4 +84,17 @@ export interface DataProvider {
    * Used for the symbol-switcher UI and ingest helper.
    */
   search?(query: string): Promise<SymbolMeta[]>;
+
+  /**
+   * Optional: fundamentals snapshot for the decision dossier.
+   * Returns null when the provider has no data for the symbol.
+   * Validate with FundamentalsSchema before returning.
+   */
+  getFundamentals?(symbol: string): Promise<Fundamentals | null>;
+
+  /**
+   * Optional: recent news headlines for the decision dossier.
+   * Returns [] when unavailable. Validate with NewsItemSchema before returning.
+   */
+  getNews?(symbol: string, count?: number): Promise<NewsItem[]>;
 }

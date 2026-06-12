@@ -31,4 +31,29 @@ function migrate(db: Database.Database): void {
   for (const stmt of statements) {
     db.exec(stmt + ';');
   }
+  migrateSignals(db);
+}
+
+/**
+ * Column adds and data fixes that schema.sql cannot express idempotently
+ * (SQLite has no ADD COLUMN IF NOT EXISTS). Order matters: dedup must run
+ * before the unique index is created or index creation throws on legacy dups.
+ */
+function migrateSignals(db: Database.Database): void {
+  const cols = db.pragma('table_info(signals)') as Array<{ name: string }>;
+  if (!cols.some((c) => c.name === 'created_at')) {
+    db.exec('ALTER TABLE signals ADD COLUMN created_at TEXT');
+    db.exec('UPDATE signals SET created_at = time WHERE created_at IS NULL');
+  }
+  db.exec(`
+    DELETE FROM signals WHERE id NOT IN (
+      SELECT MIN(id) FROM signals GROUP BY symbol, time, strategy_id, side
+    )
+  `);
+  db.exec(
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_signals_dedup ON signals (symbol, time, strategy_id, side)',
+  );
+  db.exec(
+    'CREATE INDEX IF NOT EXISTS idx_signals_symbol_time ON signals (symbol, time)',
+  );
 }

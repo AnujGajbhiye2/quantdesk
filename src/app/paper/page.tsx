@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import DublinClock from '@/components/DublinClock';
 import NewPaperTrade from '@/components/NewPaperTrade';
+import AccountStrip from '@/components/AccountStrip';
+import type { AccountSummary } from '@/core/paper/account';
 import { fmtMoney } from '@/core/format/currency';
 import type { TradeBook } from '@/core/paper/tradebook';
+import type { PaperTradeWithHold } from '@/core/paper/hold';
 import type { PaperTrade } from '@/core/types';
 
 // ---------------------------------------------------------------------------
@@ -14,6 +17,7 @@ import type { PaperTrade } from '@/core/types';
 interface MarkEntry {
   unrealizedPnl:    number;
   unrealizedPnlPct: number;
+  markPrice:        number;
 }
 
 function pct(v: number, sign = true) {
@@ -40,6 +44,27 @@ function fmtDate(s: string | undefined) { return s ? s.slice(0, 10) : '--'; }
 function fmtNum(n: number | undefined, dec = 2) {
   if (n == null || !isFinite(n)) return '--';
   return n.toFixed(dec);
+}
+
+/** Hold cell: open trades show the historical-median estimate; closed show actual days. */
+function holdCell(t: PaperTradeWithHold): { text: string; title: string } {
+  if (t.status === 'open') {
+    if (!t.estHold) return { text: '--', title: 'no edge data yet for this strategy' };
+    const f = (s: string) =>
+      new Date(`${s}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    const { medianHoldBars, earliest, latest, source, sampleSize } = t.estHold;
+    return {
+      text:  `~${medianHoldBars}d (${f(earliest)} - ${f(latest)})`,
+      title: `historical median winner hold, ${source === 'symbol' ? 'this symbol' : 'whole universe'}, ${sampleSize} trades - not a forecast`,
+    };
+  }
+  if (t.exitTime) {
+    const days = Math.round(
+      (new Date(t.exitTime).getTime() - new Date(t.entryTime).getTime()) / 86_400_000,
+    );
+    return { text: `${days}d`, title: 'actual calendar days held' };
+  }
+  return { text: '--', title: '' };
 }
 
 // ---------------------------------------------------------------------------
@@ -121,7 +146,7 @@ function TradesTable({
   marks,
   onClose,
 }: {
-  trades:  PaperTrade[];
+  trades:  PaperTradeWithHold[];
   marks:   Map<string, MarkEntry>;
   onClose: (id: string) => void;
 }) {
@@ -137,12 +162,24 @@ function TradesTable({
           <th style={{ textAlign: 'left',  padding: '3px 6px', fontWeight: 400 }}>STRATEGY</th>
           <th style={{ textAlign: 'center',padding: '3px 6px', fontWeight: 400 }}>SIDE</th>
           <th style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}>ENTRY</th>
+          <th
+            style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}
+            title="latest stored close for open trades - what the position is worth right now"
+          >
+            CUR
+          </th>
           <th style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}>STOP</th>
           <th style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}>TARGET</th>
           <th style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}>QTY</th>
           <th style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}>EXIT</th>
           <th style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}>P&amp;L</th>
           <th style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}>P&amp;L%</th>
+          <th
+            style={{ textAlign: 'left', padding: '3px 6px', fontWeight: 400 }}
+            title="open: historical median winner hold time (not a forecast); closed: actual days held"
+          >
+            EST HOLD
+          </th>
           <th style={{ textAlign: 'center',padding: '3px 6px', fontWeight: 400 }}>STATUS</th>
           <th style={{ textAlign: 'center',padding: '3px 6px', fontWeight: 400 }}>ACTION</th>
         </tr>
@@ -154,6 +191,7 @@ function TradesTable({
           const isMtm = mark != null;
           const displayPnl    = isMtm ? mark.unrealizedPnl    : t.pnl;
           const displayPnlPct = isMtm ? mark.unrealizedPnlPct : t.pnlPct;
+          const hold          = holdCell(t);
 
           return (
             <tr key={t.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -165,6 +203,9 @@ function TradesTable({
               </td>
               <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                 {fmtMoney(t.entryPrice, cur)}
+              </td>
+              <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', ...(mark != null ? pnlStyle(mark.unrealizedPnl) : { color: 'var(--text-muted)' }) }}>
+                {mark != null ? fmtMoney(mark.markPrice, cur) : '--'}
               </td>
               <td style={{ padding: '3px 6px', textAlign: 'right', color: 'var(--color-down)', fontVariantNumeric: 'tabular-nums' }}>
                 {t.stopPrice != null ? fmtMoney(t.stopPrice, cur) : '--'}
@@ -185,6 +226,9 @@ function TradesTable({
               </td>
               <td style={{ padding: '3px 6px', textAlign: 'right', ...pnlStyle(displayPnlPct ?? null) }}>
                 {displayPnlPct != null ? `${isMtm ? '~' : ''}${pct(displayPnlPct)}` : '--'}
+              </td>
+              <td style={{ padding: '3px 6px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }} title={hold.title}>
+                {hold.text}
               </td>
               <td style={{ padding: '3px 6px', textAlign: 'center', color: t.status === 'open' ? 'var(--color-accent)' : 'var(--text-muted)' }}>
                 {t.status.toUpperCase()}
@@ -220,19 +264,25 @@ function TradesTable({
 // ---------------------------------------------------------------------------
 
 export default function PaperPage() {
-  const [trades,    setTrades]    = useState<PaperTrade[]>([]);
+  const [trades,    setTrades]    = useState<PaperTradeWithHold[]>([]);
   const [marks,     setMarks]     = useState<Map<string, MarkEntry>>(new Map());
   const [book,      setBook]      = useState<TradeBook | null>(null);
+  const [account,   setAccount]   = useState<AccountSummary | null>(null);
   const [sweeping,  setSweeping]  = useState(false);
   const [sweepMsg,  setSweepMsg]  = useState('');
 
   // Load data on mount (and after mutations)
   const loadData = useCallback(async () => {
-    const [tRes, bRes, mRes] = await Promise.all([
+    const [tRes, bRes, mRes, aRes] = await Promise.all([
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'list' }) }),
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'tradebook' }) }),
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'mark', useQuotes: false }) }),
+      fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'account' }) }),
     ]);
+    if (aRes.ok) {
+      const { account: acct } = await aRes.json() as { account: AccountSummary | null };
+      setAccount(acct);
+    }
     if (tRes.ok) {
       const { trades: t } = await tRes.json() as { trades: PaperTrade[] };
       setTrades(t);
@@ -243,9 +293,9 @@ export default function PaperPage() {
     }
     if (mRes.ok) {
       const { marks: markResults } = await mRes.json() as {
-        marks: { trade: { id: string }; unrealizedPnl: number; unrealizedPnlPct: number }[];
+        marks: { trade: { id: string }; unrealizedPnl: number; unrealizedPnlPct: number; markPrice: number }[];
       };
-      setMarks(new Map(markResults.map((m) => [m.trade.id, { unrealizedPnl: m.unrealizedPnl, unrealizedPnlPct: m.unrealizedPnlPct }])));
+      setMarks(new Map(markResults.map((m) => [m.trade.id, { unrealizedPnl: m.unrealizedPnl, unrealizedPnlPct: m.unrealizedPnlPct, markPrice: m.markPrice }])));
     }
   }, []);
 
@@ -298,8 +348,8 @@ export default function PaperPage() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ action: 'sweep' }),
       });
-      const data = await res.json() as { closed: number; stopped: number; targeted: number };
-      setSweepMsg(`sweep: ${data.closed} closed (${data.stopped} stopped, ${data.targeted} targeted)`);
+      const data = await res.json() as { closed: number; stopped: number; targeted: number; expired: number };
+      setSweepMsg(`sweep: ${data.closed} closed (${data.stopped} stopped, ${data.targeted} targeted, ${data.expired ?? 0} expired)`);
       void loadData();
     } catch (err) {
       setSweepMsg(`sweep error: ${err instanceof Error ? err.message : String(err)}`);
@@ -322,7 +372,9 @@ export default function PaperPage() {
           <nav className="flex gap-3" style={{ fontSize: 'var(--fs-xs)' }}>
             <a href="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>DASH</a>
             <a href="/backtest" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>BACKTEST</a>
+            <a href="/compare" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>COMPARE</a>
             <a href="/paper" style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>PAPER</a>
+            <a href="/journal" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>JOURNAL</a>
           </nav>
         </div>
         <div className="flex items-center gap-3">
@@ -345,6 +397,18 @@ export default function PaperPage() {
           <DublinClock />
         </div>
       </div>
+
+      {/* Paper trading budget strip */}
+      <AccountStrip
+        account={account}
+        onSetBudget={(amount) => {
+          void fetch('/api/paper', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ action: 'account-set', startingBalance: amount }),
+          }).then(() => loadData());
+        }}
+      />
 
       {/* New trade form */}
       <NewPaperTrade onOpened={handleOpened} />

@@ -107,6 +107,44 @@ export function getBars(symbol: string, timeframe: Timeframe): Bar[] {
   }));
 }
 
+/**
+ * Return the most recent `limit` bars for a symbol + timeframe, sorted ascending.
+ * Scanner path: avoids loading 10y of history when 600 bars cover every
+ * registered indicator's warm-up (MA200 + convergence margin).
+ */
+export function getRecentBars(
+  symbol: string,
+  timeframe: Timeframe,
+  limit: number,
+): Bar[] {
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT time, open, high, low, close, volume
+       FROM bars
+       WHERE symbol = ? AND timeframe = ?
+       ORDER BY time DESC
+       LIMIT ?`,
+    )
+    .all(symbol, timeframe, limit) as Array<{
+    time: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+  }>;
+  rows.reverse();
+  return rows.map((r) => ({
+    time:   r.time,
+    open:   r.open,
+    high:   r.high,
+    low:    r.low,
+    close:  r.close,
+    volume: r.volume,
+  }));
+}
+
 /** Return the most recent close price for a symbol + timeframe, or null. */
 export function getLatestClose(
   symbol: string,

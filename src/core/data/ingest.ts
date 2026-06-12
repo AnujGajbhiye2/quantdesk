@@ -35,7 +35,9 @@ export async function ingestUniverse(
   from: string = FULL_HISTORY_FROM,
   timeframe: Timeframe = DEFAULT_TIMEFRAME,
 ): Promise<IngestResult[]> {
-  const to = todayString();
+  // Provider range ends are exclusive (verified against Yahoo chart), so the
+  // window must end at tomorrow for today's bar to be included.
+  const to = nextDay(todayString());
   const results: IngestResult[] = [];
 
   for (const entry of universe) {
@@ -78,11 +80,31 @@ export async function ingestUniverse(
  * @param universe  Optional list of symbols to refresh. Defaults to all stored symbols.
  * @param timeframe Timeframe to refresh (default: '1d').
  */
+/**
+ * Compute the fetch window for an incremental refresh.
+ *
+ * - to: the day AFTER today, because provider range ends are exclusive -
+ *   with to = today, today's bar is never returned and the DB stays
+ *   permanently a day behind.
+ * - from: the latest stored day itself, not the day after. A bar stored while
+ *   the market was still open is partial; re-fetching that day finalizes it
+ *   via upsert. One redundant bar per symbol per refresh is the cost.
+ */
+export function refreshWindow(
+  latestStored: string | null,
+  today: string,
+): { from: string; to: string } {
+  return {
+    from: latestStored ?? FULL_HISTORY_FROM,
+    to:   nextDay(today),
+  };
+}
+
 export async function refreshUniverse(
   universe?: UniverseEntry[],
   timeframe: Timeframe = DEFAULT_TIMEFRAME,
 ): Promise<IngestResult[]> {
-  const to = todayString();
+  const today = todayString();
   const results: IngestResult[] = [];
 
   // Build the list to refresh
@@ -106,19 +128,14 @@ export async function refreshUniverse(
     try {
       const provider = getProvider(entry.providerId);
 
-      // Find the latest stored bar time and fetch only newer bars
+      // Latest stored bar time; null means full ingest from default start.
+      // The window deliberately re-fetches the latest stored day (see
+      // refreshWindow) so a partial intraday bar gets finalized.
       const latestStored = getLatestBarTime(entry.symbol, timeframe);
-
-      // If no bars exist, do a full ingest from default start
-      const from = latestStored
-        ? nextDay(latestStored) // fetch from the day AFTER the last stored bar
-        : FULL_HISTORY_FROM;
-
-      // Nothing to fetch if already up to date (or next fetch start = today with no new close)
-      if (from >= to) {
-        results.push({ symbol: entry.symbol, barsAdded: 0 });
-        continue;
-      }
+      const { from, to } = refreshWindow(
+        latestStored ? latestStored.slice(0, 10) : null,
+        today,
+      );
 
       // Upsert symbol meta in case this is the first time
       const meta: SymbolMeta = {
@@ -135,7 +152,11 @@ export async function refreshUniverse(
       const bars = await provider.getHistory(entry.symbol, timeframe, from, to);
       upsertBars(entry.symbol, timeframe, bars);
 
-      results.push({ symbol: entry.symbol, barsAdded: bars.length });
+      // Count only genuinely new days; the re-fetched latest day is an update.
+      const newBars = latestStored
+        ? bars.filter((b) => b.time.slice(0, 10) > latestStored.slice(0, 10))
+        : bars;
+      results.push({ symbol: entry.symbol, barsAdded: newBars.length });
     } catch (err) {
       results.push({
         symbol: entry.symbol,

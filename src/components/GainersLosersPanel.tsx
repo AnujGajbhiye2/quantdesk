@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import Panel from './Panel';
 import EmptyState from './EmptyState';
 import { fmtMoney } from '@/core/format/currency';
@@ -14,6 +15,7 @@ function fmt(n: number) {
 }
 
 function MiniTable({ items, positive }: { items: MarketRow[]; positive: boolean }) {
+  const router = useRouter();
   if (items.length === 0) {
     return <EmptyState message="— no data —" />;
   }
@@ -22,7 +24,12 @@ function MiniTable({ items, positive }: { items: MarketRow[]; positive: boolean 
     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
       <tbody>
         {items.map((row) => (
-          <tr key={row.symbol} style={{ borderBottom: '1px solid var(--border)' }}>
+          <tr
+            key={row.symbol}
+            onClick={() => router.push(`/backtest?symbol=${row.symbol}`)}
+            title={`backtest ${row.symbol}`}
+            style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+          >
             <td style={{ padding: '2px 6px', color: 'var(--color-accent)', fontWeight: 600 }}>{row.symbol}</td>
             <td
               style={{
@@ -56,10 +63,20 @@ export default function GainersLosersPanel({ rows }: Props) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ gap: '1px', background: 'var(--border)' }}>
-      <Panel title="TOP GAINERS" className="flex-1">
+      <Panel
+        title="TOP GAINERS"
+        className="flex-1"
+        subtitle="Today's biggest risers - momentum candidates. Click to backtest."
+        info="Biggest risers today in the current market filter - momentum candidates worth a backtest. Click a row to open it."
+      >
         <MiniTable items={gainers} positive />
       </Panel>
-      <Panel title="TOP LOSERS" className="flex-1">
+      <Panel
+        title="TOP LOSERS"
+        className="flex-1"
+        subtitle="Today's biggest fallers - mean-reversion candidates. Click to backtest."
+        info="Biggest fallers today - mean-reversion candidates or names to avoid. Click a row to backtest."
+      >
         <MiniTable items={losers} positive={false} />
       </Panel>
     </div>

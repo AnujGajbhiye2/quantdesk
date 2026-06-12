@@ -1,0 +1,119 @@
+import 'server-only';
+import { getDb } from './client';
+import type { AssetClass } from '@/core/types';
+import type { EdgeStats } from '@/core/edge/types';
+
+interface EdgeRow {
+  strategy_id:          string;
+  scope:                string;
+  symbol:               string | null;
+  asset_class:          string | null;
+  win_rate:             number;
+  avg_win_pct:          number;
+  avg_loss_pct:         number;
+  profit_factor:        number;
+  num_trades:           number;
+  median_win_hold_bars: number;
+  tested_from:          string;
+  tested_to:            string;
+  computed_at:          string;
+}
+
+function rowToStats(r: EdgeRow): EdgeStats {
+  return {
+    strategyId:        r.strategy_id,
+    scope:             r.scope,
+    symbol:            r.symbol,
+    assetClass:        r.asset_class as AssetClass | null,
+    winRate:           r.win_rate,
+    avgWinPct:         r.avg_win_pct,
+    avgLossPct:        r.avg_loss_pct,
+    profitFactor:      r.profit_factor,
+    numTrades:         r.num_trades,
+    medianWinHoldBars: r.median_win_hold_bars,
+    testedFrom:        r.tested_from,
+    testedTo:          r.tested_to,
+    computedAt:        r.computed_at,
+  };
+}
+
+/** Upsert edge rows in one transaction, keyed (strategy_id, scope). */
+export function upsertEdgeStats(rows: EdgeStats[]): void {
+  if (rows.length === 0) return;
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO strategy_edge (
+      strategy_id, scope, symbol, asset_class, win_rate, avg_win_pct,
+      avg_loss_pct, profit_factor, num_trades, median_win_hold_bars,
+      tested_from, tested_to, computed_at
+    ) VALUES (
+      @strategyId, @scope, @symbol, @assetClass, @winRate, @avgWinPct,
+      @avgLossPct, @profitFactor, @numTrades, @medianWinHoldBars,
+      @testedFrom, @testedTo, @computedAt
+    )
+    ON CONFLICT(strategy_id, scope) DO UPDATE SET
+      symbol               = excluded.symbol,
+      asset_class          = excluded.asset_class,
+      win_rate             = excluded.win_rate,
+      avg_win_pct          = excluded.avg_win_pct,
+      avg_loss_pct         = excluded.avg_loss_pct,
+      profit_factor        = excluded.profit_factor,
+      num_trades           = excluded.num_trades,
+      median_win_hold_bars = excluded.median_win_hold_bars,
+      tested_from          = excluded.tested_from,
+      tested_to            = excluded.tested_to,
+      computed_at          = excluded.computed_at
+  `);
+  const insertMany = db.transaction((items: EdgeStats[]) => {
+    for (const r of items) {
+      stmt.run({
+        strategyId:        r.strategyId,
+        scope:             r.scope,
+        symbol:            r.symbol,
+        assetClass:        r.assetClass,
+        winRate:           r.winRate,
+        avgWinPct:         r.avgWinPct,
+        avgLossPct:        r.avgLossPct,
+        profitFactor:      r.profitFactor,
+        numTrades:         r.numTrades,
+        medianWinHoldBars: r.medianWinHoldBars,
+        testedFrom:        r.testedFrom,
+        testedTo:          r.testedTo,
+        computedAt:        r.computedAt,
+      });
+    }
+  });
+  insertMany(rows);
+}
+
+export interface GetEdgeStatsOpts {
+  strategyId?: string;
+  scope?:      string;
+  /** Convenience filter: symbol-scoped rows for this symbol. */
+  symbol?:     string;
+}
+
+export function getEdgeStats(opts: GetEdgeStatsOpts = {}): EdgeStats[] {
+  const db = getDb();
+  const conditions: string[] = [];
+  const params: Record<string, unknown> = {};
+
+  if (opts.strategyId) {
+    conditions.push('strategy_id = @strategyId');
+    params.strategyId = opts.strategyId;
+  }
+  if (opts.scope) {
+    conditions.push('scope = @scope');
+    params.scope = opts.scope;
+  }
+  if (opts.symbol) {
+    conditions.push('symbol = @symbol');
+    params.symbol = opts.symbol;
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const rows = db
+    .prepare(`SELECT * FROM strategy_edge ${where} ORDER BY strategy_id, scope`)
+    .all(params) as EdgeRow[];
+  return rows.map(rowToStats);
+}

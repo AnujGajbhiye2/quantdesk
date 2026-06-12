@@ -17,7 +17,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { refreshUniverse, type UniverseEntry } from '../src/core/data/ingest';
-import { sweepOpenTrades } from '../src/core/paper/broker';
+import { postRefreshTasks } from '../src/core/data/post-refresh';
 
 function parseArgs(): { universePath?: string } {
   const args = process.argv.slice(2);
@@ -70,19 +70,41 @@ async function main() {
 
   console.log(`\nDone. ${results.length - errors}/${results.length} symbols checked, ${totalBars} new bars. ${errors} error(s).`);
 
-  // EOD sweep: auto-close paper trades that hit stop or target
-  console.log('\nRunning EOD sweep on open paper trades...');
-  try {
-    const sweepResults = sweepOpenTrades();
-    const closed  = sweepResults.filter((r) => r.action !== 'still-open');
+  // Post-refresh: sweep open paper trades, then run the all-strategies scan
+  console.log('\nRunning post-refresh tasks (sweep + scan-all)...');
+  const post = postRefreshTasks();
+
+  if (post.sweep.error) {
+    console.error(`Sweep error: ${post.sweep.error}`);
+  } else {
+    const closed   = post.sweep.results.filter((r) => r.action !== 'still-open');
     const stopped  = closed.filter((r) => r.action === 'stopped').length;
     const targeted = closed.filter((r) => r.action === 'targeted').length;
+    const expired  = closed.filter((r) => r.action === 'expired').length;
     for (const r of closed) {
       console.log(`  ${r.action.toUpperCase().padEnd(8)} ${r.trade.symbol}: exit @ ${r.exitPrice?.toFixed(2)} on ${r.exitTime} | P&L ${r.trade.pnl?.toFixed(2) ?? '--'}`);
     }
-    console.log(`Sweep done. Closed ${closed.length} trade(s): ${stopped} stopped, ${targeted} targeted.`);
-  } catch (err) {
-    console.error(`Sweep error: ${err instanceof Error ? err.message : String(err)}`);
+    console.log(`Sweep done. Closed ${closed.length} trade(s): ${stopped} stopped, ${targeted} targeted, ${expired} expired (max hold).`);
+  }
+
+  if (post.scan.error) {
+    console.error(`Scan error: ${post.scan.error}`);
+  } else if (post.scan.result) {
+    const s = post.scan.result;
+    console.log(
+      `Scan-all done. ${s.scanned} symbols x ${s.totalStrategies} strategies, ` +
+      `${s.signals.length} signals, ${s.consensus.length} consensus rows, ${s.durationMs}ms.`,
+    );
+  }
+
+  if (post.edge.error) {
+    console.error(`Edge compute error: ${post.edge.error}`);
+  } else if (post.edge.result) {
+    const e = post.edge.result;
+    console.log(
+      `Edge stats done. ${e.symbols} symbols x ${e.strategies} strategies, ` +
+      `${e.rows} rows (${e.recomputed} recomputed), ${e.durationMs}ms.`,
+    );
   }
 
   if (errors > 0) process.exit(1);
