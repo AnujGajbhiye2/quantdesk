@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import InfoTip from './InfoTip';
+import InfoTip from '@/components/primitives/InfoTip';
 import type { AccountSummary } from '@/core/paper/account';
 
 interface Props {

@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import DublinClock from '@/components/DublinClock';
-import NewPaperTrade from '@/components/NewPaperTrade';
-import AccountStrip from '@/components/AccountStrip';
+import DublinClock from '@/components/primitives/DublinClock';
+import NewPaperTrade from '@/components/trade/NewPaperTrade';
+import AccountStrip from '@/components/panels/AccountStrip';
 import type { AccountSummary } from '@/core/paper/account';
 import { fmtMoney } from '@/core/format/currency';
 import type { TradeBook } from '@/core/paper/tradebook';

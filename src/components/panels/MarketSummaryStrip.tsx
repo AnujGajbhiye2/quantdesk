@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useMemo } from 'react';
-import Sparkline from './Sparkline';
+import Sparkline from '@/components/primitives/Sparkline';
 import { fmtMoney } from '@/core/format/currency';
 import type { MarketRow } from '@/core/market/snapshot';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import InfoTip from './InfoTip';
+import InfoTip from '@/components/primitives/InfoTip';
 import { gloss, type GlossaryKey } from '@/core/glossary';
 import type { BacktestMetrics } from '@/core/backtest/engine';
 

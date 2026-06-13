@@ -1,7 +1,7 @@
 'use client';
 
-import Panel from './Panel';
-import EmptyState from './EmptyState';
+import Panel from '@/components/primitives/Panel';
+import EmptyState from '@/components/primitives/EmptyState';
 import type { TradeRecord } from '@/core/backtest/engine';
 
 interface Props {

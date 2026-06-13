@@ -2,10 +2,10 @@
 
 import { memo, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Panel from './Panel';
-import { useTableSort } from './useTableSort';
-import EmptyState from './EmptyState';
-import EdgeBadge from './EdgeBadge';
+import Panel from '@/components/primitives/Panel';
+import { useTableSort } from '@/hooks/useTableSort';
+import EmptyState from '@/components/primitives/EmptyState';
+import EdgeBadge from '@/components/primitives/EdgeBadge';
 import { tierOpacity } from '@/core/edge/score';
 import type { EdgeSummary } from '@/core/edge/context';
 import type { MarketRow } from '@/core/market/snapshot';

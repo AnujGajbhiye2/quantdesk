@@ -2,8 +2,8 @@
 
 import { memo, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Panel from './Panel';
-import EmptyState from './EmptyState';
+import Panel from '@/components/primitives/Panel';
+import EmptyState from '@/components/primitives/EmptyState';
 import { fmtMoney } from '@/core/format/currency';
 import type { MarketRow } from '@/core/market/snapshot';
 

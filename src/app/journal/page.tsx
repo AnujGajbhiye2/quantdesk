@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import DublinClock from '@/components/DublinClock';
-import InfoTip from '@/components/InfoTip';
+import DublinClock from '@/components/primitives/DublinClock';
+import InfoTip from '@/components/primitives/InfoTip';
 import { fmtMoney } from '@/core/format/currency';
 import type { JournalRow, ComboReport } from '@/app/api/journal/route';
 

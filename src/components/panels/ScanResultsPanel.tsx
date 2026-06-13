@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { List, useListRef, type RowComponentProps } from 'react-window';
 import { useRouter } from 'next/navigation';
-import Sparkline from './Sparkline';
+import Sparkline from '@/components/primitives/Sparkline';
 import { fmtMoney } from '@/core/format/currency';
 import type { MarketRow } from '@/core/market/snapshot';
 

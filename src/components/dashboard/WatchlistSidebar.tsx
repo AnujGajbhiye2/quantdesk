@@ -1,6 +1,6 @@
 'use client';
 
-import InfoTip from './InfoTip';
+import InfoTip from '@/components/primitives/InfoTip';
 import type { WatchlistItem } from '@/app/api/watchlist/route';
 
 interface Props {

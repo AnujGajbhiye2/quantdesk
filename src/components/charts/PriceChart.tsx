@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, type CSSProperties } from 'react';
-import EmptyState from './EmptyState';
+import EmptyState from '@/components/primitives/EmptyState';
 import {
   createChart,
   CandlestickSeries,

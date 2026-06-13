@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import Panel from './Panel';
-import EmptyState from './EmptyState';
+import Panel from '@/components/primitives/Panel';
+import EmptyState from '@/components/primitives/EmptyState';
 import { monthlyReturns } from '@/core/backtest/monthly';
 import type { EquityPoint } from '@/core/backtest/engine';
 

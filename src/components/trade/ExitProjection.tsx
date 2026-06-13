@@ -1,6 +1,6 @@
 'use client';
 
-import Panel from './Panel';
+import Panel from '@/components/primitives/Panel';
 import type { TradeIdea } from '@/core/types';
 
 export interface ExitProjectionData {

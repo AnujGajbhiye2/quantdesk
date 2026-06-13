@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import EmptyState from './EmptyState';
-import InfoTip from './InfoTip';
+import EmptyState from '@/components/primitives/EmptyState';
+import InfoTip from '@/components/primitives/InfoTip';
 
 interface PanelProps {
   title: string;

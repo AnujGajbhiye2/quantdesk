@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import Panel from './Panel';
+import Panel from '@/components/primitives/Panel';
 import type { RiskExposure } from '@/core/risk/exposure';
 import type { AccountSummary } from '@/core/paper/account';
 

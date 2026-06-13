@@ -3,20 +3,20 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import DublinClock from '@/components/DublinClock';
-import MetricsPanel from '@/components/MetricsPanel';
-import TradesTable from '@/components/TradesTable';
-import MonthlyReturnsHeatmap from '@/components/MonthlyReturnsHeatmap';
-import ExitProjection, { type ExitProjectionData } from '@/components/ExitProjection';
-import SignalTimeline from '@/components/SignalTimeline';
-import SymbolTypeahead from '@/components/SymbolTypeahead';
+import DublinClock from '@/components/primitives/DublinClock';
+import MetricsPanel from '@/components/panels/MetricsPanel';
+import TradesTable from '@/components/panels/TradesTable';
+import MonthlyReturnsHeatmap from '@/components/charts/MonthlyReturnsHeatmap';
+import ExitProjection, { type ExitProjectionData } from '@/components/trade/ExitProjection';
+import SignalTimeline from '@/components/charts/SignalTimeline';
+import SymbolTypeahead from '@/components/primitives/SymbolTypeahead';
 import type { BacktestResult } from '@/core/backtest/engine';
 import type { Bar, TradeIdea } from '@/core/types';
 import { toWeekly } from '@/core/data/resample';
 
 // Charts must be client-side only (no SSR)
-const PriceChart       = dynamic(() => import('@/components/PriceChart'), { ssr: false });
-const EquityCurveChart = dynamic(() => import('@/components/EquityCurveChart'), { ssr: false });
+const PriceChart       = dynamic(() => import('@/components/charts/PriceChart'), { ssr: false });
+const EquityCurveChart = dynamic(() => import('@/components/charts/EquityCurveChart'), { ssr: false });
 
 // ---------------------------------------------------------------------------
 // Types

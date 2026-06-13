@@ -2,9 +2,9 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import DublinClock from '@/components/DublinClock';
-import SymbolTypeahead from '@/components/SymbolTypeahead';
-import InfoTip from '@/components/InfoTip';
+import DublinClock from '@/components/primitives/DublinClock';
+import SymbolTypeahead from '@/components/primitives/SymbolTypeahead';
+import InfoTip from '@/components/primitives/InfoTip';
 import { gloss, type GlossaryKey } from '@/core/glossary';
 import type { CompareRow } from '@/app/api/compare/route';
 

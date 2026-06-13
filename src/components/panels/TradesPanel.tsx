@@ -2,9 +2,9 @@
 
 import { memo } from 'react';
 import { useRouter } from 'next/navigation';
-import Panel from './Panel';
-import EmptyState from './EmptyState';
-import { useTableSort } from './useTableSort';
+import Panel from '@/components/primitives/Panel';
+import EmptyState from '@/components/primitives/EmptyState';
+import { useTableSort } from '@/hooks/useTableSort';
 import { fmtMoney } from '@/core/format/currency';
 import type { PaperTradeWithHold } from '@/core/paper/hold';
 

@@ -4,7 +4,7 @@ import { getPaperTrades } from '@/core/db/paper';
 import { getAllSymbols } from '@/core/db/bars';
 import { mergeKnownSymbols } from '@/core/data/universe';
 import { list as listStrategies } from '@/core/strategy/registry';
-import Dashboard from '@/components/Dashboard';
+import Dashboard from '@/components/dashboard/Dashboard';
 
 export const dynamic = 'force-dynamic';
 

@@ -2,9 +2,9 @@
 
 import { memo } from 'react';
 import { useRouter } from 'next/navigation';
-import Panel from './Panel';
-import EmptyState from './EmptyState';
-import EdgeBadge from './EdgeBadge';
+import Panel from '@/components/primitives/Panel';
+import EmptyState from '@/components/primitives/EmptyState';
+import EdgeBadge from '@/components/primitives/EdgeBadge';
 import { fmtMoney } from '@/core/format/currency';
 import { tierOpacity } from '@/core/edge/score';
 import type { EnrichedTradeIdea } from '@/core/signals/gate';

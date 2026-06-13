@@ -9,7 +9,7 @@ import {
   type ISeriesApi,
   type LineData,
 } from 'lightweight-charts';
-import Panel from './Panel';
+import Panel from '@/components/primitives/Panel';
 import type { EquityPoint } from '@/core/backtest/engine';
 
 interface Props {

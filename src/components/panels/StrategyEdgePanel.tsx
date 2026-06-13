@@ -1,9 +1,9 @@
 'use client';
 
 import { memo } from 'react';
-import Panel from './Panel';
-import EmptyState from './EmptyState';
-import InfoTip from './InfoTip';
+import Panel from '@/components/primitives/Panel';
+import EmptyState from '@/components/primitives/EmptyState';
+import InfoTip from '@/components/primitives/InfoTip';
 import { gloss } from '@/core/glossary';
 import type { TradeBook } from '@/core/paper/tradebook';
 
