@@ -48,11 +48,11 @@ Markers: use `createSeriesMarkers` (imported), not `series.setMarkers()`. Charts
 
 ---
 
-## Quickstart
+## Quickstart (local dev)
 
 ```bash
 npm install
-cp .env.local.example .env.local
+cp .env.local.example .env.local   # fill in keys - see Environment variables section
 
 # Build the database incrementally (rate-limited, resumable)
 npm run poll -- --universe scripts/universe/sp500.json
@@ -63,6 +63,154 @@ npm run dev
 ```
 
 Dashboard populates once the DB has bars. Run `npm run refresh` any time for latest EOD bars.
+
+---
+
+## Production deployment
+
+QuantDesk is a **self-hosted single-user tool**. It uses a local SQLite database and a
+persistent in-process cron scheduler. This means it **cannot** run on serverless platforms
+(Vercel, Netlify, Cloudflare Workers) - it needs a long-lived Node.js process and persistent
+disk storage.
+
+### Where to host
+
+| Option | Cost | Notes |
+|---|---|---|
+| VPS (DigitalOcean, Hetzner, Linode) | $4-6/mo | Cheapest reliable choice |
+| Home server / Raspberry Pi | ~$0 running cost | Fine if you have stable broadband |
+| Cloud VM (AWS EC2 t3.micro, GCP e2-micro) | ~$5-10/mo | Free tier available on some |
+
+Any Linux machine with Node.js 20+ and 512 MB RAM is sufficient.
+
+### Step-by-step VPS deploy
+
+**1. Provision server and install Node.js**
+```bash
+# On the server (Ubuntu 22.04 example)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs git
+```
+
+**2. Clone and build**
+```bash
+git clone <your-repo-url> quantdesk
+cd quantdesk
+npm install
+npm run build          # must pass before you can start
+```
+
+**3. Create `.env.local` with production values**
+```bash
+cp .env.local.example .env.local
+nano .env.local
+```
+
+Minimum required for full functionality:
+```env
+# Telegram alerts (stops + targets for open paper trades)
+TELEGRAM_BOT_TOKEN=<your-bot-token>
+TELEGRAM_CHAT_ID=<your-chat-id>
+
+# Data provider (Yahoo requires no key; add Twelve Data key for better global coverage)
+TWELVE_DATA_API_KEY=<optional-key>
+
+# Risk controls - adjust to your actual paper budget
+RISK_MAX_POSITION_PCT=25
+RISK_MAX_OPEN_RISK_PCT=6
+RISK_MAX_OPEN_TRADES=8
+RISK_HALT_DRAWDOWN_PCT=20
+
+# EOD refresh timing (default 21:05 Europe/Dublin = ~16:05 ET, Mon-Fri)
+REFRESH_CRON=5 21 * * 1-5
+REFRESH_TZ=Europe/Dublin
+
+# Alert when price within 2% of stop or target (default 2)
+ALERT_PROXIMITY_PCT=2
+```
+
+**4. Populate the database**
+```bash
+# First run - downloads full history (takes 20-60 min per universe, rate-limited)
+npm run poll -- --universe scripts/universe/sp500.json
+npm run poll -- --universe scripts/universe/nifty200.json
+
+# Subsequent runs - incremental update only
+npm run refresh
+```
+
+**5. Run with PM2 (keeps process alive across reboots)**
+```bash
+npm install -g pm2
+pm2 start "npm start" --name quantdesk
+pm2 save                          # persist across reboots
+pm2 startup                       # follow the printed command to enable at boot
+```
+
+Check logs: `pm2 logs quantdesk`
+
+**6. (Optional) Nginx reverse proxy**
+
+Expose on port 80/443 instead of 3000:
+```bash
+sudo apt-get install -y nginx
+sudo nano /etc/nginx/sites-available/quantdesk
+```
+
+```nginx
+server {
+    listen 80;
+    server_name your.domain.com;   # or your server IP
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+```bash
+sudo ln -s /etc/nginx/sites-available/quantdesk /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+For HTTPS use Certbot: `sudo apt install certbot python3-certbot-nginx && sudo certbot --nginx`.
+
+### What runs automatically (once deployed)
+
+| What | When | How |
+|---|---|---|
+| EOD data refresh | 21:05 Mon-Fri (Dublin time, ~16:05 ET) | `node-cron` inside the Next.js process |
+| Paper trade sweep (stop/target hit detection) | After every EOD refresh | Part of `postRefreshTasks()` |
+| Telegram stop/target proximity alerts | Every 15 min Mon-Fri | `node-cron` inside the Next.js process |
+
+**All three run automatically as long as `npm start` / PM2 is alive.** No extra cron jobs,
+no separate worker process, no intervention needed.
+
+Alerts fire when an open paper trade's live price comes within `ALERT_PROXIMITY_PCT` (default 2%)
+of its stop or target level. One alert per state change with hysteresis - no spam.
+
+### Keeping data fresh
+
+```bash
+# Manual incremental refresh (picks up any missed bars)
+npm run refresh
+
+# Re-poll full history for a universe (rarely needed)
+npm run poll -- --universe scripts/universe/sp500.json
+```
+
+### Security notes
+
+- QuantDesk has no user authentication. If you expose it on a public IP, add HTTP basic auth
+  via nginx (`htpasswd`) or restrict access by IP/VPN.
+- Never commit `.env.local` - it is gitignored via `.env*` in `.gitignore`.
+- The SQLite file `data/quantdesk.db` is gitignored. Back it up periodically:
+  `cp data/quantdesk.db data/quantdesk.db.bak`
 
 ---
 
@@ -123,25 +271,47 @@ quantdesk/
     │       ├── scan/route.ts          # POST: run scanner across universe
     │       ├── search/route.ts        # GET: symbol typeahead search
     │       └── strategies/route.ts    # GET: list registered strategies
+    ├── hooks/
+    │   ├── useKeyboardNav.ts          # keyboard navigation + tab-switch hook
+    │   ├── usePersistedState.ts       # SSR-safe localStorage state hook
+    │   └── useTableSort.ts            # generic header-click sort with persistence
     ├── components/
-    │   ├── Dashboard.tsx              # main layout, panel orchestration, symbol state
-    │   ├── PriceChart.tsx             # lightweight-charts: candles + volume + indicators + markers
-    │   ├── MarketSummaryStrip.tsx     # top bar: index quotes + market open/closed status
-    │   ├── SignalDashboardPanel.tsx   # current scanner signals with side/reason/strategy
-    │   ├── TradeIdeasPanel.tsx        # risk-sized trade ideas (entry, stop, target, R/R, qty)
-    │   ├── ScanResultsPanel.tsx       # raw scan output table
-    │   ├── GainersLosersPanel.tsx     # top movers by % change
-    │   ├── MetricsPanel.tsx           # backtest metrics display (return, Sharpe, drawdown)
-    │   ├── TradesPanel.tsx            # paper trade list with unrealized P&L
-    │   ├── StrategyEdgePanel.tsx      # per-strategy backtest edge summary
-    │   ├── CommandBar.tsx             # keyboard command palette
-    │   ├── GoToSymbolOverlay.tsx      # symbol switcher overlay with typeahead
-    │   ├── NewPaperTrade.tsx          # new paper trade entry form
-    │   ├── Panel.tsx                  # generic panel wrapper component
-    │   ├── Sparkline.tsx              # mini sparkline chart
-    │   ├── DublinClock.tsx            # timezone clock (Europe/Dublin)
-    │   ├── EmptyState.tsx             # empty state display
-    │   └── useKeyboardNav.ts          # keyboard navigation hook
+    │   ├── dashboard/
+    │   │   ├── Dashboard.tsx          # main layout, tab orchestration, symbol state
+    │   │   └── WatchlistSidebar.tsx   # collapsible watchlist with live quotes
+    │   ├── panels/
+    │   │   ├── ScanResultsPanel.tsx   # raw scan output table
+    │   │   ├── GainersLosersPanel.tsx # top movers by % change
+    │   │   ├── SignalDashboardPanel.tsx  # scanner signals with side/reason/strategy
+    │   │   ├── TradeIdeasPanel.tsx    # risk-sized trade ideas (entry, stop, target, R/R)
+    │   │   ├── StrategyEdgePanel.tsx  # per-strategy backtest edge summary
+    │   │   ├── RiskPanel.tsx          # open risk exposure summary
+    │   │   ├── TradesPanel.tsx        # paper trade list with unrealized P&L
+    │   │   ├── TradesTable.tsx        # backtest trade record table
+    │   │   ├── MetricsPanel.tsx       # backtest metrics (return, Sharpe, drawdown)
+    │   │   ├── MarketSummaryStrip.tsx # index quotes + market open/closed status
+    │   │   └── AccountStrip.tsx       # paper account equity + budget strip
+    │   ├── charts/
+    │   │   ├── PriceChart.tsx         # lightweight-charts: candles + volume + markers
+    │   │   ├── EquityCurveChart.tsx   # backtest equity curve chart
+    │   │   ├── MonthlyReturnsHeatmap.tsx  # calendar heatmap of monthly returns
+    │   │   └── SignalTimeline.tsx     # per-symbol signal history timeline
+    │   ├── trade/
+    │   │   ├── NewPaperTrade.tsx      # new paper trade entry form
+    │   │   ├── QuickTradeConfirm.tsx  # one-click confirm overlay for trade ideas
+    │   │   └── ExitProjection.tsx     # exit price projection display
+    │   ├── overlays/
+    │   │   ├── CommandBar.tsx         # keyboard command palette
+    │   │   └── GoToSymbolOverlay.tsx  # symbol switcher overlay with typeahead
+    │   └── primitives/
+    │       ├── Panel.tsx              # generic panel wrapper
+    │       ├── EmptyState.tsx         # empty state display
+    │       ├── InfoTip.tsx            # glossary tooltip
+    │       ├── EdgeBadge.tsx          # conviction tier badge
+    │       ├── ResizeHandle.tsx       # drag-to-resize handle (react-resizable-panels)
+    │       ├── DublinClock.tsx        # timezone clock (Europe/Dublin)
+    │       ├── Sparkline.tsx          # mini sparkline chart
+    │       └── SymbolTypeahead.tsx    # symbol search input with suggestions
     └── core/
         ├── types.ts                   # Bar, SymbolMeta, Signal, TradeIdea, PaperTrade
         ├── db/
