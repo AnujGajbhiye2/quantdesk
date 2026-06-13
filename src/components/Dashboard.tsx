@@ -16,8 +16,11 @@ import WatchlistSidebar from "./WatchlistSidebar";
 import QuickTradeConfirm from "./QuickTradeConfirm";
 import AccountStrip from "./AccountStrip";
 import RiskPanel from "./RiskPanel";
+import { Group, Panel, useDefaultLayout } from "react-resizable-panels";
+import ResizeHandle from "./ResizeHandle";
 import { useKeyboardNav } from "./useKeyboardNav";
 import { useTableSort } from "./useTableSort";
+import { usePersistedState } from "./usePersistedState";
 import type { WatchlistItem } from "@/app/api/watchlist/route";
 import type { AccountSummary } from "@/core/paper/account";
 import type { RiskExposure } from "@/core/risk/exposure";
@@ -60,11 +63,7 @@ export default function Dashboard({
   const [trades, setTrades] = useState<PaperTrade[]>(initialTrades);
   const [marks, setMarks] = useState<MarksMap>(new Map());
   const [book, setBook] = useState<TradeBook | null>(null);
-  const [signals, setSignals] = useState<Signal[]>([]);
-  const [consensus, setConsensus] = useState<ConsensusSignal[]>([]);
   const [scanningAll, setScanningAll] = useState(false);
-  const [ideas, setIdeas] = useState<EnrichedTradeIdea[]>([]);
-  const [signalEdges, setSignalEdges] = useState<Record<string, EdgeSummary | null>>({});
   const [ideaBusy, setIdeaBusy] = useState(false);
   const [strategies] = useState(initialStrategies);
   const [scanStratId, setScanStratId] = useState(
@@ -79,27 +78,46 @@ export default function Dashboard({
   const [backtestWinRates, setBacktestWinRates] = useState<Record<string, number>>({});
   const [riskExposure, setRiskExposure] = useState<RiskExposure | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [scanStatus, setScanStatus] = useState("");
-  const [marketFilter, setMarketFilter] = useState<Market | "ALL">("ALL");
   const [quotes, setQuotes] = useState(new Map<string, QuoteRow>());
+
+  // Persisted UI prefs - survive full reloads and <a href> navigation
+  const [marketFilter, setMarketFilter] = usePersistedState<Market | "ALL">("qd.v1.marketFilter", "ALL");
+  const [tab, setTab] = usePersistedState<"scan" | "signals" | "risk">("qd.v1.tab", "scan");
+
+  // Persisted scan results - bundled atomically so they rehydrate together
+  interface ScanBundle {
+    signals:      Signal[];
+    consensus:    ConsensusSignal[];
+    ideas:        EnrichedTradeIdea[];
+    signalEdges:  Record<string, EdgeSummary | null>;
+    scanStatus:   string;
+  }
+  const EMPTY_SCAN: ScanBundle = { signals: [], consensus: [], ideas: [], signalEdges: {}, scanStatus: "" };
+  const [scanBundle, setScanBundle] = usePersistedState<ScanBundle>("qd.v1.scan", EMPTY_SCAN);
+  const { signals, consensus, ideas, signalEdges, scanStatus } = scanBundle;
+  const setSignals      = (s: Signal[])                              => setScanBundle((b) => ({ ...b, signals: s }));
+  const setConsensus    = (c: ConsensusSignal[])                     => setScanBundle((b) => ({ ...b, consensus: c }));
+  const setIdeas        = (i: EnrichedTradeIdea[])                   => setScanBundle((b) => ({ ...b, ideas: i }));
+  const setSignalEdges  = (e: Record<string, EdgeSummary | null>)    => setScanBundle((b) => ({ ...b, signalEdges: e }));
+  const setScanStatus   = (s: string)                                => setScanBundle((b) => ({ ...b, scanStatus: s }));
   const cmdRef = useRef<CommandBarHandle>(null);
   const router = useRouter();
 
-  // Build a symbol -> market map from allSymbols (already has assetClass/exchange)
-  const symbolMarketMap = useRef(new Map<string, Market>());
-  useEffect(() => {
-    symbolMarketMap.current.clear();
+  // Panel layout persistence via react-resizable-panels v4 useDefaultLayout hook
+  const scanLayout     = useDefaultLayout({ id: 'qd-scan',     panelIds: ['scan-results', 'scan-gainers'] });
+  const signalsLayout  = useDefaultLayout({ id: 'qd-signals',  panelIds: ['sig-dashboard', 'sig-ideas'] });
+  const riskVLayout    = useDefaultLayout({ id: 'qd-risk-v',   panelIds: ['risk-top', 'risk-trades'] });
+  const riskTopLayout  = useDefaultLayout({ id: 'qd-risk-top', panelIds: ['risk-gauges', 'risk-edge'] });
+
+  // Build a symbol -> market map from allSymbols (already has assetClass/exchange).
+  // useMemo (not ref+effect) so the map exists on first render and is a real
+  // reactive dependency for marketCounts, inMarket, and filteredPlaceholders.
+  const symbolMarketMap = useMemo(() => {
+    const m = new Map<string, Market>();
     for (const s of allSymbols) {
-      symbolMarketMap.current.set(
-        s.symbol,
-        marketOf({
-          symbol: s.symbol,
-          assetClass: s.assetClass,
-          exchange: s.exchange,
-        }),
-      );
+      m.set(s.symbol, marketOf({ symbol: s.symbol, assetClass: s.assetClass, exchange: s.exchange }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return m;
   }, [allSymbols]);
 
   // Core equity markets always get a tab (even with zero symbols ingested, so
@@ -108,25 +126,24 @@ export default function Dashboard({
   const presentMarkets = ALL_MARKETS.filter(
     (m) =>
       CORE_MARKETS.includes(m) ||
-      allSymbols.some((s) => symbolMarketMap.current.get(s.symbol) === m),
+      allSymbols.some((s) => symbolMarketMap.get(s.symbol) === m),
   );
 
   // Ingested-symbol count per market for the tab labels
   const marketCounts = useMemo(() => {
     const counts = new Map<Market | "ALL", number>([["ALL", rows.length]]);
     for (const r of rows) {
-      const m = symbolMarketMap.current.get(r.symbol);
+      const m = symbolMarketMap.get(r.symbol);
       if (m) counts.set(m, (counts.get(m) ?? 0) + 1);
     }
     return counts;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows]);
+  }, [rows, symbolMarketMap]);
 
   const inMarket = useCallback(
     (symbol: string) =>
       marketFilter === "ALL" ||
-      symbolMarketMap.current.get(symbol) === marketFilter,
-    [marketFilter],
+      symbolMarketMap.get(symbol) === marketFilter,
+    [marketFilter, symbolMarketMap],
   );
 
   const filteredRows = useMemo(
@@ -144,7 +161,7 @@ export default function Dashboard({
           !s.inDb &&
           !inDbSet.has(s.symbol) &&
           (marketFilter === "ALL" ||
-            symbolMarketMap.current.get(s.symbol) === marketFilter),
+            symbolMarketMap.get(s.symbol) === marketFilter),
       )
       .map((s) => ({
         symbol: s.symbol,
@@ -154,8 +171,7 @@ export default function Dashboard({
         exchange: s.exchange,
         providerId: s.providerId,
       }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allSymbols, inDbSet, marketFilter]);
+  }, [allSymbols, inDbSet, marketFilter, symbolMarketMap]);
 
   // Market filter applies to EVERY panel, not just the scan table
   const visibleSignals = useMemo(
@@ -208,7 +224,7 @@ export default function Dashboard({
     last:   (r) => r.last,
     chg:    (r) => r.changePct,
     vol:    (r) => r.volume,
-  });
+  }, undefined, 'qd.v1.scanSort');
   const ideasSort = useTableSort(visibleIdeas, {
     symbol: (i) => i.symbol,
     entry:  (i) => i.entryPrice,
@@ -216,7 +232,7 @@ export default function Dashboard({
     risk:   (i) => i.riskAmount,
     rr:     (i) => i.rr,
     conv:   (i) => i.conviction?.score ?? null,
-  });
+  }, undefined, 'qd.v1.ideasSort');
 
   // All-strategies x all-symbols scan ('s' key / SCAN ALL button)
   const runScanAll = useCallback(async () => {
@@ -380,7 +396,11 @@ export default function Dashboard({
     onPin: (i) => {
       if (scanSort.sorted[i]) void mutateWatchlist("add", scanSort.sorted[i].symbol);
     },
-    onFocusIdeas: () => setIdeasFocus(true),
+    onFocusIdeas: () => { setTab("signals"); setIdeasFocus(true); },
+    onTabSwitch: (idx) => {
+      const tabs = ["scan", "signals", "risk"] as const;
+      if (tabs[idx]) { setTab(tabs[idx]); setSelected(-1); }
+    },
     enabled: !gotoOpen && !ideasFocus && pendingIdea === null,
   });
 
@@ -654,6 +674,23 @@ export default function Dashboard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scanStratId]);
 
+  // Stable prop references so React.memo'd children skip re-renders when these
+  // values haven't changed. Must be derived here (not inline in JSX).
+  const strategyNames = useMemo(
+    () => Object.fromEntries(strategies.map((s) => [s.id, s.name])),
+    [strategies],
+  );
+  const onIngestDone = useCallback(() => void refreshAll(), [refreshAll]);
+  const onTakeIdea = useCallback((idea: Parameters<typeof setPendingIdea>[0]) => setPendingIdea(idea), []);
+  const scanSortProp = useMemo(
+    () => ({ click: scanSort.clickHeader, indicator: scanSort.indicator }),
+    [scanSort.clickHeader, scanSort.indicator],
+  );
+  const ideasSortProp = useMemo(
+    () => ({ click: ideasSort.clickHeader, indicator: ideasSort.indicator }),
+    [ideasSort.clickHeader, ideasSort.indicator],
+  );
+
   return (
     <>
       {gotoOpen && (
@@ -771,7 +808,7 @@ export default function Dashboard({
                 whiteSpace: "nowrap",
               }}
             >
-              [/] cmd &nbsp; [g] symbol &nbsp; [s] scan &nbsp; [w] watchlist &nbsp; [p] pin &nbsp; [i] ideas &nbsp; [j/k] nav
+              [/] cmd &nbsp; [g] symbol &nbsp; [s] scan &nbsp; [w] watchlist &nbsp; [p] pin &nbsp; [i] ideas &nbsp; [1/2/3] tabs &nbsp; [j/k] nav
             </span>
             <DublinClock />
           </div>
@@ -899,62 +936,127 @@ export default function Dashboard({
         {/* Paper trading budget strip */}
         <AccountStrip account={account} onSetBudget={(amt) => void setBudget(amt)} />
 
-        {/* Main content - page-scroll, 12-col grid */}
-        <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
-          <div
-            className="grid grid-cols-12 gap-px"
-            style={{ background: "var(--border)" }}
-          >
-            {/* Row 1: Scan (7) + Gainers/Losers (5) */}
-            <div className="col-span-7 h-95">
-              <ScanResultsPanel
-                rows={scanSort.sorted}
-                selected={selected}
-                placeholders={filteredPlaceholders}
-                onIngestDone={() => void refreshAll()}
-                sort={{ click: scanSort.clickHeader, indicator: scanSort.indicator }}
-              />
-            </div>
-            <div className="col-span-5 h-95">
-              <GainersLosersPanel rows={visibleRows} />
-            </div>
+        {/* Tab strip */}
+        <div
+          className="flex items-center gap-1 px-4 py-1 shrink-0"
+          style={{
+            background: "var(--bg-panel-header)",
+            borderBottom: "1px solid var(--border)",
+          }}
+        >
+          {(["scan", "signals", "risk"] as const).map((t, idx) => {
+            const labels = { scan: "SCAN", signals: "SIGNALS & IDEAS", risk: "RISK & TRADES" };
+            const active = tab === t;
+            return (
+              <button
+                key={t}
+                onClick={() => { setTab(t); setSelected(-1); }}
+                title={`Switch to ${labels[t]} [${idx + 1}]`}
+                style={{
+                  background: active ? "var(--color-accent)" : "var(--bg-panel)",
+                  border: "1px solid var(--border)",
+                  color: active ? "#0a0e14" : "var(--text-muted)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--fs-xs)",
+                  padding: "1px 14px",
+                  cursor: "pointer",
+                  fontWeight: active ? 700 : 400,
+                  letterSpacing: "0.06em",
+                }}
+              >
+                [{idx + 1}] {labels[t]}
+              </button>
+            );
+          })}
+        </div>
 
-            {/* Row 2: Signal dashboard (6) + Trade ideas (6) */}
-            <div className="col-span-6 h-80">
-              <SignalDashboardPanel
-                rows={visibleRows}
-                signals={visibleSignals}
-                consensus={visibleConsensus}
-                edges={signalEdges}
-              />
-            </div>
+        {/* Main content - tabbed, resizable panels */}
+        <div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+          {/* Tab: SCAN - Scan results + Gainers/Losers */}
+          {tab === "scan" && (
+            <Group
+              orientation="horizontal"
+              defaultLayout={scanLayout.defaultLayout ?? { 'scan-results': 58, 'scan-gainers': 42 }}
+              onLayoutChanged={scanLayout.onLayoutChanged}
+              style={{ height: "100%" }}
+            >
+              <Panel id="scan-results" defaultSize={58} minSize={25}>
+                <ScanResultsPanel
+                  rows={scanSort.sorted}
+                  selected={selected}
+                  placeholders={filteredPlaceholders}
+                  onIngestDone={onIngestDone}
+                  sort={scanSortProp}
+                />
+              </Panel>
+              <ResizeHandle orientation="horizontal" />
+              <Panel id="scan-gainers" defaultSize={42} minSize={20}>
+                <GainersLosersPanel rows={visibleRows} />
+              </Panel>
+            </Group>
+          )}
 
-            {/* Row 3: Trade ideas (6) */}
-            <div className="col-span-6 h-80">
-              <TradeIdeasPanel
-                ideas={ideasSort.sorted}
-                onTake={(idea) => setPendingIdea(idea)}
-                busy={ideaBusy}
-                strategyNames={Object.fromEntries(strategies.map((s) => [s.id, s.name]))}
-                focused={ideasFocus}
-                selected={ideaSelected}
-                sort={{ click: ideasSort.clickHeader, indicator: ideasSort.indicator }}
-              />
-            </div>
+          {/* Tab: SIGNALS & IDEAS - Signal dashboard + Trade ideas */}
+          {tab === "signals" && (
+            <Group
+              orientation="horizontal"
+              defaultLayout={signalsLayout.defaultLayout ?? { 'sig-dashboard': 50, 'sig-ideas': 50 }}
+              onLayoutChanged={signalsLayout.onLayoutChanged}
+              style={{ height: "100%" }}
+            >
+              <Panel id="sig-dashboard" defaultSize={50} minSize={25}>
+                <SignalDashboardPanel
+                  rows={visibleRows}
+                  signals={visibleSignals}
+                  consensus={visibleConsensus}
+                  edges={signalEdges}
+                />
+              </Panel>
+              <ResizeHandle orientation="horizontal" />
+              <Panel id="sig-ideas" defaultSize={50} minSize={25}>
+                <TradeIdeasPanel
+                  ideas={ideasSort.sorted}
+                  onTake={onTakeIdea}
+                  busy={ideaBusy}
+                  strategyNames={strategyNames}
+                  focused={ideasFocus}
+                  selected={ideaSelected}
+                  sort={ideasSortProp}
+                />
+              </Panel>
+            </Group>
+          )}
 
-            {/* Row 4: Risk gauges (4) + Strategy edge (8) */}
-            <div className="col-span-4 h-40">
-              <RiskPanel exposure={riskExposure} account={account} />
-            </div>
-            <div className="col-span-8 h-40">
-              <StrategyEdgePanel book={book} backtestWinRates={backtestWinRates} />
-            </div>
-
-            {/* Row 5: Recent trades (full width) */}
-            <div className="col-span-12 h-70">
-              <TradesPanel trades={visibleTrades} marks={marks} />
-            </div>
-          </div>
+          {/* Tab: RISK & TRADES - top row (Risk + Edge) + Trades below */}
+          {tab === "risk" && (
+            <Group
+              orientation="vertical"
+              defaultLayout={riskVLayout.defaultLayout ?? { 'risk-top': 28, 'risk-trades': 72 }}
+              onLayoutChanged={riskVLayout.onLayoutChanged}
+              style={{ height: "100%" }}
+            >
+              <Panel id="risk-top" defaultSize={28} minSize={15}>
+                <Group
+                  orientation="horizontal"
+                  defaultLayout={riskTopLayout.defaultLayout ?? { 'risk-gauges': 33, 'risk-edge': 67 }}
+                  onLayoutChanged={riskTopLayout.onLayoutChanged}
+                  style={{ height: "100%" }}
+                >
+                  <Panel id="risk-gauges" defaultSize={33} minSize={20}>
+                    <RiskPanel exposure={riskExposure} account={account} />
+                  </Panel>
+                  <ResizeHandle orientation="horizontal" />
+                  <Panel id="risk-edge" defaultSize={67} minSize={30}>
+                    <StrategyEdgePanel book={book} backtestWinRates={backtestWinRates} />
+                  </Panel>
+                </Group>
+              </Panel>
+              <ResizeHandle orientation="vertical" />
+              <Panel id="risk-trades" defaultSize={72} minSize={25}>
+                <TradesPanel trades={visibleTrades} marks={marks} />
+              </Panel>
+            </Group>
+          )}
         </div>
 
         {/* Disclaimer */}

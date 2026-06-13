@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import Panel from './Panel';
 import type { RiskExposure } from '@/core/risk/exposure';
 import type { AccountSummary } from '@/core/paper/account';
@@ -37,7 +38,7 @@ function Gauge({ label, used, limit, unit, title }: {
  * Live exposure vs the risk rules the broker enforces. When a gauge fills,
  * the next trade that would cross it is rejected with the same numbers.
  */
-export default function RiskPanel({ exposure, account }: Props) {
+function RiskPanel({ exposure, account }: Props) {
   if (!exposure) {
     return (
       <Panel title="RISK" className="h-full" subtitle="exposure gauges load with the account">
@@ -115,3 +116,5 @@ export default function RiskPanel({ exposure, account }: Props) {
     </Panel>
   );
 }
+
+export default memo(RiskPanel);

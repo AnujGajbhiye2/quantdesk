@@ -11,6 +11,7 @@ import { StochReversalStrategy }      from './examples/stoch-reversal';
 import { Rsi2PullbackStrategy }       from './examples/rsi2-pullback';
 import { DownStreakStrategy }         from './examples/down-streak';
 import { EmaPullbackStrategy }        from './examples/ema-pullback';
+import { Ma44SupportStrategy }        from './examples/ma44-support';
 
 /**
  * Strategy registry.
@@ -65,3 +66,4 @@ register(new StochReversalStrategy());
 register(new Rsi2PullbackStrategy());
 register(new DownStreakStrategy());
 register(new EmaPullbackStrategy());
+register(new Ma44SupportStrategy());

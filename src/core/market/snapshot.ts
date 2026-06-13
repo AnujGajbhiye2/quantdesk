@@ -1,5 +1,5 @@
 import 'server-only';
-import { getAllSymbols, getBars } from '@/core/db/bars';
+import { getAllSymbols, getRecentBars } from '@/core/db/bars';
 import { compute } from '@/core/indicators/registry';
 import type { Timeframe, SymbolMeta } from '@/core/types';
 
@@ -37,6 +37,12 @@ export interface SnapshotOpts {
 // Constants
 // ---------------------------------------------------------------------------
 
+// Full-universe snapshots are expensive (indicator compute × all symbols).
+// Cache for 60 s so navigation away+back is instant. Symbol-filtered calls
+// (e.g. watchlist refresh) are not cached - they're already fast.
+const SNAPSHOT_TTL_MS = 60_000;
+let _allCache: { rows: MarketRow[]; tf: Timeframe; ts: number } | null = null;
+
 const SPARK_LEN    = 20;
 const MA_GOLDEN    = 200; // requires this many bars at minimum
 const MA_DEATH     = 200; // same
@@ -65,6 +71,13 @@ function lastFinite(arr: number[]): number {
 export function getMarketSnapshot(opts: SnapshotOpts = {}): MarketRow[] {
   const { timeframe = '1d' } = opts;
 
+  // Use in-process cache for full-universe queries (no symbol filter).
+  if (!opts.symbols?.length) {
+    if (_allCache && _allCache.tf === timeframe && Date.now() - _allCache.ts < SNAPSHOT_TTL_MS) {
+      return _allCache.rows;
+    }
+  }
+
   const allMeta  = getAllSymbols();
   const filtered = opts.symbols?.length
     ? allMeta.filter((m) => opts.symbols!.includes(m.symbol))
@@ -74,7 +87,8 @@ export function getMarketSnapshot(opts: SnapshotOpts = {}): MarketRow[] {
 
   for (const meta of filtered) {
     try {
-      const bars = getBars(meta.symbol, timeframe);
+      // 260 bars covers MA200 warm-up + 20-bar spark with margin - faster than full history
+      const bars = getRecentBars(meta.symbol, timeframe, 260);
       if (bars.length < 2) continue;
 
       const last     = bars[bars.length - 1];
@@ -143,5 +157,15 @@ export function getMarketSnapshot(opts: SnapshotOpts = {}): MarketRow[] {
     }
   }
 
+  // Store in cache only for full-universe queries
+  if (!opts.symbols?.length) {
+    _allCache = { rows, tf: timeframe, ts: Date.now() };
+  }
+
   return rows;
+}
+
+/** Invalidate the snapshot cache (call after EOD ingest or scan-all). */
+export function invalidateSnapshotCache(): void {
+  _allCache = null;
 }

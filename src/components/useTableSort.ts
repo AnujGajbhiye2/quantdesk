@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 /**
  * Generic header-click sorting for terminal tables.
@@ -23,9 +23,35 @@ export function useTableSort<Row, K extends string>(
   rows: readonly Row[],
   accessors: Record<K, SortAccessor<Row>>,
   initial?: { key: K; dir: SortDir },
+  persistKey?: string,
 ) {
   const [sortKey, setSortKey] = useState<K | null>(initial?.key ?? null);
   const [sortDir, setSortDir] = useState<SortDir>(initial?.dir ?? -1);
+
+  // Hydrate sort from localStorage on mount (SSR-safe)
+  useEffect(() => {
+    if (!persistKey || typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(persistKey);
+      if (raw !== null) {
+        const saved = JSON.parse(raw) as { key: K; dir: SortDir };
+        if (saved.key) {
+          setSortKey(saved.key);
+          setSortDir(saved.dir ?? -1);
+        }
+      }
+    } catch { /* corrupt entry - stay with default */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist sort changes (skip when sortKey is null = default/no sort)
+  useEffect(() => {
+    if (!persistKey || typeof window === 'undefined' || sortKey === null) return;
+    try {
+      localStorage.setItem(persistKey, JSON.stringify({ key: sortKey, dir: sortDir }));
+    } catch { /* storage unavailable - ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortKey, sortDir]);
 
   function clickHeader(key: K) {
     if (key === sortKey) {

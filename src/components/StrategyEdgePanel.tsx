@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import Panel from './Panel';
 import EmptyState from './EmptyState';
 import InfoTip from './InfoTip';
@@ -65,7 +66,7 @@ function verdictColor(v: Verdict): string {
   return 'var(--color-accent)';
 }
 
-export default function StrategyEdgePanel({ book, backtestWinRates = {} }: Props) {
+function StrategyEdgePanel({ book, backtestWinRates = {} }: Props) {
   if (!book) {
     return (
       <Panel title="STRATEGY EDGE" className="h-full">
@@ -152,3 +153,5 @@ export default function StrategyEdgePanel({ book, backtestWinRates = {} }: Props
     </Panel>
   );
 }
+
+export default memo(StrategyEdgePanel);

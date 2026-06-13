@@ -8,6 +8,8 @@ import { compute } from '@/core/indicators/registry';
 import { dropPartialToday } from '@/core/scan/scanner';
 import { buildCase, type SymbolCase } from '@/core/dossier/case';
 import { list as listStrategies } from '@/core/strategy/registry';
+import { computeConviction, type Conviction } from '@/core/signals/conviction';
+import { edgeScore } from '@/core/edge/score';
 import type { Fundamentals, NewsItem } from '@/core/data/DataProvider';
 import type { EdgeStats } from '@/core/edge/types';
 
@@ -32,7 +34,7 @@ export interface DossierResponse {
     rsi14: number | null;
     pctBelow52wHigh: number | null;
   };
-  signals: Array<{ strategyId: string; side: string; time: string; reason: string }>;
+  signals: Array<{ strategyId: string; side: string; time: string; reason: string; conviction?: Conviction }>;
   consensus: { long: number; short: number; totalStrategies: number };
   edges: EdgeStats[];
   history: { longSignals: number; longHitRate: number | null };
@@ -115,17 +117,27 @@ export async function GET(request: Request) {
     }
     const longHitRate = longSamples >= 5 ? longHits / longSamples : null;
 
-    // --- Fundamentals + news, cache-first ---
+    // --- Fundamentals + news, cache-first, provider calls run in parallel ---
     let fundamentals = getCachedFundamentals(symbol);
     let news = getCachedNews(symbol);
     const provider = getProvider(meta.providerId);
-    if (fundamentals === null && typeof provider.getFundamentals === 'function') {
-      fundamentals = await provider.getFundamentals(symbol);
-      if (fundamentals) saveFundamentals(symbol, fundamentals);
-    }
-    if (news === null && typeof provider.getNews === 'function') {
-      news = await provider.getNews(symbol);
-      saveNews(symbol, news);
+
+    const needFundamentals = fundamentals === null && typeof provider.getFundamentals === 'function';
+    const needNews         = news === null          && typeof provider.getNews         === 'function';
+
+    if (needFundamentals || needNews) {
+      const [freshFundamentals, freshNews] = await Promise.all([
+        needFundamentals ? provider.getFundamentals!(symbol) : Promise.resolve(null),
+        needNews         ? provider.getNews!(symbol)         : Promise.resolve(null),
+      ]);
+      if (freshFundamentals !== null) {
+        fundamentals = freshFundamentals;
+        saveFundamentals(symbol, fundamentals);
+      }
+      if (freshNews !== null) {
+        news = freshNews;
+        saveNews(symbol, news);
+      }
     }
     news = news ?? [];
 
@@ -163,12 +175,25 @@ export async function GET(request: Request) {
         rsi14,
         pctBelow52wHigh,
       },
-      signals: fresh.map((s) => ({
-        strategyId: s.strategyId,
-        side:       s.side,
-        time:       s.time,
-        reason:     s.reason,
-      })),
+      signals: fresh.map((s) => {
+        const edge = edges.find((e) => e.strategyId === s.strategyId);
+        const score = edge ? edgeScore(edge).score : null;
+        const conviction = computeConviction({
+          edgeScore:         score,
+          edgeTrades:        edge?.numTrades ?? null,
+          consensusStrength: s.side === 'long' ? consensus.long / totalStrategies : consensus.short / totalStrategies,
+          rr:                null, // rr not available without running strategy params
+          hitRate:           s.side === 'long' ? longHitRate : null,
+          regimeAligned:     lastBar && sma200 ? (s.side === 'long' ? lastBar.close > sma200 : lastBar.close < sma200) : null,
+        });
+        return {
+          strategyId: s.strategyId,
+          side:       s.side,
+          time:       s.time,
+          reason:     s.reason,
+          conviction,
+        };
+      }),
       consensus,
       edges,
       history: { longSignals: longSamples, longHitRate },
@@ -177,7 +202,9 @@ export async function GET(request: Request) {
       case: symbolCase,
     };
 
-    return NextResponse.json(body);
+    return NextResponse.json(body, {
+      headers: { 'Cache-Control': 'private, max-age=30' },
+    });
   } catch (err) {
     console.error('[GET /api/dossier]', err);
     return NextResponse.json(

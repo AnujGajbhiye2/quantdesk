@@ -84,7 +84,7 @@ describe('riskLimitsFromEnv', () => {
   it('falls back to defaults on missing or junk values', () => {
     expect(riskLimitsFromEnv({} as NodeJS.ProcessEnv)).toEqual(DEFAULT_RISK_LIMITS);
     expect(
-      riskLimitsFromEnv({ RISK_MAX_POSITION_PCT: 'banana' } as NodeJS.ProcessEnv).maxPositionPct,
+      riskLimitsFromEnv({ RISK_MAX_POSITION_PCT: 'banana' } as unknown as NodeJS.ProcessEnv).maxPositionPct,
     ).toBe(DEFAULT_RISK_LIMITS.maxPositionPct);
   });
 
@@ -92,7 +92,7 @@ describe('riskLimitsFromEnv', () => {
     const limits = riskLimitsFromEnv({
       RISK_MAX_POSITION_PCT: '10',
       RISK_MAX_OPEN_TRADES: '3',
-    } as NodeJS.ProcessEnv);
+    } as unknown as NodeJS.ProcessEnv);
     expect(limits.maxPositionPct).toBe(10);
     expect(limits.maxOpenTrades).toBe(3);
     expect(limits.maxOpenRiskPct).toBe(DEFAULT_RISK_LIMITS.maxOpenRiskPct);

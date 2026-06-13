@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { useRouter } from 'next/navigation';
 import Panel from './Panel';
 import EmptyState from './EmptyState';
@@ -45,7 +46,7 @@ function rrColor(rr: number) {
   return 'var(--color-down)';
 }
 
-export default function TradeIdeasPanel({ ideas, onTake, busy, strategyNames = {}, focused, selected = -1, sort }: Props) {
+function TradeIdeasPanel({ ideas, onTake, busy, strategyNames = {}, focused, selected = -1, sort }: Props) {
   const router = useRouter();
   const sortableTh = (key: IdeaSortKey, label: string, align: 'left' | 'center' | 'right') => (
     <th
@@ -230,3 +231,5 @@ export default function TradeIdeasPanel({ ideas, onTake, busy, strategyNames = {
     </div>
   );
 }
+
+export default memo(TradeIdeasPanel);

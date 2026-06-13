@@ -79,28 +79,31 @@ export function validateStrategy(strategy: Strategy): ValidationResult {
     }
   }
 
-  // 4. Smoke backtest
-  const smokeBars = makeSyntheticBars(300);
-  try {
-    const result = runBacktest({
-      strategy,
-      bars: smokeBars,
-      symbol: '__smoke__',
-      rawParams: {},
-      commission: 0,
-      slippagePct: 0,
-    });
-    const m = result.metrics;
-    if (!Number.isFinite(m.totalReturnPct)) {
-      errors.push('smoke backtest produced non-finite totalReturnPct');
+  // 4. Smoke backtest - skipped in development to avoid expensive module-load cost.
+  // Runs in test (NODE_ENV=test) and when VALIDATE_STRATEGIES=1 is explicitly set.
+  if (process.env.NODE_ENV === 'test' || process.env.VALIDATE_STRATEGIES === '1') {
+    const smokeBars = makeSyntheticBars(300);
+    try {
+      const result = runBacktest({
+        strategy,
+        bars: smokeBars,
+        symbol: '__smoke__',
+        rawParams: {},
+        commission: 0,
+        slippagePct: 0,
+      });
+      const m = result.metrics;
+      if (!Number.isFinite(m.totalReturnPct)) {
+        errors.push('smoke backtest produced non-finite totalReturnPct');
+      }
+      if (!Number.isFinite(m.maxDrawdownPct)) {
+        errors.push('smoke backtest produced non-finite maxDrawdownPct');
+      }
+    } catch (err) {
+      errors.push(
+        `smoke backtest threw: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
-    if (!Number.isFinite(m.maxDrawdownPct)) {
-      errors.push('smoke backtest produced non-finite maxDrawdownPct');
-    }
-  } catch (err) {
-    errors.push(
-      `smoke backtest threw: ${err instanceof Error ? err.message : String(err)}`,
-    );
   }
 
   return { ok: errors.length === 0, errors };

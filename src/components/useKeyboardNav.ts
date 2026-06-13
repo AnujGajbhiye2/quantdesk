@@ -11,6 +11,7 @@ interface UseKeyboardNavOpts {
   onWatchlist?:   () => void;     // 'w' pressed
   onPin?:         (i: number) => void; // 'p' pressed with a row selected
   onFocusIdeas?:  () => void;     // 'i' pressed
+  onTabSwitch?:   (idx: number) => void; // '1'/'2'/'3' pressed - tab index 0..2
   onEscape?:      () => void;     // Escape pressed (after deselect)
   enabled?:       boolean;        // default true
 }
@@ -27,6 +28,7 @@ interface UseKeyboardNavOpts {
  * w              - toggle watchlist sidebar
  * p              - pin/unpin selected row to watchlist
  * i              - toggle trade-ideas panel focus
+ * 1 / 2 / 3      - switch to tab index 0/1/2 (onTabSwitch)
  * Escape         - deselect (then onEscape, e.g. to exit a focus zone)
  *
  * Multiple instances may be mounted at once (one per focusable panel);
@@ -43,6 +45,7 @@ export function useKeyboardNav({
   onWatchlist,
   onPin,
   onFocusIdeas,
+  onTabSwitch,
   onEscape,
   enabled = true,
 }: UseKeyboardNavOpts) {
@@ -106,13 +109,21 @@ export function useKeyboardNav({
             onFocusIdeas?.();
           }
           break;
+        case '1':
+        case '2':
+        case '3':
+          if (!inInput) {
+            e.preventDefault();
+            onTabSwitch?.(Number(e.key) - 1);
+          }
+          break;
         case 'Escape':
           setSelected(-1);
           onEscape?.();
           break;
       }
     },
-    [count, enabled, onActivate, onCommand, onGoToSymbol, onScanAll, onWatchlist, onPin, onFocusIdeas, onEscape, selected],
+    [count, enabled, onActivate, onCommand, onGoToSymbol, onScanAll, onWatchlist, onPin, onFocusIdeas, onTabSwitch, onEscape, selected],
   );
 
   useEffect(() => {

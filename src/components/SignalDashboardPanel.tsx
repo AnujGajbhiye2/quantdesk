@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Panel from './Panel';
 import { useTableSort } from './useTableSort';
@@ -114,11 +115,14 @@ function ConsensusSection({ consensus }: { consensus: ConsensusSignal[] }) {
   );
 }
 
-export default function SignalDashboardPanel({ rows, signals, consensus = [], edges = {} }: Props) {
+function SignalDashboardPanel({ rows, signals, consensus = [], edges = {} }: Props) {
   const router = useRouter();
   // Index signals by symbol (latest per symbol if duplicate)
-  const sigMap = new Map<string, Signal>();
-  for (const s of signals) sigMap.set(s.symbol, s);
+  const sigMap = useMemo(() => {
+    const m = new Map<string, Signal>();
+    for (const s of signals) m.set(s.symbol, s);
+    return m;
+  }, [signals]);
 
   const { sorted, clickHeader, indicator } = useTableSort(rows, {
     symbol: (r) => r.symbol,
@@ -250,3 +254,5 @@ export default function SignalDashboardPanel({ rows, signals, consensus = [], ed
     </Panel>
   );
 }
+
+export default memo(SignalDashboardPanel);

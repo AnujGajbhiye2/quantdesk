@@ -16,6 +16,8 @@ function initDb() {
 export default function DashboardPage() {
   initDb();
 
+  // getMarketSnapshot caches full-universe results for 60 s internally;
+  // navigation away+back is fast after the first load.
   const rows       = getMarketSnapshot({ timeframe: '1d' });
   const trades     = getPaperTrades();
   const metas      = getAllSymbols();

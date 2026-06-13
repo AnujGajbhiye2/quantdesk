@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Panel from './Panel';
 import EmptyState from './EmptyState';
@@ -56,10 +57,11 @@ function MiniTable({ items, positive }: { items: MarketRow[]; positive: boolean 
 
 const TOP_N = 10;
 
-export default function GainersLosersPanel({ rows }: Props) {
-  const sorted  = [...rows].filter((r) => isFinite(r.changePct)).sort((a, b) => b.changePct - a.changePct);
-  const gainers = sorted.slice(0, TOP_N);
-  const losers  = [...sorted].reverse().slice(0, TOP_N);
+function GainersLosersPanel({ rows }: Props) {
+  const { gainers, losers } = useMemo(() => {
+    const sorted = [...rows].filter((r) => isFinite(r.changePct)).sort((a, b) => b.changePct - a.changePct);
+    return { gainers: sorted.slice(0, TOP_N), losers: [...sorted].reverse().slice(0, TOP_N) };
+  }, [rows]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ gap: '1px', background: 'var(--border)' }}>
@@ -82,3 +84,5 @@ export default function GainersLosersPanel({ rows }: Props) {
     </div>
   );
 }
+
+export default memo(GainersLosersPanel);

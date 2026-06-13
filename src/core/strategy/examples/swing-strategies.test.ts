@@ -4,6 +4,7 @@ import { makeContext } from '@/core/strategy/context';
 import { Rsi2PullbackStrategy } from './rsi2-pullback';
 import { DownStreakStrategy } from './down-streak';
 import { EmaPullbackStrategy } from './ema-pullback';
+import { Ma44SupportStrategy } from './ma44-support';
 import type { Bar } from '@/core/types';
 import type { Strategy } from '../Strategy';
 
@@ -64,6 +65,7 @@ const strategies: Strategy[] = [
   new Rsi2PullbackStrategy(),
   new DownStreakStrategy(),
   new EmaPullbackStrategy(),
+  new Ma44SupportStrategy(),
 ];
 
 describe.each(strategies.map((s) => [s.id, s] as const))('%s', (_id, strategy) => {
@@ -127,6 +129,26 @@ describe('rsi2-pullback specifics', () => {
     for (const t of result.trades) {
       expect(t.holdingBars).toBeLessThanOrEqual(10);
     }
+  });
+});
+
+describe('ma44-support specifics', () => {
+  it('entries carry both stop and target (2R structure)', () => {
+    const strategy = new Ma44SupportStrategy();
+    const bars = uptrendWithDip();
+    const parsed = strategy.params.parse({});
+    for (let i = 220; i < bars.length; i++) {
+      const ctx = makeContext(bars, i, 'flat', new Map());
+      const d = strategy.onBar(ctx, parsed);
+      if (d.action === 'enter_long') {
+        expect(d.stopPct).toBeGreaterThan(0);
+        expect(d.targetPct).toBeGreaterThan(0);
+        expect(d.targetPct! / d.stopPct!).toBeCloseTo(2, 5);
+        expect(d.maxHoldBars).toBe(21);
+        return;
+      }
+    }
+    throw new Error('no entry decision found on fixture');
   });
 });
 

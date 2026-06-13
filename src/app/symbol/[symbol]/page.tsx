@@ -1,6 +1,7 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use } from 'react';
+import useSWR from 'swr';
 import DublinClock from '@/components/DublinClock';
 import InfoTip from '@/components/InfoTip';
 import { fmtMoney } from '@/core/format/currency';
@@ -75,21 +76,12 @@ export default function SymbolDossierPage({ params }: { params: Promise<{ symbol
   const { symbol: rawSymbol } = use(params);
   const symbol = decodeURIComponent(rawSymbol).toUpperCase();
 
-  const [dossier, setDossier] = useState<DossierResponse | null>(null);
-  const [error, setError]     = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/dossier?symbol=${encodeURIComponent(symbol)}`)
-      .then(async (r) => {
-        const d = await r.json();
-        if (cancelled) return;
-        if (!r.ok) setError(d.error ?? r.statusText);
-        else setDossier(d as DossierResponse);
-      })
-      .catch((e) => { if (!cancelled) setError(String(e)); });
-    return () => { cancelled = true; };
-  }, [symbol]);
+  const { data: dossier, error: swrError, isLoading } = useSWR<DossierResponse>(
+    `/api/dossier?symbol=${encodeURIComponent(symbol)}`,
+  );
+  const error = swrError
+    ? ((swrError as { message?: string }).message ?? String(swrError))
+    : '';
 
   const panelStyle: React.CSSProperties = {
     background: 'var(--bg-panel)',
@@ -138,7 +130,7 @@ export default function SymbolDossierPage({ params }: { params: Promise<{ symbol
       {error && (
         <div style={{ padding: 24, color: 'var(--color-down)', fontSize: 'var(--fs-sm)' }}>{error}</div>
       )}
-      {!error && !dossier && (
+      {!error && isLoading && (
         <div style={{ padding: 24, color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>building dossier...</div>
       )}
 
@@ -198,8 +190,20 @@ export default function SymbolDossierPage({ params }: { params: Promise<{ symbol
               {kv('SMA200', dossier.technical.sma200 != null ? fmtMoney(dossier.technical.sma200, dossier.currency) : '--')}
               {kv('below 52w high', dossier.technical.pctBelow52wHigh != null ? `${dossier.technical.pctBelow52wHigh.toFixed(1)}%` : '--')}
               {kv('signals now', dossier.signals.length > 0
-                ? dossier.signals.map((s) => `${s.strategyId}:${s.side.toUpperCase()}`).join(' ')
+                ? dossier.signals.map((s) => `${s.strategyId}:${s.side.toUpperCase()}${s.conviction ? ` (${s.conviction.score})` : ''}`).join(' ')
                 : 'none fresh')}
+              {dossier.signals.length > 0 && dossier.signals.map(s => s.conviction && (
+                <div key={`${s.strategyId}-conv`} style={{ padding: '2px 10px', fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
+                  <span style={{
+                    color: s.conviction.band === 'STRONG' ? 'var(--color-up)'
+                         : s.conviction.band === 'WEAK' ? 'var(--color-down)' : 'var(--color-accent)',
+                    fontWeight: 700
+                  }}>
+                    {s.strategyId} conviction: {s.conviction.score} {s.conviction.band}
+                  </span>
+                  <div style={{ marginTop: 2 }}>{s.reason}</div>
+                </div>
+              ))}
               {kv('consensus', `${dossier.consensus.long} long / ${dossier.consensus.short} short of ${dossier.consensus.totalStrategies}`)}
             </div>
 

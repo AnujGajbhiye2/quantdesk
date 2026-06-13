@@ -38,12 +38,12 @@ read this file first.
 - [x] `/symbol/[symbol]` dossier page: verdict bar + BULL/BEAR factor lists + 4 analyst desks + actions; DOSSIER link on backtest page
 - [x] Graceful degradation (unavailable factors listed, not hidden); NSE/INR verified
 
-## Phase 5 - conviction score + trade journal (trader agent + decision log)
-- [ ] `core/signals/conviction.ts` 0-100 composite (edge 40 / consensus 20 / R:R 15 / realized hit-rate 15 / regime 10), STRONG/MODERATE/WEAK bands, tested
-- [ ] Conviction shown on ideas (sortable), dossier, QuickTradeConfirm
-- [ ] `journal` table: WHY snapshot at open, outcome reflection at close (manual + sweep paths)
-- [ ] `/journal` page: chronological entries + per-strategy reflection summaries
-- [ ] System report: strategy x market combos ranked by LIVE record with TRUST/WATCH/AVOID - the "follow it" list (with min-sample warnings + disclaimer)
+## Phase 5 - conviction score + trade journal (trader agent + decision log) (DONE)
+- [x] `core/signals/conviction.ts` 0-100 composite (edge 40 / consensus 20 / R:R 15 / realized hit-rate 15 / regime 10), STRONG/MODERATE/WEAK bands, 8 tests
+- [x] Conviction shown on ideas (CONV column, sortable), dossier per-signal, QuickTradeConfirm
+- [x] `journal` table: WHY snapshot at open (auto in broker - covers ideas, manual form, all paths), outcome at close incl. sweep exit reasons (stop/target/time/manual)
+- [x] `/journal` page: decision log + JOURNAL nav link on every page
+- [x] System report: strategy x market combos ranked by LIVE P&L (USD) with TRUST/WATCH/AVOID + min-sample warnings + disclaimer
 
 ## Phase 6 - optional LLM analyst (env-gated)
 - [ ] `ANTHROPIC_API_KEY` set -> dossier "AI ANALYST" bull/bear narrative (claude-sonnet-4-6), labeled AI opinion; absent -> hidden, zero impact; never feeds signals/sizing/risk

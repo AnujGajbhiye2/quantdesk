@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { useRouter } from 'next/navigation';
 import Panel from './Panel';
 import EmptyState from './EmptyState';
@@ -58,7 +59,7 @@ function holdCell(t: PaperTradeWithHold): { text: string; title: string } {
   return { text: '--', title: '' };
 }
 
-export default function TradesPanel({ trades, marks }: Props) {
+function TradesPanel({ trades, marks }: Props) {
   const router = useRouter();
   const recent = [...trades].reverse().slice(0, 20);
   const { sorted, clickHeader, indicator } = useTableSort(recent, {
@@ -180,3 +181,5 @@ export default function TradesPanel({ trades, marks }: Props) {
     </Panel>
   );
 }
+
+export default memo(TradesPanel);

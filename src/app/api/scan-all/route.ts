@@ -7,7 +7,34 @@ import { fromUSD } from '@/core/format/fx';
 import { enrichIdeas } from '@/core/signals/enrich';
 import { EdgeIndex, type EdgeSummary } from '@/core/edge/context';
 import { getAllSymbols } from '@/core/db/bars';
+import { compute } from '@/core/indicators/registry';
 import type { TradeIdea, Timeframe } from '@/core/types';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function lastFinite(arr: number[]): number {
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (isFinite(arr[i])) return arr[i];
+  }
+  return NaN;
+}
+
+/** Cheap SMA50/SMA200 regime check from existing bars. Returns 'up' | 'down' | null. */
+function barRegime(bars: readonly { open: number; high: number; low: number; close: number; volume: number; time: string }[]): 'up' | 'down' | null {
+  if (bars.length < 200) return null;
+  try {
+    const sma50arr  = compute('sma', bars as Parameters<typeof compute>[1], { period: 50  }) as number[];
+    const sma200arr = compute('sma', bars as Parameters<typeof compute>[1], { period: 200 }) as number[];
+    const sma50  = lastFinite(sma50arr);
+    const sma200 = lastFinite(sma200arr);
+    if (!isFinite(sma50) || !isFinite(sma200)) return null;
+    return sma50 > sma200 ? 'up' : 'down';
+  } catch {
+    return null;
+  }
+}
 
 /**
  * POST /api/scan-all
@@ -80,20 +107,36 @@ export async function POST(request: Request) {
     const assetClassOf = (symbol: string) => metaMap.get(symbol)?.assetClass ?? null;
     const enriched = enrichIdeas(ideas, index, assetClassOf);
 
-    // Conviction: edge + consensus + R:R folded into one inspectable score.
-    // Hit-rate and regime are left neutral here (too costly per full scan);
-    // the dossier computes them per symbol.
+    // Regime map: one SMA50/SMA200 check per unique symbol from already-loaded bars.
+    // Cost = two SMA computes per symbol - effectively free vs the scan itself.
+    const regimeBySymbol = new Map<string, 'up' | 'down' | null>();
+    for (const raw of result.rawResults) {
+      const sym = raw.signal.symbol;
+      if (!regimeBySymbol.has(sym)) {
+        regimeBySymbol.set(sym, barRegime(raw.bars));
+      }
+    }
+
+    // Conviction: edge + consensus + R:R + regime alignment folded into one inspectable score.
+    // Hit-rate is left neutral (per-symbol/costly; the dossier computes it fully).
     const strengthByKey = new Map(
       result.consensus.map((c) => [`${c.symbol}|${c.side}`, c.strength]),
     );
     for (const idea of enriched) {
+      const regime = regimeBySymbol.get(idea.symbol) ?? null;
+      const regimeAligned =
+        regime === null
+          ? null
+          : idea.side === 'long'
+            ? regime === 'up'
+            : regime === 'down';
       idea.conviction = computeConviction({
         edgeScore:         idea.edge?.score ?? null,
         edgeTrades:        idea.edge?.numTrades ?? null,
         consensusStrength: strengthByKey.get(`${idea.symbol}|${idea.side}`) ?? null,
         rr:                idea.rr,
         hitRate:           null,
-        regimeAligned:     null,
+        regimeAligned,
       });
     }
 

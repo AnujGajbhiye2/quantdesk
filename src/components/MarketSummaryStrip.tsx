@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import Sparkline from './Sparkline';
 import { fmtMoney } from '@/core/format/currency';
 import type { MarketRow } from '@/core/market/snapshot';
@@ -33,7 +34,7 @@ function sourceLabel(row: MarketRow) {
   return row.priceSource === 'quote' && row.quoteTime ? `Q ${row.quoteTime.slice(11, 16)}` : row.latestTime;
 }
 
-export default function MarketSummaryStrip({ rows }: Props) {
+function MarketSummaryStrip({ rows }: Props) {
   if (rows.length === 0) {
     return (
       <div
@@ -50,7 +51,8 @@ export default function MarketSummaryStrip({ rows }: Props) {
     );
   }
 
-  const sorted = sortRows(rows).slice(0, 12);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const sorted = useMemo(() => sortRows(rows).slice(0, 12), [rows]);
 
   const renderItem = (row: MarketRow, key: string) => {
     const chgColor = row.changePct >= 0 ? 'var(--color-up)' : 'var(--color-down)';
@@ -104,3 +106,5 @@ export default function MarketSummaryStrip({ rows }: Props) {
     </div>
   );
 }
+
+export default memo(MarketSummaryStrip);

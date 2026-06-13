@@ -2,6 +2,7 @@ import 'server-only';
 import { sweepOpenTrades, type SweepResult } from '@/core/paper/broker';
 import { scanAll, type ScanAllResult } from '@/core/scan/scan-all';
 import { computeEdgeForUniverse, type ComputeEdgeResult } from '@/core/edge/compute';
+import { invalidateSnapshotCache } from '@/core/market/snapshot';
 
 /**
  * Tasks that must run after every EOD data refresh, regardless of how the
@@ -26,6 +27,9 @@ export function postRefreshTasks(): PostRefreshSummary {
     scan:  { result: null },
     edge:  { result: null },
   };
+
+  // New bars just landed - force a fresh snapshot on the next dashboard load.
+  invalidateSnapshotCache();
 
   try {
     summary.sweep.results = sweepOpenTrades();

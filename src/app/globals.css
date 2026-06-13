@@ -66,3 +66,11 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* Resize handle hover / active states */
+.resize-handle:hover {
+  background: var(--text-muted) !important;
+}
+.resize-handle[data-resize-handle-active] {
+  background: var(--color-accent) !important;
+}
