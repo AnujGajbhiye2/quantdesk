@@ -77,6 +77,31 @@ export function insertPaperTrade(trade: PaperTrade): void {
   });
 }
 
+/**
+ * Flip a pending trade to open by recording the actual fill price and time.
+ * Does NOT touch stop/target/qty - those are set correctly at creation.
+ */
+export function fillPendingPaperTrade(
+  id: string,
+  fill: { entryPrice: number; entryTime: string },
+): void {
+  const db = getDb();
+  db.prepare(`
+    UPDATE paper_trades SET
+      entry_price = @entryPrice,
+      entry_time  = @entryTime,
+      status      = 'open'
+    WHERE id = @id AND status = 'pending'
+  `).run({ id, entryPrice: fill.entryPrice, entryTime: fill.entryTime });
+}
+
+/** Delete a pending trade (cancel a resting limit order - no history kept). */
+export function cancelPendingPaperTrade(id: string): void {
+  getDb()
+    .prepare("DELETE FROM paper_trades WHERE id = @id AND status = 'pending'")
+    .run({ id });
+}
+
 /** Update exit fields and status when a trade is closed. */
 export function updatePaperTrade(trade: PaperTrade): void {
   const db = getDb();
@@ -116,6 +141,22 @@ export function getPaperTrade(id: string): PaperTrade | undefined {
       WHERE pt.id = ?
     `)
     .get(id) as PaperTradeRow | undefined;
+  return row ? rowToTrade(row) : undefined;
+}
+
+/** Return any active (open OR pending) paper trade for a symbol, if one exists. */
+export function getActivePaperTradeBySymbol(symbol: string): PaperTrade | undefined {
+  const db = getDb();
+  const row = db
+    .prepare(`
+      SELECT pt.*, s.currency
+      FROM paper_trades pt
+      LEFT JOIN symbols s ON pt.symbol = s.symbol
+      WHERE pt.symbol = ? AND pt.status IN ('open', 'pending')
+      ORDER BY pt.entry_time DESC
+      LIMIT 1
+    `)
+    .get(symbol) as PaperTradeRow | undefined;
   return row ? rowToTrade(row) : undefined;
 }
 

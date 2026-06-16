@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import {
   openPaperTrade,
+  createPendingTrade,
+  fillPendingTradesWithQuotes,
   closePaperTrade,
   markOpenTrades,
   markOpenTradesWithQuotes,
@@ -11,12 +13,14 @@ import {
   BankruptError,
   RiskCheckError,
 } from '@/core/paper/broker';
+import { cancelPendingPaperTrade } from '@/core/db/paper';
 import { currentExposure } from '@/core/risk/exposure';
 import { buildTradeBook } from '@/core/paper/tradebook';
 import { withEstHold } from '@/core/paper/hold';
 import { accountSummary } from '@/core/paper/summary';
 import { setStartingBalance } from '@/core/db/account';
 import { getPaperTrades } from '@/core/db/paper';
+import { openTradingViewChart } from '@/core/tradingview/open';
 
 /**
  * POST /api/paper
@@ -53,7 +57,9 @@ export async function POST(request: Request) {
 
     switch (action) {
       case 'open': {
-        const entryPrice = body.entryPrice as number;
+        const entryPrice  = body.entryPrice as number;
+        const orderType   = (body.orderType as string | undefined) ?? 'market';
+
         // Support direct absolute stopPrice/targetPrice in addition to pct-based
         let stopPct  = body.stopPct  as number | undefined;
         let targetPct = body.targetPct as number | undefined;
@@ -65,9 +71,10 @@ export async function POST(request: Request) {
           const targetAbs = body.targetPrice as number;
           targetPct = Math.abs(targetAbs - entryPrice) / entryPrice;
         }
+
         // Support pre-computed qty (overrides sizePct-based sizing)
         const preQty = body.qty as number | undefined;
-        const trade = openPaperTrade({
+        const tradeInput = {
           strategyId:  body.strategyId  as string,
           symbol:      body.symbol      as string,
           side:        body.side        as 'long' | 'short',
@@ -84,8 +91,29 @@ export async function POST(request: Request) {
           journalWhy:  (typeof body.journal === 'object' && body.journal !== null
             ? body.journal
             : undefined) as Record<string, unknown> | undefined,
-        });
-        return NextResponse.json({ trade });
+        };
+
+        // 'limit' -> resting order (pending until price is hit); 'market' -> fill now
+        const trade = orderType === 'limit'
+          ? createPendingTrade(tradeInput)
+          : openPaperTrade(tradeInput);
+
+        // Auto-open TradingView chart when QD_TRADINGVIEW_AUTOOPEN=1
+        openTradingViewChart(trade.symbol);
+
+        return NextResponse.json({ trade, orderType });
+      }
+
+      case 'cancel-pending': {
+        cancelPendingPaperTrade(body.id as string);
+        return NextResponse.json({ ok: true });
+      }
+
+      case 'fill-pending': {
+        // Check live quotes for any pending trades whose limit has been crossed
+        const fillResults = await fillPendingTradesWithQuotes();
+        const filled = fillResults.filter((r) => r.action === 'filled').length;
+        return NextResponse.json({ fillResults, filled });
       }
 
       case 'close': {

@@ -5,10 +5,12 @@
  *   npm run build-universe
  *   npm run build-universe -- --only sp500
  *   npm run build-universe -- --only nifty200
+ *   npm run build-universe -- --only stoxx600
  *
  * Outputs:
  *   scripts/universe/sp500.json     - S&P 500 constituents (from Wikipedia)
  *   scripts/universe/nifty200.json  - NIFTY 200 constituents (from NSE India CSV)
+ *   scripts/universe/stoxx600.json  - STOXX Europe 600 constituents (from Wikipedia)
  *
  * Run periodically (e.g. quarterly) to refresh index membership.
  * If a live fetch fails, the existing file is preserved.
@@ -24,6 +26,19 @@ interface UniverseEntry {
   currency:   string;
   exchange?:  string;
   providerId: string;
+}
+
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
+
+function extractText(cell: string): string {
+  return cell
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&#160;/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -47,13 +62,6 @@ async function buildSP500(): Promise<UniverseEntry[]> {
   for (const row of rows.slice(1)) { // skip header
     const cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/g) ?? [];
     if (cells.length < 2) continue;
-
-    const extractText = (cell: string) => cell
-      .replace(/<[^>]+>/g, '')
-      .replace(/&amp;/g, '&')
-      .replace(/&#160;/g, ' ')
-      .replace(/&nbsp;/g, ' ')
-      .trim();
 
     const rawSymbol = extractText(cells[0] ?? '').replace(/\n/g, '').trim();
     const name      = extractText(cells[1] ?? '').trim();
@@ -150,6 +158,112 @@ async function buildNifty200(): Promise<UniverseEntry[]> {
   return entries;
 }
 
+// ---------------------------------------------------------------------------
+// STOXX Europe 600 from Wikipedia
+// ---------------------------------------------------------------------------
+
+// Maps the country column in the Wikipedia STOXX 600 table to Yahoo Finance
+// exchange suffix and the primary trading currency. Countries with no clear
+// Yahoo suffix are omitted (Bermuda, Israel) and logged during build.
+const STOXX_COUNTRY_MAP: Record<string, { suffix: string; currency: string; exchange: string }> = {
+  'United Kingdom': { suffix: '.L',  currency: 'GBP', exchange: 'LSE'   },
+  'Germany':        { suffix: '.DE', currency: 'EUR', exchange: 'XETRA' },
+  'France':         { suffix: '.PA', currency: 'EUR', exchange: 'EPA'   },
+  'Switzerland':    { suffix: '.SW', currency: 'CHF', exchange: 'SIX'   },
+  'Sweden':         { suffix: '.ST', currency: 'SEK', exchange: 'OMX'   },
+  'Netherlands':    { suffix: '.AS', currency: 'EUR', exchange: 'AEX'   },
+  'Spain':          { suffix: '.MC', currency: 'EUR', exchange: 'BME'   },
+  'Italy':          { suffix: '.MI', currency: 'EUR', exchange: 'BIT'   },
+  'Belgium':        { suffix: '.BR', currency: 'EUR', exchange: 'EBR'   },
+  'Finland':        { suffix: '.HE', currency: 'EUR', exchange: 'HEL'   },
+  'Norway':         { suffix: '.OL', currency: 'NOK', exchange: 'OSL'   },
+  'Denmark':        { suffix: '.CO', currency: 'DKK', exchange: 'CPH'   },
+  'Austria':        { suffix: '.VI', currency: 'EUR', exchange: 'VIE'   },
+  'Ireland':        { suffix: '.IR', currency: 'EUR', exchange: 'ISE'   },
+  'Portugal':       { suffix: '.LS', currency: 'EUR', exchange: 'ELI'   },
+  'Luxembourg':     { suffix: '.LU', currency: 'EUR', exchange: 'LUX'   },
+  'Poland':         { suffix: '.WA', currency: 'PLN', exchange: 'WSE'   },
+  'Greece':         { suffix: '.AT', currency: 'EUR', exchange: 'ATHEX' },
+};
+
+async function buildStoxx600(): Promise<UniverseEntry[]> {
+  console.log('Fetching STOXX Europe 600 from Wikipedia...');
+
+  const url = 'https://en.wikipedia.org/wiki/STOXX_Europe_600';
+  const html = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; QuantDesk/1.0)' },
+  }).then((r) => r.text());
+
+  // Find all wikitables; the constituent table (Ticker | Company | ICB Sector | Country | HQ)
+  // is identified by having "Ticker" as its first header cell.
+  const wikitableRe = /<table[^>]*class="[^"]*wikitable[^"]*"[^>]*>([\s\S]*?)<\/table>/g;
+  let constituentHtml: string | undefined;
+  let m: RegExpExecArray | null;
+  while ((m = wikitableRe.exec(html)) !== null) {
+    const inner = m[1];
+    const firstRow = (inner.match(/<tr[^>]*>([\s\S]*?)<\/tr>/) ?? [])[1] ?? '';
+    if (/ticker/i.test(extractText(firstRow))) {
+      constituentHtml = inner;
+      break;
+    }
+  }
+
+  if (!constituentHtml) {
+    throw new Error('Could not find STOXX 600 constituent table on Wikipedia (no table with "Ticker" header found)');
+  }
+
+  const rows = constituentHtml.match(/<tr[^>]*>([\s\S]*?)<\/tr>/g) ?? [];
+  const entries: UniverseEntry[] = [];
+  const skipped: string[] = [];
+
+  for (const row of rows.slice(1)) { // skip header row
+    const cells = row.match(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/g) ?? [];
+    if (cells.length < 4) continue;
+
+    const ticker  = extractText(cells[0] ?? '').replace(/\n/g, '').trim();
+    const name    = extractText(cells[1] ?? '').trim();
+    const country = extractText(cells[3] ?? '').trim();
+
+    if (!ticker || !name) continue;
+
+    const mapped = STOXX_COUNTRY_MAP[country];
+    if (!mapped) {
+      skipped.push(`${ticker} (${country})`);
+      continue;
+    }
+
+    entries.push({
+      symbol:     `${ticker}${mapped.suffix}`,
+      name,
+      assetClass: 'equity',
+      currency:   mapped.currency,
+      exchange:   mapped.exchange,
+      providerId: 'yahoo',
+    });
+  }
+
+  if (skipped.length > 0) {
+    console.log(`  Skipped ${skipped.length} entries with no Yahoo mapping: ${skipped.join(', ')}`);
+  }
+
+  // Add STOXX Europe 600 index benchmark
+  entries.push({
+    symbol:     '^STOXX',
+    name:       'STOXX Europe 600 Index',
+    assetClass: 'index',
+    currency:   'EUR',
+    exchange:   'STOXX',
+    providerId: 'yahoo',
+  });
+
+  if (entries.length < 450) {
+    throw new Error(`Expected at least 450 STOXX 600 entries, got ${entries.length - 1} (check Wikipedia page structure)`);
+  }
+
+  console.log(`  Found ${entries.length - 1} STOXX Europe 600 stocks + 1 index benchmark`);
+  return entries;
+}
+
 function parseCsvLine(line: string): string[] {
   const cols: string[] = [];
   let cur = '';
@@ -186,6 +300,7 @@ async function main() {
   const tasks: { name: string; fn: () => Promise<UniverseEntry[]>; file: string }[] = [
     { name: 'sp500',    fn: buildSP500,    file: `${outDir}/sp500.json`    },
     { name: 'nifty200', fn: buildNifty200, file: `${outDir}/nifty200.json` },
+    { name: 'stoxx600', fn: buildStoxx600, file: `${outDir}/stoxx600.json` },
   ].filter((t) => !only || t.name === only);
 
   for (const task of tasks) {

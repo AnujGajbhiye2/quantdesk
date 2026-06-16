@@ -88,7 +88,7 @@ export default function QuickTradeConfirm({ idea, busy, account, strategyName, o
           }}
         >
           <span style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.06em' }}>
-            OPEN PAPER TRADE
+            LIMIT ORDER (PENDING UNTIL ENTRY)
           </span>
           <span style={{ color: sideColor, fontWeight: 700 }}>
             {idea.side.toUpperCase()} {idea.symbol}
@@ -145,7 +145,7 @@ export default function QuickTradeConfirm({ idea, busy, account, strategyName, o
             justifyContent: 'space-between',
           }}
         >
-          <span>{busy ? 'opening...' : unaffordable ? 'confirm blocked' : '[Enter] confirm'}</span>
+          <span>{busy ? 'queueing...' : unaffordable ? 'confirm blocked' : '[Enter] queue limit'}</span>
           <span>[Esc] cancel</span>
         </div>
         <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>

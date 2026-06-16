@@ -12,6 +12,13 @@ const GLYPH: Record<string, string> = {
   CNY: '¥',
   AUD: 'A$',
   CAD: 'C$',
+  CHF: 'Fr',
+  SEK: 'kr',
+  NOK: 'kr',
+  DKK: 'kr',
+  PLN: 'zł',
+  HUF: 'Ft',
+  CZK: 'Kč',
 };
 
 /** Returns the currency glyph (₹, $, €, ...) for a given ISO currency code. */

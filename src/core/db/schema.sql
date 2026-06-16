@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS paper_trades (
   exit_price   REAL,
   stop_price   REAL,
   target_price REAL,
-  status       TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+  status       TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed', 'pending')),
   pnl          REAL,
   pnl_pct      REAL,
   costs        REAL NOT NULL DEFAULT 0,

@@ -103,11 +103,18 @@ export default function Dashboard({
   const cmdRef = useRef<CommandBarHandle>(null);
   const router = useRouter();
 
+  // SSR-safe storage shim — localStorage is undefined during server render
+  const ssrSafeStorage = useMemo(() => ({
+    getItem: (key: string) => (typeof window !== 'undefined' ? localStorage.getItem(key) : null),
+    setItem: (key: string, value: string) => { if (typeof window !== 'undefined') localStorage.setItem(key, value); },
+    removeItem: (key: string) => { if (typeof window !== 'undefined') localStorage.removeItem(key); },
+  }), []);
+
   // Panel layout persistence via react-resizable-panels v4 useDefaultLayout hook
-  const scanLayout     = useDefaultLayout({ id: 'qd-scan',     panelIds: ['scan-results', 'scan-gainers'] });
-  const signalsLayout  = useDefaultLayout({ id: 'qd-signals',  panelIds: ['sig-dashboard', 'sig-ideas'] });
-  const riskVLayout    = useDefaultLayout({ id: 'qd-risk-v',   panelIds: ['risk-top', 'risk-trades'] });
-  const riskTopLayout  = useDefaultLayout({ id: 'qd-risk-top', panelIds: ['risk-gauges', 'risk-edge'] });
+  const scanLayout     = useDefaultLayout({ id: 'qd-scan',     panelIds: ['scan-results', 'scan-gainers'],  storage: ssrSafeStorage });
+  const signalsLayout  = useDefaultLayout({ id: 'qd-signals',  panelIds: ['sig-dashboard', 'sig-ideas'],    storage: ssrSafeStorage });
+  const riskVLayout    = useDefaultLayout({ id: 'qd-risk-v',   panelIds: ['risk-top', 'risk-trades'],       storage: ssrSafeStorage });
+  const riskTopLayout  = useDefaultLayout({ id: 'qd-risk-top', panelIds: ['risk-gauges', 'risk-edge'],      storage: ssrSafeStorage });
 
   // Build a symbol -> market map from allSymbols (already has assetClass/exchange).
   // useMemo (not ref+effect) so the map exists on first render and is a real
@@ -505,6 +512,7 @@ export default function Dashboard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "open",
+          orderType: "limit",  // resting limit - pending until market hits entry
           strategyId: idea.strategyId,
           symbol: idea.symbol,
           side: idea.side,
@@ -538,7 +546,7 @@ export default function Dashboard({
         setTrades(newTrades);
       }
       setScanStatus(
-        `Paper trade opened: ${idea.side.toUpperCase()} ${idea.symbol} x${idea.qty.toFixed(2)}`,
+        `Limit order queued: ${idea.side.toUpperCase()} ${idea.symbol} x${idea.qty.toFixed(2)} @ ${idea.entryPrice} (pending until entry hit)`,
       );
       void loadAccount();
     } catch (err) {

@@ -32,6 +32,48 @@ function migrate(db: Database.Database): void {
     db.exec(stmt + ';');
   }
   migrateSignals(db);
+  migratePaperTrades(db);
+}
+
+/**
+ * Rebuild paper_trades if the stored status CHECK constraint does not include
+ * 'pending'. SQLite cannot ALTER a CHECK constraint in place, so the table is
+ * recreated with the same data inside a transaction. Idempotent.
+ */
+function migratePaperTrades(db: Database.Database): void {
+  const row = db
+    .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='paper_trades'")
+    .get() as { sql: string } | undefined;
+
+  // Table doesn't exist yet (fresh DB) or already has 'pending' - nothing to do
+  if (!row || row.sql.includes("'pending'")) return;
+
+  const rebuild = db.transaction(() => {
+    db.exec(`
+      CREATE TABLE paper_trades_new (
+        id           TEXT PRIMARY KEY,
+        strategy_id  TEXT NOT NULL,
+        symbol       TEXT NOT NULL,
+        side         TEXT NOT NULL CHECK (side IN ('long', 'short')),
+        qty          REAL NOT NULL,
+        entry_time   TEXT NOT NULL,
+        entry_price  REAL NOT NULL,
+        exit_time    TEXT,
+        exit_price   REAL,
+        stop_price   REAL,
+        target_price REAL,
+        status       TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed', 'pending')),
+        pnl          REAL,
+        pnl_pct      REAL,
+        costs        REAL NOT NULL DEFAULT 0,
+        notes        TEXT
+      )
+    `);
+    db.exec('INSERT INTO paper_trades_new SELECT * FROM paper_trades');
+    db.exec('DROP TABLE paper_trades');
+    db.exec('ALTER TABLE paper_trades_new RENAME TO paper_trades');
+  });
+  rebuild();
 }
 
 /**

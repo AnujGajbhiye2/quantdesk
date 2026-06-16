@@ -3,8 +3,12 @@ import type { SymbolMeta } from '@/core/types';
 import type { UniverseEntry } from './ingest';
 import sp500 from '../../../scripts/universe/sp500.json';
 import nifty200 from '../../../scripts/universe/nifty200.json';
+import stoxx600 from '../../../scripts/universe/stoxx600.json';
 
-const CURATED_UNIVERSE = [...sp500, ...nifty200] as UniverseEntry[];
+// stoxx600.json is a placeholder until populated via:
+//   npm run build-universe -- --only stoxx600
+//   npm run ingest -- --universe scripts/universe/stoxx600.json
+const CURATED_UNIVERSE = [...sp500, ...nifty200, ...stoxx600] as UniverseEntry[];
 
 export interface KnownSymbol {
   symbol:     string;

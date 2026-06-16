@@ -35,6 +35,7 @@ const colStyle: React.CSSProperties = {
 export default function NewPaperTrade({ onOpened }: Props) {
   const [symbol,    setSymbol]    = useState('');
   const [side,      setSide]      = useState<'long' | 'short'>('long');
+  const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
   const [qty,       setQty]       = useState('');
   const [entry,     setEntry]     = useState('');
   const [stop,      setStop]      = useState('');
@@ -68,6 +69,7 @@ export default function NewPaperTrade({ onOpened }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
           action:      'open',
+          orderType,
           strategyId:  'manual',
           symbol:      symbol.toUpperCase(),
           side,
@@ -79,8 +81,9 @@ export default function NewPaperTrade({ onOpened }: Props) {
         }),
       });
       if (!res.ok) throw new Error(await res.text());
-      const data = await res.json() as { trade: PaperTrade };
-      setStatus(`opened: ${side.toUpperCase()} ${symbol.toUpperCase()} x${qtyNum}`);
+      const data = await res.json() as { trade: PaperTrade; orderType: string };
+      const verb = data.orderType === 'limit' ? `pending @ ${entryNum}` : 'opened';
+      setStatus(`${verb}: ${side.toUpperCase()} ${symbol.toUpperCase()} x${qtyNum}`);
       setSymbol(''); setQty(''); setEntry(''); setStop(''); setTarget('');
       onOpened(data.trade);
     } catch (err) {
@@ -122,6 +125,19 @@ export default function NewPaperTrade({ onOpened }: Props) {
         >
           <option value="long">LONG</option>
           <option value="short">SHORT</option>
+        </select>
+      </div>
+
+      <div style={colStyle}>
+        <label style={labelStyle}>ORDER</label>
+        <select
+          style={inputStyle}
+          value={orderType}
+          onChange={(e) => setOrderType(e.target.value as 'limit' | 'market')}
+          title="LIMIT: pending until market hits entry price | MARKET: fill immediately"
+        >
+          <option value="limit">LIMIT</option>
+          <option value="market">MARKET</option>
         </select>
       </div>
 

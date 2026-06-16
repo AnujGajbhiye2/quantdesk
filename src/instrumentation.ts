@@ -88,6 +88,18 @@ export async function register() {
     monitorSchedule,
     async () => {
       try {
+        // Check resting limit orders against live quotes first; fills fire Telegram
+        const { fillPendingTradesWithQuotes } = await import('@/core/paper/broker');
+        const fills = await fillPendingTradesWithQuotes();
+        const filled = fills.filter((r) => r.action === 'filled').length;
+        if (filled > 0) {
+          console.log(`[monitor] ${filled} pending trade(s) filled via live quote`);
+        }
+      } catch (err) {
+        console.error('[monitor] pending fill check failed:', err);
+      }
+
+      try {
         const result = await checkOpenTrades();
         if (!result.configured) return; // silent when Telegram unset
         if (result.alertsSent > 0 || result.errors.length > 0) {

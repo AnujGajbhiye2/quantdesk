@@ -1,0 +1,3730 @@
+[
+  {
+    "symbol": "ZURN.SW",
+    "name": "Zurich Insurance Group",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GSK.L",
+    "name": "GSK plc",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RIO.L",
+    "name": "Rio Tinto Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INGA.AS",
+    "name": "ING Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UBSG.SW",
+    "name": "UBS Group",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SAF.PA",
+    "name": "Safran",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DG.PA",
+    "name": "Vinci",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PRU.L",
+    "name": "Prudential plc",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BATS.L",
+    "name": "British American Tobacco",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MBG.DE",
+    "name": "Mercedes-Benz Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HLI.L",
+    "name": "Haleon",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FERR.MI",
+    "name": "Ferrari",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RMS.PA",
+    "name": "Hermès",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ISP.MI",
+    "name": "Intesa Sanpaolo",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HMB.ST",
+    "name": "H&M",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PERP.PA",
+    "name": "Pernod Ricard",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MICP.PA",
+    "name": "Michelin",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BKT.MC",
+    "name": "Bankinter",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CABK.MC",
+    "name": "CaixaBank",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ENG.MC",
+    "name": "Enagás",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NTGY.MC",
+    "name": "Naturgy",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FER.AS",
+    "name": "Ferrovial",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RED.MC",
+    "name": "Redeia",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ITX.MC",
+    "name": "Inditex",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "REP.MC",
+    "name": "Repsol",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SAB.MC",
+    "name": "Banco Sabadell",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ATCOa.ST",
+    "name": "Atlas Copco",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ERICb.ST",
+    "name": "Ericsson",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ALFA.ST",
+    "name": "Alfa Laval",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SAND.ST",
+    "name": "Sandvik AB",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FORTUM.HE",
+    "name": "Fortum",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "HEL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GLEN.L",
+    "name": "Glencore",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NG.L",
+    "name": "National Grid",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LLOY.L",
+    "name": "Lloyds Banking Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CPG.L",
+    "name": "Compass Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RKT.L",
+    "name": "Reckitt",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EXPN.L",
+    "name": "Experian",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IMB.L",
+    "name": "Imperial Brands",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RR.L",
+    "name": "Rolls-Royce Holdings",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LSEG.L",
+    "name": "London Stock Exchange Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IAG.L",
+    "name": "International Airlines Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "III.L",
+    "name": "3i",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HLMA.L",
+    "name": "Halma plc",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SMT.L",
+    "name": "Scottish Mortgage Investment Trust",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MNG.L",
+    "name": "M&G",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SMIN.L",
+    "name": "Smiths Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CRDA.L",
+    "name": "Croda International",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PHNX.L",
+    "name": "Phoenix Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UTG.L",
+    "name": "Unite Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SGRO.L",
+    "name": "Segro",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BDEV.L",
+    "name": "Barratt Developments",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PSN.L",
+    "name": "Persimmon plc",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NXT.L",
+    "name": "Next plc",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KGF.L",
+    "name": "Kingfisher plc",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HOLN.SW",
+    "name": "Holcim",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SRENH.SW",
+    "name": "Swiss Re",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LONN.SW",
+    "name": "Lonza Group",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GIVN.SW",
+    "name": "Givaudan",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SIKA.SW",
+    "name": "Sika",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "STMN.SW",
+    "name": "Straumann",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PGHN.SW",
+    "name": "Partners Group",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SOON.SW",
+    "name": "Sonova",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LISN.SW",
+    "name": "Lindt & Sprüngli",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SCHP.SW",
+    "name": "Schindler Group",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UHR.SW",
+    "name": "Swatch Group",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LOGN.SW",
+    "name": "Logitech",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HELN.SW",
+    "name": "Helvetia Insurance",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BALN.SW",
+    "name": "Baloise",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GALE.SW",
+    "name": "Galenica",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EMSN.SW",
+    "name": "Ems-Chemie",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ABBN.SW",
+    "name": "ABB Ltd",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ABN.AS",
+    "name": "ABN AMRO",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AC.PA",
+    "name": "Accor",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ACS.MC",
+    "name": "ACS Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADEN.SW",
+    "name": "Adecco",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADS.DE",
+    "name": "Adidas",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADM.L",
+    "name": "Admiral Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADYEN.AS",
+    "name": "Adyen",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AENA.MC",
+    "name": "Aena",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AGS.BR",
+    "name": "Ageas",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EBR",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AIRP.PA",
+    "name": "Air Liquide",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AIR.PA",
+    "name": "Airbus",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AKERBP.OL",
+    "name": "Aker BP",
+    "assetClass": "equity",
+    "currency": "NOK",
+    "exchange": "OSL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ALV.DE",
+    "name": "Allianz",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ALO.PA",
+    "name": "Alstom",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AIXA.DE",
+    "name": "AIXTRON",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ALC.SW",
+    "name": "Alcon",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AMBU B.CO",
+    "name": "Ambu",
+    "assetClass": "equity",
+    "currency": "DKK",
+    "exchange": "CPH",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AAL.L",
+    "name": "Anglo American plc",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ABI.BR",
+    "name": "Anheuser-Busch InBev",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EBR",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ANTO.L",
+    "name": "Antofagasta plc",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AKE.PA",
+    "name": "Arkema",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AHT.L",
+    "name": "Ashtead Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ASMI.AS",
+    "name": "ASM International",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ASML.AS",
+    "name": "ASML Holding",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ASSA B.ST",
+    "name": "Assa Abloy",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ABF.L",
+    "name": "Associated British Foods",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AZN.L",
+    "name": "AstraZeneca",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AUTO.L",
+    "name": "Auto Trader Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AV.L",
+    "name": "Aviva",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CS.PA",
+    "name": "AXA",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AZE.BR",
+    "name": "Azelis Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EBR",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BME.L",
+    "name": "B&M European Value Retail",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BA.L",
+    "name": "BAE Systems",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BALD B.ST",
+    "name": "Balder",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BBY.L",
+    "name": "Balfour Beatty",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BARC.L",
+    "name": "Barclays",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BOL.ST",
+    "name": "Boliden AB",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BBVA.MC",
+    "name": "Banco Bilbao Vizcaya Argentaria",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SAN.MC",
+    "name": "Banco Santander",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BARN.SW",
+    "name": "Barry Callebaut",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BAS.DE",
+    "name": "BASF",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BAYN.DE",
+    "name": "Bayer",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BEZ.L",
+    "name": "Beazley",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BEI.DE",
+    "name": "Beiersdorf",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BEB.SW",
+    "name": "Belimo",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BKG.L",
+    "name": "Berkeley Group Holdings",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BMW.DE",
+    "name": "BMW",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BNPP.PA",
+    "name": "BNP Paribas",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BOL.PA",
+    "name": "Bolloré",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BP.L",
+    "name": "BP",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BNR.DE",
+    "name": "Brenntag",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BT.A.L",
+    "name": "BT Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BNZL.L",
+    "name": "Bunzl",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BRBY.L",
+    "name": "Burberry",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BVI.PA",
+    "name": "Bureau Veritas",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AFX.DE",
+    "name": "Carl Zeiss Meditec",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CAPP.PA",
+    "name": "Capgemini",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CARR.PA",
+    "name": "Carrefour",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CAST.ST",
+    "name": "Castellum",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CNA.L",
+    "name": "Centrica",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CCH.SW",
+    "name": "Coca-Cola HBC",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "COLR.BR",
+    "name": "Colruyt",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EBR",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CBK.DE",
+    "name": "Commerzbank",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CON.DE",
+    "name": "Continental",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CTEC.L",
+    "name": "ConvaTec",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "1COV.DE",
+    "name": "Covestro",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CAGR.PA",
+    "name": "Crédit Agricole",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CPR.MI",
+    "name": "Davide Campari-Milano",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DANO.PA",
+    "name": "Danone",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DHER.DE",
+    "name": "Delivery Hero",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DEMANT.CO",
+    "name": "Demant",
+    "assetClass": "equity",
+    "currency": "DKK",
+    "exchange": "CPH",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DLN.L",
+    "name": "Derwent London",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DB1.DE",
+    "name": "Deutsche Börse",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DTE.DE",
+    "name": "Deutsche Telekom",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DHL.DE",
+    "name": "DHL Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DGE.L",
+    "name": "Diageo",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DPLM.L",
+    "name": "Diploma",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DLG.L",
+    "name": "Direct Line",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DOCM.SW",
+    "name": "DocMorris",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SMDS.L",
+    "name": "DS Smith",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EZJ.L",
+    "name": "EasyJet",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EDEN.PA",
+    "name": "Edenred",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EDP.LS",
+    "name": "EDP - Energias de Portugal",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "ELI",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EDPR.LS",
+    "name": "EDP Renováveis",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "ELI",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EFGI.PA",
+    "name": "Eiffage",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ELUX-B.ST",
+    "name": "Electrolux",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ELISA.HE",
+    "name": "Elisa",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "HEL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EDV.L",
+    "name": "Endeavour Mining",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ENI.MI",
+    "name": "Eni",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ENEL.MI",
+    "name": "Enel",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ENT.L",
+    "name": "Entain",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EOAN.DE",
+    "name": "E.ON",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EPI A.ST",
+    "name": "Epiroc",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EBS.VI",
+    "name": "Erste Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "VIE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ESLX.PA",
+    "name": "EssilorLuxottica",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ENX.AS",
+    "name": "Euronext",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EVK.DE",
+    "name": "Evonik Industries",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EVT.DE",
+    "name": "Evotec",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EXO.AS",
+    "name": "Exor",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FRVIA.PA",
+    "name": "Forvia",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FNTN.DE",
+    "name": "Freenet",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FME.DE",
+    "name": "Fresenius Medical Care",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GALP.LS",
+    "name": "Galp Energia",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "ELI",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GAW.L",
+    "name": "Games Workshop",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "G1A.DE",
+    "name": "GEA Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GEBN.SW",
+    "name": "Geberit",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GFC.PA",
+    "name": "Gecina",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GF.SW",
+    "name": "Georg Fischer",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GET.PA",
+    "name": "Getlink",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GLB.IR",
+    "name": "Glanbia",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "ISE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GN.CO",
+    "name": "GN Store Nord",
+    "assetClass": "equity",
+    "currency": "DKK",
+    "exchange": "CPH",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GFT.IR",
+    "name": "Grafton Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "ISE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GRF.MC",
+    "name": "Grifols",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HNR.DE",
+    "name": "Hannover Re",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HAS.L",
+    "name": "Hays",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HEI.DE",
+    "name": "Heidelberg Materials",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HELN.SW",
+    "name": "Helvetia",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HEN3.DE",
+    "name": "Henkel",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HIK.L",
+    "name": "Hikma Pharmaceuticals",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HWDN.L",
+    "name": "Howden Joinery",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HSBA.L",
+    "name": "HSBC",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BOSS.DE",
+    "name": "Hugo Boss",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "HUSQ B.ST",
+    "name": "Husqvarna",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IBE.MC",
+    "name": "Iberdrola",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INCH.L",
+    "name": "Inchcape",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INDT.ST",
+    "name": "Indutrade",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IFX.DE",
+    "name": "Infineon Technologies",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INPST.LU",
+    "name": "InPost",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "LUX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IHG.L",
+    "name": "InterContinental Hotels Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ICP.L",
+    "name": "Intermediate Capital Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ITRK.L",
+    "name": "Intertek",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IPN.PA",
+    "name": "Ipsen",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ITV.L",
+    "name": "ITV",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SBRY.L",
+    "name": "Sainsbury's",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JD.L",
+    "name": "JD Sports",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JMT.LS",
+    "name": "Jerónimo Martins",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "ELI",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BAER.SW",
+    "name": "Julius Baer",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KBC.BR",
+    "name": "KBC Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EBR",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KER.PA",
+    "name": "Kering",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KNEBV.HE",
+    "name": "Kone",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "HEL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KPN.AS",
+    "name": "KPN",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LAND.L",
+    "name": "Land Securities",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LXS.DE",
+    "name": "Lanxess",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LEG.DE",
+    "name": "LEG Immobilien",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LDO.MI",
+    "name": "Leonardo",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LSG.OL",
+    "name": "Lerøy Seafood",
+    "assetClass": "equity",
+    "currency": "NOK",
+    "exchange": "OSL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LII.L",
+    "name": "Liberty Global",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LIF.IR",
+    "name": "LifeCo",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "ISE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LIN.L",
+    "name": "Linde plc",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "OR.PA",
+    "name": "L'Oréal",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LPP.WA",
+    "name": "LPP",
+    "assetClass": "equity",
+    "currency": "PLN",
+    "exchange": "WSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LHA.DE",
+    "name": "Lufthansa",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LUMI.PA",
+    "name": "Lumibird",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MC.PA",
+    "name": "LVMH",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MAERSK B.CO",
+    "name": "Maersk",
+    "assetClass": "equity",
+    "currency": "DKK",
+    "exchange": "CPH",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MAN.DE",
+    "name": "MAN SE",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MB.MI",
+    "name": "Mediobanca",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MELE.BR",
+    "name": "Melexis",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EBR",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MEL.MC",
+    "name": "Meliá Hotels",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MRL.MC",
+    "name": "Merlin Properties",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "METSO.HE",
+    "name": "Metso",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "HEL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TIGO.ST",
+    "name": "Millicom",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MCG.L",
+    "name": "Mobico Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MONC.MI",
+    "name": "Moncler",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MNDI.L",
+    "name": "Mondi",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MOR.DE",
+    "name": "MorphoSys",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MUV2.DE",
+    "name": "Munich Re",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MT.LU",
+    "name": "ArcelorMittal",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "LUX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MTX.DE",
+    "name": "MTU Aero Engines",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NAB.AT",
+    "name": "National Bank of Greece",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "ATHEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NWG.L",
+    "name": "NatWest Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NEM.DE",
+    "name": "Nemetschek",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NEOEN.PA",
+    "name": "Neoen",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NSN.HE",
+    "name": "Neste",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "HEL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NESN.SW",
+    "name": "Nestlé",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NEX.PA",
+    "name": "Nexans",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NEXI.MI",
+    "name": "Nexi",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NIBE B.ST",
+    "name": "Nibe Industrier",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NN.AS",
+    "name": "NN Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NOKIA.HE",
+    "name": "Nokia",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "HEL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NDA FI.HE",
+    "name": "Nordea",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "HEL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NHY.OL",
+    "name": "Norsk Hydro",
+    "assetClass": "equity",
+    "currency": "NOK",
+    "exchange": "OSL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NOV N.SW",
+    "name": "Novartis",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NOVO B.CO",
+    "name": "Novo Nordisk",
+    "assetClass": "equity",
+    "currency": "DKK",
+    "exchange": "CPH",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "OCDO.L",
+    "name": "Ocado",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "OCI.AS",
+    "name": "OCI",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "OERL.SW",
+    "name": "Oerlikon",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "OMV.VI",
+    "name": "OMV",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "VIE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ONT.BR",
+    "name": "Ontex",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EBR",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ORA.PA",
+    "name": "Orange S.A.",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ORK.OL",
+    "name": "Orkla ASA",
+    "assetClass": "equity",
+    "currency": "NOK",
+    "exchange": "OSL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ORSTED.CO",
+    "name": "Ørsted",
+    "assetClass": "equity",
+    "currency": "DKK",
+    "exchange": "CPH",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PANDORA.CO",
+    "name": "Pandora",
+    "assetClass": "equity",
+    "currency": "DKK",
+    "exchange": "CPH",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PBB.DE",
+    "name": "Deutsche Pfandbriefbank",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "P911.DE",
+    "name": "Porsche",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PNL.AS",
+    "name": "PostNL",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PSN.PA",
+    "name": "Publicis",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PUM.DE",
+    "name": "Puma",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "QIA.AS",
+    "name": "Qiagen",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RBI.VI",
+    "name": "Raiffeisen Bank International",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "VIE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "REC.MI",
+    "name": "Recordati",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RHM.DE",
+    "name": "Rheinmetall",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RIGN.SW",
+    "name": "Transocean",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CFR.SW",
+    "name": "Richemont",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ROG.SW",
+    "name": "Roche Holding",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ROL.L",
+    "name": "Royal Mail",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RWE.DE",
+    "name": "RWE",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SGE.L",
+    "name": "Sage Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SGO.PA",
+    "name": "Saint-Gobain",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SALM.OL",
+    "name": "SalMar",
+    "assetClass": "equity",
+    "currency": "NOK",
+    "exchange": "OSL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SAMPO.HE",
+    "name": "Sampo Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "HEL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SAN.PA",
+    "name": "Sanofi",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SANO.HE",
+    "name": "Sanoma",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "HEL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SAP.DE",
+    "name": "SAP",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SECU B.ST",
+    "name": "Securitas AB",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SU.PA",
+    "name": "Schneider Electric",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SCR.PA",
+    "name": "SCOR SE",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SGSN.SW",
+    "name": "SGS S.A.",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SHEL.L",
+    "name": "Shell plc",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SIE.DE",
+    "name": "Siemens",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SIG.SW",
+    "name": "SIG Group",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SEB.ST",
+    "name": "Skandinaviska Enskilda Banken",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SKA B.ST",
+    "name": "Skanska",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SKF-B.ST",
+    "name": "SKF",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SKY.L",
+    "name": "Sky Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SN.L",
+    "name": "Smith & Nephew",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SOLB.BR",
+    "name": "Solvay",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EBR",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SSE.L",
+    "name": "SSE plc",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SRB.OL",
+    "name": "Storebrand",
+    "assetClass": "equity",
+    "currency": "NOK",
+    "exchange": "OSL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "STER.HE",
+    "name": "Stora Enso",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "HEL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "STMPA.SW",
+    "name": "STMicroelectronics",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SWED A.ST",
+    "name": "Swedbank",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SWMA.ST",
+    "name": "Swedish Match",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SCMN.SW",
+    "name": "Swisscom",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SHB B.ST",
+    "name": "Svenska Handelsbanken",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SY1.DE",
+    "name": "Symrise",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TATE.L",
+    "name": "Tate & Lyle",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TJW.L",
+    "name": "Taylor Wimpey",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TELIA.ST",
+    "name": "Telia Company",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TIT.MI",
+    "name": "Telecom Italia",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TEL2-B.ST",
+    "name": "Tele2",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TEL.OL",
+    "name": "Telenor",
+    "assetClass": "equity",
+    "currency": "NOK",
+    "exchange": "OSL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TEMN.SW",
+    "name": "Temenos Group",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TEN.LU",
+    "name": "Tenaris",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "LUX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TRN.MI",
+    "name": "Terna",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TSCO.L",
+    "name": "Tesco",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TKA.DE",
+    "name": "ThyssenKrupp",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TOM.AS",
+    "name": "TomTom",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TTE.PA",
+    "name": "TotalEnergies",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TRYG.CO",
+    "name": "Tryg",
+    "assetClass": "equity",
+    "currency": "DKK",
+    "exchange": "CPH",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TUI.DE",
+    "name": "TUI Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UMI.BR",
+    "name": "Umicore",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EBR",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UC.MI",
+    "name": "UniCredit",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ULVR.L",
+    "name": "Unilever",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UPW.L",
+    "name": "United Utilities",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UMG.AS",
+    "name": "Universal Music Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VALMT.HE",
+    "name": "Valmet",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "HEL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VACN.SW",
+    "name": "VAT Group",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VESTAS.CO",
+    "name": "Vestas",
+    "assetClass": "equity",
+    "currency": "DKK",
+    "exchange": "CPH",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VIV.PA",
+    "name": "Vivendi",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VOD.L",
+    "name": "Vodafone",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VOLV B.ST",
+    "name": "Volvo Group",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VNA.DE",
+    "name": "Vonovia",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WTB.L",
+    "name": "Whitbread",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WKL.AS",
+    "name": "Wolters Kluwer",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WPP.L",
+    "name": "WPP",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PSON.L",
+    "name": "Pearson",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PNN.L",
+    "name": "Pennon Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PIRC.MI",
+    "name": "Pirelli",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PLPH.SW",
+    "name": "PolyPeptide",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PAH3.DE",
+    "name": "Porsche SE",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PST.MI",
+    "name": "Poste Italiane",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PROX.BR",
+    "name": "Proximus",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EBR",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "PRY.MI",
+    "name": "Prysmian",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "QLT.L",
+    "name": "Quilter",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FRA.DE",
+    "name": "Rational",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "REL.L",
+    "name": "RELX",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RCO.PA",
+    "name": "Rémy Cointreau",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RNO.PA",
+    "name": "Renault",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RTO.L",
+    "name": "Rentokil Initial",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RXL.PA",
+    "name": "Rexel",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "RMV.L",
+    "name": "Rightmove",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "S4.L",
+    "name": "S4 Capital",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SDZ.SW",
+    "name": "Sandoz",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SRT3.DE",
+    "name": "Sartorius",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SCHA.OL",
+    "name": "Schibsted",
+    "assetClass": "equity",
+    "currency": "NOK",
+    "exchange": "OSL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SDR.L",
+    "name": "Schroders",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "G24.DE",
+    "name": "Scout24",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SVT.L",
+    "name": "Severn Trent",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SHEL.L",
+    "name": "Shell",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LIGHT.AS",
+    "name": "Signify",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SIX2.DE",
+    "name": "Sixt",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SKG.IR",
+    "name": "Smurfit Kappa",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "ISE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SRG.MI",
+    "name": "Snam",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GLE.PA",
+    "name": "Société Générale",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SW.PA",
+    "name": "Sodexo",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SCT.L",
+    "name": "Softcat",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SOW.DE",
+    "name": "Software",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SXS.L",
+    "name": "Spectris",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SPX.L",
+    "name": "Spirax-Sarco Engineering",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "STJ.L",
+    "name": "St. James's Place",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "STAN.L",
+    "name": "Standard Chartered",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "STLAM.AS",
+    "name": "Stellantis",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SWECO B.ST",
+    "name": "Sweco",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SLHN.SW",
+    "name": "Swiss Life",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "SPSN.SW",
+    "name": "Swiss Prime Site",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TLX.DE",
+    "name": "Talanx",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TMV.DE",
+    "name": "TeamViewer",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FTI.L",
+    "name": "TechnipFMC",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TEF.MC",
+    "name": "Telefónica",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TEP.PA",
+    "name": "Teleperformance",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TPG.L",
+    "name": "Telecom Plus",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TGS.OL",
+    "name": "TGS",
+    "assetClass": "equity",
+    "currency": "NOK",
+    "exchange": "OSL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "THL.PA",
+    "name": "Thales",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TOM.OL",
+    "name": "Tomra",
+    "assetClass": "equity",
+    "currency": "NOK",
+    "exchange": "OSL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TPK.L",
+    "name": "Travis Perkins",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "TREL B.ST",
+    "name": "Trelleborg",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "8TRA.DE",
+    "name": "Traton",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UBI.PA",
+    "name": "Ubisoft",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "URW.PA",
+    "name": "Unibail-Rodamco-Westfield",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UN01.DE",
+    "name": "Uniper",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "UPM.HE",
+    "name": "UPM-Kymmene",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "HEL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FR.PA",
+    "name": "Valeo",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VK.PA",
+    "name": "Vallourec",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VAR1.DE",
+    "name": "Varta",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VIE.PA",
+    "name": "Veolia",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VER.VI",
+    "name": "Verbund",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "VIE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VPLAY B.ST",
+    "name": "Viaplay",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VCT.PA",
+    "name": "Vicat",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VIG.VI",
+    "name": "Vienna Insurance Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "VIE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VITR.ST",
+    "name": "Vitrolife",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VOE.VI",
+    "name": "Voestalpine",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "VIE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "VPK.AS",
+    "name": "Vopak",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WDP.BR",
+    "name": "Warehouses De Pauw",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EBR",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WEIR.L",
+    "name": "Weir Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WEND.PA",
+    "name": "Wendel",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WIE.VI",
+    "name": "Wienerberger",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "VIE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WIHL.ST",
+    "name": "Wihlborgs Fastigheter",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WISE.L",
+    "name": "Wise",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "WLN.PA",
+    "name": "Worldline",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "YAR.OL",
+    "name": "Yara International",
+    "assetClass": "equity",
+    "currency": "NOK",
+    "exchange": "OSL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ZAL.DE",
+    "name": "Zalando",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ANA.MC",
+    "name": "Acciona",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ANE.MC",
+    "name": "Acciona Energía",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ACX.MC",
+    "name": "Acerinox",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ADH.OL",
+    "name": "Adevinta",
+    "assetClass": "equity",
+    "currency": "NOK",
+    "exchange": "OSL",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AF.PA",
+    "name": "Air France-KLM",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AKZA.AS",
+    "name": "AkzoNobel",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ALLFG.MC",
+    "name": "Allfunds Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AML.L",
+    "name": "Aston Martin",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "AMS.VI",
+    "name": "ams OSRAM",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "VIE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ARGX.AS",
+    "name": "Argenx",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ARND.DE",
+    "name": "Aroundtown",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ATOS.PA",
+    "name": "Atos",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BPOST.BR",
+    "name": "Bpost",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EBR",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BRNW.MI",
+    "name": "Brunello Cucinelli",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "BYG.L",
+    "name": "Big Yellow Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CASP.ST",
+    "name": "Castellum",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CDR.WA",
+    "name": "CD Projekt",
+    "assetClass": "equity",
+    "currency": "PLN",
+    "exchange": "WSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CLN.SW",
+    "name": "Clariant",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CTG.L",
+    "name": "Computer Center",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "CTS.DE",
+    "name": "CTS Eventim",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DIA.MC",
+    "name": "Dia",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DIE.BR",
+    "name": "DIETEREN Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EBR",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DSM.SW",
+    "name": "DSM-Firmenich",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "DTG.DE",
+    "name": "Daimler Truck",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "XETRA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EN.PA",
+    "name": "Bouygues",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "ENGI.PA",
+    "name": "Engie",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "EVR.L",
+    "name": "Evraz",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FALK.CO",
+    "name": "Falck",
+    "assetClass": "equity",
+    "currency": "DKK",
+    "exchange": "CPH",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FLOW.AS",
+    "name": "Flow Traders",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FLTR.IR",
+    "name": "Flutter Entertainment",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "ISE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "FOR.MC",
+    "name": "FCC",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BME",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GREG.L",
+    "name": "Greggs",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "GWI.MI",
+    "name": "Gruppo Campari",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IDP.MI",
+    "name": "Interpump Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "BIT",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IGGI.L",
+    "name": "IG Group",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IMI.L",
+    "name": "IMI",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INDV.L",
+    "name": "Indivior",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INF.L",
+    "name": "Informa",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "INP.L",
+    "name": "Investec",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "IPX.PA",
+    "name": "Ipsos",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JMAT.L",
+    "name": "Johnson Matthey",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "JUST.AS",
+    "name": "Just Eat Takeaway",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "AEX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KBC.BR",
+    "name": "KBC Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EBR",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KGF.L",
+    "name": "Kingfisher",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "KNIN.SW",
+    "name": "Kuehne + Nagel",
+    "assetClass": "equity",
+    "currency": "CHF",
+    "exchange": "SIX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LANV.PA",
+    "name": "Lanvin Group",
+    "assetClass": "equity",
+    "currency": "EUR",
+    "exchange": "EPA",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LGEN.L",
+    "name": "Legal & General",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "LUN.ST",
+    "name": "Lundin Energy",
+    "assetClass": "equity",
+    "currency": "SEK",
+    "exchange": "OMX",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MKS.L",
+    "name": "Marks & Spencer",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MONY.L",
+    "name": "Moneysupermarket.com",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "MRW.L",
+    "name": "Morrisons",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "NGG.L",
+    "name": "National Grid",
+    "assetClass": "equity",
+    "currency": "GBP",
+    "exchange": "LSE",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "^STOXX",
+    "name": "STOXX Europe 600 Index",
+    "assetClass": "index",
+    "currency": "EUR",
+    "exchange": "STOXX",
+    "providerId": "yahoo"
+  }
+]

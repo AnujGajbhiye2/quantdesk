@@ -1,5 +1,5 @@
 import 'server-only';
-import { sweepOpenTrades, type SweepResult } from '@/core/paper/broker';
+import { sweepOpenTrades, sweepPendingTrades, type SweepResult, type PendingFillResult } from '@/core/paper/broker';
 import { scanAll, type ScanAllResult } from '@/core/scan/scan-all';
 import { computeEdgeForUniverse, type ComputeEdgeResult } from '@/core/edge/compute';
 import { invalidateSnapshotCache } from '@/core/market/snapshot';
@@ -16,20 +16,30 @@ import { invalidateSnapshotCache } from '@/core/market/snapshot';
  */
 
 export interface PostRefreshSummary {
-  sweep: { results: SweepResult[]; error?: string };
-  scan:  { result: ScanAllResult | null; error?: string };
-  edge:  { result: ComputeEdgeResult | null; error?: string };
+  pendingFills: { results: PendingFillResult[]; error?: string };
+  sweep:        { results: SweepResult[]; error?: string };
+  scan:         { result: ScanAllResult | null; error?: string };
+  edge:         { result: ComputeEdgeResult | null; error?: string };
 }
 
 export function postRefreshTasks(): PostRefreshSummary {
   const summary: PostRefreshSummary = {
-    sweep: { results: [] },
-    scan:  { result: null },
-    edge:  { result: null },
+    pendingFills: { results: [] },
+    sweep:        { results: [] },
+    scan:         { result: null },
+    edge:         { result: null },
   };
 
   // New bars just landed - force a fresh snapshot on the next dashboard load.
   invalidateSnapshotCache();
+
+  // Check resting limit orders FIRST so a trade that fills and immediately
+  // hits its stop/target is also caught in the sweep below.
+  try {
+    summary.pendingFills.results = sweepPendingTrades();
+  } catch (err) {
+    summary.pendingFills.error = err instanceof Error ? err.message : String(err);
+  }
 
   try {
     summary.sweep.results = sweepOpenTrades();

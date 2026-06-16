@@ -32,7 +32,7 @@ export interface Signal {
   strategyId: string;
 }
 
-export type TradeStatus = 'open' | 'closed';
+export type TradeStatus = 'open' | 'closed' | 'pending';
 
 /** A concrete, actionable trade idea produced by the recommendation engine. */
 export interface TradeIdea {

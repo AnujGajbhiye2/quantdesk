@@ -5,20 +5,26 @@ import type { PaperTrade } from '@/core/types';
 // Mock DB modules so no real SQLite is touched in tests
 // ---------------------------------------------------------------------------
 
-const mockInsert   = vi.fn();
-const mockUpdate   = vi.fn();
-const mockGetOne   = vi.fn();
-const mockGetAll   = vi.fn();
-const mockGetOpenBySymbol = vi.fn();
-const mockGetClose = vi.fn();
-const mockGetBars  = vi.fn();
+const mockInsert             = vi.fn();
+const mockUpdate             = vi.fn();
+const mockFillPending        = vi.fn();
+const mockCancelPending      = vi.fn();
+const mockGetOne             = vi.fn();
+const mockGetAll             = vi.fn();
+const mockGetOpenBySymbol    = vi.fn();
+const mockGetActiveBySymbol  = vi.fn();
+const mockGetClose           = vi.fn();
+const mockGetBars            = vi.fn();
 
 vi.mock('@/core/db/paper', () => ({
-  insertPaperTrade: (...args: unknown[]) => mockInsert(...args),
-  updatePaperTrade: (...args: unknown[]) => mockUpdate(...args),
-  getPaperTrade:    (...args: unknown[]) => mockGetOne(...args),
-  getPaperTrades:   (...args: unknown[]) => mockGetAll(...args),
+  insertPaperTrade:          (...args: unknown[]) => mockInsert(...args),
+  updatePaperTrade:          (...args: unknown[]) => mockUpdate(...args),
+  fillPendingPaperTrade:     (...args: unknown[]) => mockFillPending(...args),
+  cancelPendingPaperTrade:   (...args: unknown[]) => mockCancelPending(...args),
+  getPaperTrade:             (...args: unknown[]) => mockGetOne(...args),
+  getPaperTrades:            (...args: unknown[]) => mockGetAll(...args),
   getOpenPaperTradeBySymbol: (...args: unknown[]) => mockGetOpenBySymbol(...args),
+  getActivePaperTradeBySymbol: (...args: unknown[]) => mockGetActiveBySymbol(...args),
 }));
 
 vi.mock('@/core/db/bars', () => ({
@@ -39,6 +45,12 @@ vi.mock('@/core/db/journal', () => ({
   insertJournalWhy:     () => {},
   recordJournalOutcome: () => {},
   getJournalEntries:    () => [],
+}));
+
+// Telegram - no-op in tests
+vi.mock('@/core/notify/telegram', () => ({
+  telegramConfigured: () => false,
+  sendTelegram:       () => Promise.resolve(false),
 }));
 
 // Import broker AFTER mocks are registered
@@ -67,6 +79,7 @@ function makeBars(n: number) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetOpenBySymbol.mockReturnValue(undefined);
+  mockGetActiveBySymbol.mockReturnValue(undefined);
 });
 
 // ---------------------------------------------------------------------------
@@ -138,7 +151,7 @@ describe('openPaperTrade', () => {
   });
 
   it('rejects a duplicate open trade for the same symbol', () => {
-    mockGetOpenBySymbol.mockReturnValue({
+    mockGetActiveBySymbol.mockReturnValue({
       id: 'open-1', strategyId: 'macd', symbol: 'AAPL', side: 'long',
       qty: 1, entryTime: '2024-01-01', entryPrice: 100, status: 'open', costs: 0,
     });
@@ -149,7 +162,7 @@ describe('openPaperTrade', () => {
         entryPrice: 100, entryTime: '2024-01-02',
       }),
     ).toThrow(DuplicateOpenTradeError);
-    expect(mockGetOpenBySymbol).toHaveBeenCalledWith('AAPL');
+    expect(mockGetActiveBySymbol).toHaveBeenCalledWith('AAPL');
     expect(mockInsert).not.toHaveBeenCalled();
   });
 });
