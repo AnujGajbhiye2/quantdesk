@@ -37,10 +37,36 @@ export function setStartingBalance(amount: number): AccountRow {
   }
   const db = getDb();
   const now = new Date().toISOString();
+  // Preserve existing currency when updating; default to 'USD' on first insert only.
   db.prepare(`
     INSERT INTO account (id, starting_balance, currency, created_at, updated_at)
     VALUES (1, @amount, 'USD', @now, @now)
     ON CONFLICT (id) DO UPDATE SET starting_balance = @amount, updated_at = @now
   `).run({ amount, now });
+  return getAccountRow()!;
+}
+
+/** Set the display/account currency. Creates the account row if it does not exist yet. */
+export function setAccountCurrency(currency: string): AccountRow {
+  if (!currency || typeof currency !== 'string') {
+    throw new Error('currency must be a non-empty string');
+  }
+  const db = getDb();
+  const now = new Date().toISOString();
+  const existing = getAccountRow();
+  if (existing) {
+    db.prepare(
+      'UPDATE account SET currency = @currency, updated_at = @now WHERE id = 1',
+    ).run({ currency: currency.toUpperCase(), now });
+  } else {
+    // No budget row yet - create one with zero balance so currency is persisted.
+    // The zero balance means the broker falls back to legacy notional sizing until
+    // the user sets a real budget.
+    db.prepare(`
+      INSERT INTO account (id, starting_balance, currency, created_at, updated_at)
+      VALUES (1, 0, @currency, @now, @now)
+      ON CONFLICT (id) DO UPDATE SET currency = @currency, updated_at = @now
+    `).run({ currency: currency.toUpperCase(), now });
+  }
   return getAccountRow()!;
 }

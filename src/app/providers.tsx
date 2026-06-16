@@ -1,6 +1,7 @@
 'use client';
 
 import { SWRConfig } from 'swr';
+import { SettingsProvider } from '@/components/providers/SettingsProvider';
 
 const fetcher = async (url: string): Promise<unknown> => {
   const r = await fetch(url);
@@ -18,7 +19,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         dedupingInterval: 30_000,
       }}
     >
-      {children}
+      <SettingsProvider>
+        {children}
+      </SettingsProvider>
     </SWRConfig>
   );
 }

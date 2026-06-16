@@ -232,14 +232,7 @@ export default function Dashboard({
     chg:    (r) => r.changePct,
     vol:    (r) => r.volume,
   }, undefined, 'qd.v1.scanSort');
-  const ideasSort = useTableSort(visibleIdeas, {
-    symbol: (i) => i.symbol,
-    entry:  (i) => i.entryPrice,
-    qty:    (i) => i.qty,
-    risk:   (i) => i.riskAmount,
-    rr:     (i) => i.rr,
-    conv:   (i) => i.conviction?.score ?? null,
-  }, undefined, 'qd.v1.ideasSort');
+  // ideasSort removed - sorting is now handled by TanStack inside TradeIdeasPanel.
 
   // All-strategies x all-symbols scan ('s' key / SCAN ALL button)
   const runScanAll = useCallback(async () => {
@@ -415,9 +408,9 @@ export default function Dashboard({
   // trade, second Enter (in QuickTradeConfirm) opens it, Escape backs out.
   const { selected: ideaSelected, setSelected: setIdeaSelected } =
     useKeyboardNav({
-      count: ideasSort.sorted.length,
+      count: visibleIdeas.length,
       onActivate: (i) => {
-        const idea = ideasSort.sorted[i];
+        const idea = visibleIdeas[i];
         if (!idea) return;
         if (!idea.gate.passed) {
           setScanStatus(`idea gated - ${idea.gate.reason}`);
@@ -694,10 +687,7 @@ export default function Dashboard({
     () => ({ click: scanSort.clickHeader, indicator: scanSort.indicator }),
     [scanSort.clickHeader, scanSort.indicator],
   );
-  const ideasSortProp = useMemo(
-    () => ({ click: ideasSort.clickHeader, indicator: ideasSort.indicator }),
-    [ideasSort.clickHeader, ideasSort.indicator],
-  );
+  // ideasSortProp removed - TradeIdeasPanel now handles sorting internally via TanStack.
 
   return (
     <>
@@ -781,6 +771,12 @@ export default function Dashboard({
                 style={{ color: "var(--text-muted)", textDecoration: "none" }}
               >
                 JOURNAL
+              </a>
+              <a
+                href="/settings"
+                style={{ color: "var(--text-muted)", textDecoration: "none" }}
+              >
+                SETTINGS
               </a>
             </nav>
           </div>
@@ -1023,13 +1019,12 @@ export default function Dashboard({
               <ResizeHandle orientation="horizontal" />
               <Panel id="sig-ideas" defaultSize={50} minSize={25}>
                 <TradeIdeasPanel
-                  ideas={ideasSort.sorted}
+                  ideas={visibleIdeas}
                   onTake={onTakeIdea}
                   busy={ideaBusy}
                   strategyNames={strategyNames}
                   focused={ideasFocus}
                   selected={ideaSelected}
-                  sort={ideasSortProp}
                 />
               </Panel>
             </Group>

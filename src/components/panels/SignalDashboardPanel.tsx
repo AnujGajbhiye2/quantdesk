@@ -2,8 +2,9 @@
 
 import { memo, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { type ColumnDef } from '@tanstack/react-table';
 import Panel from '@/components/primitives/Panel';
-import { useTableSort } from '@/hooks/useTableSort';
+import { DataTable } from '@/components/table/DataTable';
 import EmptyState from '@/components/primitives/EmptyState';
 import EdgeBadge from '@/components/primitives/EdgeBadge';
 import { tierOpacity } from '@/core/edge/score';
@@ -47,6 +48,10 @@ function signalBadge(signal: Signal | undefined) {
   return { text: 'EXIT', color: 'var(--color-accent)' };
 }
 
+// --------------------------------------------------------------------------
+// Consensus sub-section (not a DataTable - stays as simple table)
+// --------------------------------------------------------------------------
+
 function ConsensusSection({ consensus }: { consensus: ConsensusSignal[] }) {
   const router = useRouter();
   return (
@@ -83,13 +88,7 @@ function ConsensusSection({ consensus }: { consensus: ConsensusSignal[] }) {
                     title={`${(c.strength * 100).toFixed(0)}% of strategies agree`}
                     style={{ background: 'var(--bg-panel-header)', height: 8, width: 100 }}
                   >
-                    <div
-                      style={{
-                        background: color,
-                        height: '100%',
-                        width: `${Math.round(c.strength * 100)}%`,
-                      }}
-                    />
+                    <div style={{ background: color, height: '100%', width: `${Math.round(c.strength * 100)}%` }} />
                   </div>
                 </td>
                 <td
@@ -115,20 +114,120 @@ function ConsensusSection({ consensus }: { consensus: ConsensusSignal[] }) {
   );
 }
 
+// --------------------------------------------------------------------------
+// Row shape enriched with resolved signal/edge
+// --------------------------------------------------------------------------
+
+interface SignalRow extends MarketRow {
+  _sig:     Signal | undefined;
+  _edge:    EdgeSummary | null;
+  _opacity: number;
+}
+
+// --------------------------------------------------------------------------
+// Main panel
+// --------------------------------------------------------------------------
+
 function SignalDashboardPanel({ rows, signals, consensus = [], edges = {} }: Props) {
   const router = useRouter();
-  // Index signals by symbol (latest per symbol if duplicate)
+
   const sigMap = useMemo(() => {
     const m = new Map<string, Signal>();
     for (const s of signals) m.set(s.symbol, s);
     return m;
   }, [signals]);
 
-  const { sorted, clickHeader, indicator } = useTableSort(rows, {
-    symbol: (r) => r.symbol,
-    rsi:    (r) => r.rsi14,
-    signal: (r) => sigMap.get(r.symbol)?.side ?? '',
-  });
+  const enriched = useMemo<SignalRow[]>(() => rows.map((row) => {
+    const sig  = sigMap.get(row.symbol);
+    const edge = sig && sig.side !== 'flat' ? (edges[`${sig.strategyId}|${row.symbol}`] ?? null) : null;
+    const opacity = sig && sig.side !== 'flat' ? tierOpacity(edge?.tier ?? 'unknown') : 1;
+    return { ...row, _sig: sig, _edge: edge, _opacity: opacity };
+  }), [rows, sigMap, edges]);
+
+  const columns = useMemo<ColumnDef<SignalRow, unknown>[]>(() => [
+    {
+      id:         'symbol',
+      accessorFn: (r) => r.symbol,
+      header:     'SYMBOL',
+      meta:       { align: 'left', accent: true },
+      enableSorting: true,
+      cell:       ({ row }) => (
+        <span
+          style={{ color: 'var(--color-accent)', fontWeight: 600, cursor: 'pointer' }}
+          title={`backtest ${row.original.symbol}`}
+          onClick={(e) => { e.stopPropagation(); router.push(`/backtest?symbol=${row.original.symbol}`); }}
+        >
+          {row.original.symbol}
+        </span>
+      ),
+    },
+    {
+      id:         'rsi',
+      accessorFn: (r) => r.rsi14,
+      header:     'RSI(14)',
+      meta:       { align: 'right', numeric: true },
+      enableSorting: true,
+      cell:       ({ row }) => (
+        <span style={{ color: rsiColor(row.original.rsi14), fontVariantNumeric: 'tabular-nums' }}>
+          {isFinite(row.original.rsi14) ? row.original.rsi14.toFixed(1) : '--'}
+        </span>
+      ),
+    },
+    {
+      id:         'macd',
+      accessorFn: (r) => r.macdState,
+      header:     'MACD',
+      meta:       { align: 'center' },
+      enableSorting: false,
+      cell:       ({ row }) => {
+        const badge = macdBadge(row.original.macdState);
+        return <span style={{ color: badge.color }}>{badge.text}</span>;
+      },
+    },
+    {
+      id:         'maCross',
+      accessorFn: (r) => r.maCross,
+      header:     'MA50/200',
+      meta:       { align: 'center' },
+      enableSorting: false,
+      cell:       ({ row }) => {
+        const badge = maCrossBadge(row.original.maCross);
+        return <span style={{ color: badge.color }}>{badge.text}</span>;
+      },
+    },
+    {
+      id:         'signal',
+      accessorFn: (r) => r._sig?.side ?? 'flat',
+      header:     'SIGNAL',
+      meta:       { align: 'center' },
+      enableSorting: true,
+      cell:       ({ row }) => {
+        const badge = signalBadge(row.original._sig);
+        return <span style={{ color: badge.color, fontWeight: 700 }}>{badge.text}</span>;
+      },
+    },
+    {
+      id:         'reason',
+      accessorFn: (r) => r._sig?.reason ?? '',
+      header:     'REASON',
+      meta:       { align: 'left' },
+      enableSorting: false,
+      cell:       ({ row }) => {
+        const { _sig: sig, _edge: edge } = row.original;
+        if (sig && sig.side !== 'flat') {
+          return (
+            <div style={{ maxWidth: 200, overflow: 'hidden' }}>
+              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-muted)' }}>
+                {sig.reason}
+              </div>
+              <EdgeBadge edge={edge} compact />
+            </div>
+          );
+        }
+        return <span style={{ color: 'var(--text-muted)' }}>{sig?.reason ?? ''}</span>;
+      },
+    },
+  ], [router]);
 
   if (rows.length === 0) {
     return (
@@ -148,108 +247,13 @@ function SignalDashboardPanel({ rows, signals, consensus = [], edges = {} }: Pro
     >
       <div style={{ overflowX: 'auto', overflowY: 'auto', height: '100%' }}>
         {consensus.length > 0 && <ConsensusSection consensus={consensus} />}
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
-          <thead>
-            <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>
-              <th
-                onClick={() => clickHeader('symbol')}
-                title="click to sort"
-                style={{ textAlign: 'left', padding: '2px 6px', fontWeight: indicator('symbol') ? 700 : 400, cursor: 'pointer', userSelect: 'none' }}
-              >
-                SYMBOL{indicator('symbol')}
-              </th>
-              <th
-                onClick={() => clickHeader('rsi')}
-                title="click to sort"
-                style={{ textAlign: 'right', padding: '2px 6px', fontWeight: indicator('rsi') ? 700 : 400, cursor: 'pointer', userSelect: 'none' }}
-              >
-                RSI(14){indicator('rsi')}
-              </th>
-              <th style={{ textAlign: 'center', padding: '2px 8px', fontWeight: 400 }}>MACD</th>
-              <th style={{ textAlign: 'center', padding: '2px 8px', fontWeight: 400 }}>MA50/200</th>
-              <th
-                onClick={() => clickHeader('signal')}
-                title="click to sort"
-                style={{ textAlign: 'center', padding: '2px 8px', fontWeight: indicator('signal') ? 700 : 400, cursor: 'pointer', userSelect: 'none' }}
-              >
-                SIGNAL{indicator('signal')}
-              </th>
-              <th style={{ textAlign: 'left', padding: '2px 6px', fontWeight: 400, maxWidth: 200 }}>REASON</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((row) => {
-              const macd   = macdBadge(row.macdState);
-              const cross  = maCrossBadge(row.maCross);
-              const sig    = sigMap.get(row.symbol);
-              const badge  = signalBadge(sig);
-              // Visual weight proportional to the strategy's backtested edge;
-              // rows without an active signal keep full opacity.
-              const edge = sig && sig.side !== 'flat'
-                ? edges[`${sig.strategyId}|${sig.symbol}`] ?? null
-                : null;
-              const opacity = sig && sig.side !== 'flat'
-                ? tierOpacity(edge?.tier ?? 'unknown')
-                : 1;
-              return (
-                <tr key={row.symbol} style={{ borderBottom: '1px solid var(--border)', opacity }}>
-                  <td
-                    style={{ padding: '3px 6px', color: 'var(--color-accent)', fontWeight: 600, cursor: 'pointer' }}
-                    title={`backtest ${row.symbol}`}
-                    onClick={() => router.push(`/backtest?symbol=${row.symbol}`)}
-                  >
-                    {row.symbol}
-                  </td>
-                  <td
-                    style={{
-                      padding: '3px 6px',
-                      textAlign: 'right',
-                      color: rsiColor(row.rsi14),
-                      fontVariantNumeric: 'tabular-nums',
-                    }}
-                  >
-                    {isFinite(row.rsi14) ? row.rsi14.toFixed(1) : '--'}
-                  </td>
-                  <td style={{ padding: '3px 8px', textAlign: 'center', color: macd.color }}>
-                    {macd.text}
-                  </td>
-                  <td style={{ padding: '3px 8px', textAlign: 'center', color: cross.color }}>
-                    {cross.text}
-                  </td>
-                  <td
-                    style={{
-                      padding: '3px 8px',
-                      textAlign: 'center',
-                      color: badge.color,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {badge.text}
-                  </td>
-                  <td
-                    style={{
-                      padding: '3px 6px',
-                      color: 'var(--text-muted)',
-                      maxWidth: '200px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {sig && sig.side !== 'flat' ? (
-                      <>
-                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{sig.reason}</div>
-                        <EdgeBadge edge={edge} compact />
-                      </>
-                    ) : (
-                      sig?.reason ?? ''
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <DataTable
+          columns={columns}
+          data={enriched}
+          enableSorting
+          defaultSort={[]}
+          rowStyle={(row) => ({ opacity: row._opacity })}
+        />
       </div>
     </Panel>
   );

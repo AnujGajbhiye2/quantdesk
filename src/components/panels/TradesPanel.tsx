@@ -1,10 +1,11 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { type ColumnDef } from '@tanstack/react-table';
 import Panel from '@/components/primitives/Panel';
 import EmptyState from '@/components/primitives/EmptyState';
-import { useTableSort } from '@/hooks/useTableSort';
+import { DataTable } from '@/components/table/DataTable';
 import { fmtMoney } from '@/core/format/currency';
 import type { PaperTradeWithHold } from '@/core/paper/hold';
 
@@ -59,23 +60,194 @@ function holdCell(t: PaperTradeWithHold): { text: string; title: string } {
   return { text: '--', title: '' };
 }
 
+// --------------------------------------------------------------------------
+// Row shape passed to DataTable (includes resolved mark + computed values)
+// --------------------------------------------------------------------------
+
+interface TradeRow extends PaperTradeWithHold {
+  _displayPnl:    number | undefined;
+  _displayPnlPct: number | undefined;
+  _isMtm:         boolean;
+  _markPrice:     number | undefined;
+  _hold:          { text: string; title: string };
+}
+
 function TradesPanel({ trades, marks }: Props) {
   const router = useRouter();
-  const recent = [...trades].reverse().slice(0, 20);
-  const { sorted, clickHeader, indicator } = useTableSort(recent, {
-    date:   (t) => t.entryTime,
-    symbol: (t) => t.symbol,
-    pnl:    (t) => (t.status === 'open' ? marks?.get(t.id)?.unrealizedPnl : t.pnl) ?? null,
-  });
-  const sortableTh = (key: 'date' | 'symbol' | 'pnl', label: string, align: 'left' | 'right') => (
-    <th
-      onClick={() => clickHeader(key)}
-      title="click to sort"
-      style={{ textAlign: align, padding: '2px 4px', fontWeight: indicator(key) ? 700 : 400, cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
-    >
-      {label}{indicator(key)}
-    </th>
-  );
+  const recent = useMemo<TradeRow[]>(() => {
+    return [...trades].reverse().slice(0, 20).map((t) => {
+      const mark       = t.status === 'open' ? marks?.get(t.id) : undefined;
+      const isMtm      = mark != null;
+      return {
+        ...t,
+        _displayPnl:    mark != null ? mark.unrealizedPnl    : t.pnl,
+        _displayPnlPct: mark != null ? mark.unrealizedPnlPct : t.pnlPct,
+        _isMtm:         isMtm,
+        _markPrice:     mark?.markPrice,
+        _hold:          holdCell(t),
+      };
+    });
+  }, [trades, marks]);
+
+  const columns = useMemo<ColumnDef<TradeRow, unknown>[]>(() => [
+    {
+      id:         'date',
+      accessorFn: (r) => r.entryTime,
+      header:     'DATE',
+      meta:       { align: 'left' },
+      enableSorting: true,
+      cell:       ({ row }) => (
+        <span style={{ color: 'var(--text-muted)' }}>{fmtDate(row.original.entryTime)}</span>
+      ),
+    },
+    {
+      id:         'symbol',
+      accessorFn: (r) => r.symbol,
+      header:     'SYMBOL',
+      meta:       { align: 'left', accent: true },
+      enableSorting: true,
+      cell:       ({ row }) => (
+        <span
+          style={{ color: 'var(--color-accent)', fontWeight: 600, cursor: 'pointer' }}
+          title={`backtest ${row.original.symbol}`}
+          onClick={(e) => { e.stopPropagation(); router.push(`/backtest?symbol=${row.original.symbol}`); }}
+        >
+          {row.original.symbol}
+        </span>
+      ),
+    },
+    {
+      id:         'strategy',
+      accessorFn: (r) => r.strategyId,
+      header:     'STRATEGY',
+      meta:       { align: 'left' },
+      enableSorting: false,
+      cell:       ({ row }) => (
+        <span style={{ color: 'var(--text-muted)' }}>{row.original.strategyId}</span>
+      ),
+    },
+    {
+      id:         'side',
+      accessorFn: (r) => r.side,
+      header:     'SIDE',
+      meta:       { align: 'center' },
+      enableSorting: false,
+      cell:       ({ row }) => {
+        const color = row.original.side === 'long' ? 'var(--color-up)' : 'var(--color-down)';
+        return <span style={{ color, fontWeight: 600 }}>{row.original.side.toUpperCase()}</span>;
+      },
+    },
+    {
+      id:         'entry',
+      accessorFn: (r) => r.entryPrice,
+      header:     'ENTRY',
+      meta:       { align: 'right', numeric: true },
+      enableSorting: false,
+      cell:       ({ row }) => fmtMoney(row.original.entryPrice, row.original.currency ?? 'USD'),
+    },
+    {
+      id:         'cur',
+      accessorFn: (r) => r._markPrice,
+      header:     'CUR',
+      meta:       { align: 'right', numeric: true },
+      enableSorting: false,
+      cell:       ({ row }) => {
+        const t = row.original;
+        if (t._markPrice == null) return <span style={{ color: 'var(--text-muted)' }}>--</span>;
+        return (
+          <span style={{ color: pnlColor(t._displayPnl), fontVariantNumeric: 'tabular-nums' }}>
+            {fmtMoney(t._markPrice, t.currency ?? 'USD')}
+          </span>
+        );
+      },
+    },
+    {
+      id:         'exit',
+      accessorFn: (r) => r.exitPrice,
+      header:     'EXIT',
+      meta:       { align: 'right', numeric: true },
+      enableSorting: false,
+      cell:       ({ row }) => {
+        const ep = row.original.exitPrice;
+        return (
+          <span style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+            {ep != null ? fmtMoney(ep, row.original.currency ?? 'USD') : '--'}
+          </span>
+        );
+      },
+    },
+    {
+      id:         'qty',
+      accessorFn: (r) => r.qty,
+      header:     'QTY',
+      meta:       { align: 'right', numeric: true },
+      enableSorting: false,
+      cell:       ({ row }) => (
+        <span style={{ color: 'var(--text-muted)' }}>{fmt(row.original.qty, 4)}</span>
+      ),
+    },
+    {
+      id:         'pnl',
+      accessorFn: (r) => r._displayPnl,
+      header:     'P&L',
+      meta:       { align: 'right', numeric: true },
+      enableSorting: true,
+      cell:       ({ row }) => {
+        const t = row.original;
+        if (t._displayPnl == null) return <span style={{ color: 'var(--text-muted)' }}>--</span>;
+        const prefix = `${t._isMtm ? '~' : ''}${t._displayPnl >= 0 ? '+' : ''}`;
+        return (
+          <span style={{ color: pnlColor(t._displayPnl), fontVariantNumeric: 'tabular-nums' }}>
+            {prefix}{fmtMoney(t._displayPnl, t.currency ?? 'USD')}
+          </span>
+        );
+      },
+    },
+    {
+      id:         'pnlPct',
+      accessorFn: (r) => r._displayPnlPct,
+      header:     'P&L%',
+      meta:       { align: 'right', numeric: true },
+      enableSorting: false,
+      cell:       ({ row }) => {
+        const t = row.original;
+        if (t._displayPnlPct == null) return <span style={{ color: 'var(--text-muted)' }}>--</span>;
+        const prefix = `${t._isMtm ? '~' : ''}${t._displayPnlPct >= 0 ? '+' : ''}`;
+        return (
+          <span style={{ color: pnlColor(t._displayPnlPct), fontVariantNumeric: 'tabular-nums' }}>
+            {prefix}{fmt(t._displayPnlPct)}%
+          </span>
+        );
+      },
+    },
+    {
+      id:         'hold',
+      accessorFn: (r) => r._hold.text,
+      header:     'EST HOLD',
+      meta:       { align: 'left' },
+      enableSorting: false,
+      cell:       ({ row }) => (
+        <span
+          style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}
+          title={row.original._hold.title}
+        >
+          {row.original._hold.text}
+        </span>
+      ),
+    },
+    {
+      id:         'status',
+      accessorFn: (r) => r.status,
+      header:     'STATUS',
+      meta:       { align: 'center' },
+      enableSorting: false,
+      cell:       ({ row }) => {
+        const t = row.original;
+        const color = t.status === 'open' ? 'var(--color-accent)' : 'var(--text-muted)';
+        return <span style={{ color }}>{t.status.toUpperCase()}</span>;
+      },
+    },
+  ], [router]);
 
   return (
     <Panel
@@ -88,95 +260,12 @@ function TradesPanel({ trades, marks }: Props) {
       {recent.length === 0 ? (
         <EmptyState message="— no trades —" hint="open a paper trade via POST /api/paper" />
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
-          <thead>
-            <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>
-              {sortableTh('date', 'DATE', 'left')}
-              {sortableTh('symbol', 'SYMBOL', 'left')}
-              <th style={{ textAlign: 'left', padding: '2px 4px', fontWeight: 400 }}>STRATEGY</th>
-              <th style={{ textAlign: 'center', padding: '2px 4px', fontWeight: 400 }}>SIDE</th>
-              <th style={{ textAlign: 'right', padding: '2px 4px', fontWeight: 400 }}>ENTRY</th>
-              <th
-                style={{ textAlign: 'right', padding: '2px 4px', fontWeight: 400 }}
-                title="latest stored close for open trades - what the position is worth right now"
-              >
-                CUR
-              </th>
-              <th style={{ textAlign: 'right', padding: '2px 4px', fontWeight: 400 }}>EXIT</th>
-              <th style={{ textAlign: 'right', padding: '2px 4px', fontWeight: 400 }}>QTY</th>
-              {sortableTh('pnl', 'P&L', 'right')}
-              <th style={{ textAlign: 'right', padding: '2px 4px', fontWeight: 400 }}>P&amp;L%</th>
-              <th
-                style={{ textAlign: 'left', padding: '2px 4px', fontWeight: 400 }}
-                title="open: historical median winner hold time (not a forecast); closed: actual days held"
-              >
-                EST HOLD
-              </th>
-              <th style={{ textAlign: 'center', padding: '2px 4px', fontWeight: 400 }}>STATUS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((t) => {
-              const sideColor   = t.side === 'long' ? 'var(--color-up)' : 'var(--color-down)';
-              const statusColor = t.status === 'open' ? 'var(--color-accent)' : 'var(--text-muted)';
-              const cur         = t.currency ?? 'USD';
-              const mark        = t.status === 'open' ? marks?.get(t.id) : undefined;
-              // For open trades show MTM unrealized P&L; for closed show realized P&L
-              const displayPnl    = mark != null ? mark.unrealizedPnl    : t.pnl;
-              const displayPnlPct = mark != null ? mark.unrealizedPnlPct : t.pnlPct;
-              const isMtm         = mark != null;
-              const hold          = holdCell(t);
-
-              return (
-                <tr key={t.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '2px 4px', color: 'var(--text-muted)' }}>{fmtDate(t.entryTime)}</td>
-                  <td
-                    style={{ padding: '2px 4px', color: 'var(--color-accent)', fontWeight: 600, cursor: 'pointer' }}
-                    title={`backtest ${t.symbol}`}
-                    onClick={() => router.push(`/backtest?symbol=${t.symbol}`)}
-                  >
-                    {t.symbol}
-                  </td>
-                  <td style={{ padding: '2px 4px', color: 'var(--text-muted)' }}>{t.strategyId}</td>
-                  <td style={{ padding: '2px 4px', textAlign: 'center', color: sideColor, fontWeight: 600 }}>
-                    {t.side.toUpperCase()}
-                  </td>
-                  <td style={{ padding: '2px 4px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                    {fmtMoney(t.entryPrice, cur)}
-                  </td>
-                  <td style={{ padding: '2px 4px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: mark != null ? pnlColor(mark.unrealizedPnl) : 'var(--text-muted)' }}>
-                    {mark != null ? fmtMoney(mark.markPrice, cur) : '--'}
-                  </td>
-                  <td style={{ padding: '2px 4px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-muted)' }}>
-                    {t.exitPrice != null ? fmtMoney(t.exitPrice, cur) : '--'}
-                  </td>
-                  <td style={{ padding: '2px 4px', textAlign: 'right', color: 'var(--text-muted)' }}>
-                    {fmt(t.qty, 4)}
-                  </td>
-                  <td style={{ padding: '2px 4px', textAlign: 'right', color: pnlColor(displayPnl), fontVariantNumeric: 'tabular-nums' }}>
-                    {displayPnl != null
-                      ? `${isMtm ? '~' : ''}${displayPnl >= 0 ? '+' : ''}${fmtMoney(displayPnl, cur)}`
-                      : '--'}
-                  </td>
-                  <td style={{ padding: '2px 4px', textAlign: 'right', color: pnlColor(displayPnlPct), fontVariantNumeric: 'tabular-nums' }}>
-                    {displayPnlPct != null
-                      ? `${isMtm ? '~' : ''}${displayPnlPct >= 0 ? '+' : ''}${fmt(displayPnlPct)}%`
-                      : '--'}
-                  </td>
-                  <td
-                    style={{ padding: '2px 4px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}
-                    title={hold.title}
-                  >
-                    {hold.text}
-                  </td>
-                  <td style={{ padding: '2px 4px', textAlign: 'center', color: statusColor }}>
-                    {t.status.toUpperCase()}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <DataTable
+          columns={columns}
+          data={recent}
+          enableSorting
+          defaultSort={[{ id: 'date', desc: true }]}
+        />
       )}
     </Panel>
   );

@@ -9,9 +9,7 @@ import { fmtMoney, curGlyph } from '@/core/format/currency';
 import type { TradeBook } from '@/core/paper/tradebook';
 import type { PaperTradeWithHold } from '@/core/paper/hold';
 import type { PaperTrade } from '@/core/types';
-
-// Currencies available in the display-currency selector
-const DISPLAY_CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CHF', 'SEK', 'NOK', 'DKK', 'PLN'];
+import { useSettings } from '@/components/providers/SettingsProvider';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -391,19 +389,16 @@ export default function PaperPage() {
   });
   const [refreshing,   setRefreshing]   = useState(false);
   const [lastRefresh,  setLastRefresh]  = useState('');
-  const [displayCur,   setDisplayCur]   = useState<string>(() => {
-    return typeof window !== 'undefined' ? (localStorage.getItem('qd.v1.displayCurrency') ?? 'USD') : 'USD';
-  });
-  const [fxRates,      setFxRates]      = useState<Record<string, number>>({ USD: 1 });
+  const { displayCurrency: displayCur, rates: fxRates, setDisplayCurrency: setDisplayCur } = useSettings();
 
   // Load data on mount (and after mutations)
+  // FX rates come from SettingsProvider (already fetched app-wide); skip /api/fx here.
   const loadData = useCallback(async () => {
-    const [tRes, bRes, mRes, aRes, fxRes] = await Promise.all([
+    const [tRes, bRes, mRes, aRes] = await Promise.all([
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'list' }) }),
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'tradebook' }) }),
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'mark', useQuotes: false }) }),
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'account' }) }),
-      fetch('/api/fx'),
     ]);
     if (aRes.ok) {
       const { account: acct } = await aRes.json() as { account: AccountSummary | null };
@@ -422,10 +417,6 @@ export default function PaperPage() {
         marks: { trade: { id: string }; unrealizedPnl: number; unrealizedPnlPct: number; markPrice: number }[];
       };
       setMarks(new Map(markResults.map((m) => [m.trade.id, { unrealizedPnl: m.unrealizedPnl, unrealizedPnlPct: m.unrealizedPnlPct, markPrice: m.markPrice }])));
-    }
-    if (fxRes.ok) {
-      const { rates } = await fxRes.json() as { rates: Record<string, number> };
-      setFxRates(rates);
     }
   }, []);
 
@@ -557,6 +548,7 @@ export default function PaperPage() {
             <a href="/compare" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>COMPARE</a>
             <a href="/paper" style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>PAPER</a>
             <a href="/journal" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>JOURNAL</a>
+            <a href="/settings" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>SETTINGS</a>
           </nav>
         </div>
         <div className="flex items-center gap-3">
@@ -633,15 +625,11 @@ export default function PaperPage() {
               [ TRADES ({visibleTrades.length}{statusFilter !== 'all' ? ` ${statusFilter}` : ''}) ]
             </span>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              {/* Display currency selector */}
+              {/* Display currency selector - persisted app-wide via SettingsProvider */}
               <select
                 value={displayCur}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setDisplayCur(v);
-                  localStorage.setItem('qd.v1.displayCurrency', v);
-                }}
-                title="Display currency - all prices and P&L shown in this currency (static FX rates)"
+                onChange={(e) => { void setDisplayCur(e.target.value); }}
+                title="Display currency - all prices and P&L shown in this currency (static FX rates). Change in SETTINGS to persist."
                 style={{
                   background:  'var(--bg-panel)',
                   border:      '1px solid var(--color-accent)',
@@ -652,7 +640,7 @@ export default function PaperPage() {
                   cursor:      'pointer',
                 }}
               >
-                {DISPLAY_CURRENCIES.map((c) => (
+                {(['USD', 'EUR', 'GBP', 'INR', 'CHF', 'SEK', 'NOK', 'DKK', 'PLN'] as const).map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>

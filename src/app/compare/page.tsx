@@ -148,6 +148,7 @@ function ComparePageInner() {
             <a href="/compare" style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>COMPARE</a>
             <a href="/paper" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>PAPER</a>
             <a href="/journal" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>JOURNAL</a>
+            <a href="/settings" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>SETTINGS</a>
           </nav>
         </div>
 
