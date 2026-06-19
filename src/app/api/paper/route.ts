@@ -189,6 +189,21 @@ export async function POST(request: Request) {
         return NextResponse.json({ trades: withEstHold(trades) });
       }
 
+      case 'auto-trigger': {
+        // Manually fire one auto-trade tick (ingest + scan + execute).
+        // Bypasses market-hours gate so you can test off-hours.
+        // Obeys DRY_RUN - will not open real trades when AUTO_TRADE_DRY_RUN=1.
+        const tf = (process.env.AUTO_TRADE_TIMEFRAME ?? '15m') as import('@/core/types').Timeframe;
+        const { ingestIntraday } = await import('@/core/data/intraday-ingest');
+        const { runAutoTrade }   = await import('@/core/paper/auto-trade');
+
+        const ingest = await ingestIntraday(tf);
+        // Pass bypassMarketHours flag so the engine skips the hours guard
+        const result = await runAutoTrade({ timeframe: tf, bypassMarketHours: true });
+
+        return NextResponse.json({ ingest: { symbols: ingest.symbols, barsAdded: ingest.barsAdded, errors: ingest.errors }, autoTrade: result });
+      }
+
       case 'auto-status': {
         // Read-only status: auto-trade config flags + today's auto trades.
         const today = new Date().toISOString().slice(0, 10);

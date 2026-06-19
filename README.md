@@ -1,7 +1,7 @@
 # QuantDesk
 
 Self-hosted Bloomberg-terminal-style swing-trading research platform. Dense, dark,
-monospace, keyboard-driven. Local SQLite. No cloud. No auto-trading.
+monospace, keyboard-driven. Local SQLite. No cloud.
 
 > **Research tool. Not financial advice. Backtest results are hypothetical and subject
 > to survivorship bias, look-ahead error, and other limitations. Past performance does
@@ -21,6 +21,10 @@ monospace, keyboard-driven. Local SQLite. No cloud. No auto-trading.
 - **Paper trading** - simulate entries, track open/closed positions, per-strategy hit rates
 - **Multi-market** - US equities (S&P 500, Nasdaq-100), Indian equities (Nifty 200),
   pluggable adapter interface for any provider
+- **Automated intraday paper-trading** - unattended loop: ingests 15m bars from Alpaca,
+  runs multi-strategy consensus scan, applies psychology guards (daily-loss halt,
+  max-trades/day, anti-revenge filter, no-late-entry), risk-sizes entries at 1% equity/trade,
+  opens paper trades automatically, sweeps stops/targets, sends Telegram notifications
 
 ---
 
@@ -33,7 +37,7 @@ monospace, keyboard-driven. Local SQLite. No cloud. No auto-trading.
 | Charts | lightweight-charts v5 | v5 API - use `addSeries(CandlestickSeries, ...)` not removed `addCandlestickSeries()` |
 | Indicators | `@ixjb94/indicators` | Pure TS, zero native deps |
 | Database | SQLite via `better-sqlite3` | Synchronous, single-user local |
-| Data fetch | `yahoo-finance2` | Yahoo adapter (default, no key); Twelve Data adapter also wired |
+| Data fetch | `yahoo-finance2` / Alpaca / Twelve Data | Yahoo (default, no key); Alpaca (free IEX real-time, paper keys); Twelve Data optional |
 | Scheduling | `node-cron` | In-process EOD refresh |
 | Validation | `zod` | All adapter outputs and strategy configs |
 | Testing | Vitest | Unit tests for engine, indicators, paper broker |
@@ -115,6 +119,19 @@ TELEGRAM_CHAT_ID=<your-chat-id>
 # Data provider (Yahoo requires no key; add Twelve Data key for better global coverage)
 TWELVE_DATA_API_KEY=<optional-key>
 
+# Alpaca - free paper account at alpaca.markets (required for auto-trading + intraday data)
+# Use paper trading keys (start with PK...), NOT live trading keys
+ALPACA_KEY_ID=<paper-key-id>
+ALPACA_SECRET_KEY=<paper-secret>
+
+# Automated intraday paper-trading (safe to enable - paper only, never real money)
+AUTO_TRADE_ENABLED=1           # 0 = off, 1 = on
+AUTO_TRADE_DRY_RUN=1           # 1 = Telegram only (no DB writes), 0 = live paper trades
+AUTO_TRADE_TIMEFRAME=15m       # intraday bar timeframe
+AUTO_TRADE_MIN_CONSENSUS=2     # strategies that must agree to enter
+AUTO_TRADE_MAX_TRADES_PER_DAY=5
+AUTO_TRADE_DAILY_LOSS_HALT_PCT=0.03   # halt if day P&L < -3% equity
+
 # Risk controls - adjust to your actual paper budget
 RISK_MAX_POSITION_PCT=25
 RISK_MAX_OPEN_RISK_PCT=6
@@ -187,8 +204,10 @@ For HTTPS use Certbot: `sudo apt install certbot python3-certbot-nginx && sudo c
 | EOD data refresh | 21:05 Mon-Fri (Dublin time, ~16:05 ET) | `node-cron` inside the Next.js process |
 | Paper trade sweep (stop/target hit detection) | After every EOD refresh | Part of `postRefreshTasks()` |
 | Telegram stop/target proximity alerts | Every 15 min Mon-Fri | `node-cron` inside the Next.js process |
+| **Intraday bar ingest** | Every 15 min, 09:00-16:00 ET Mon-Fri | `node-cron` (requires `AUTO_TRADE_ENABLED=1`) |
+| **Auto paper-trade loop** | Every 15 min, 09:00-16:00 ET Mon-Fri | `node-cron` (requires `AUTO_TRADE_ENABLED=1`) |
 
-**All three run automatically as long as `npm start` / PM2 is alive.** No extra cron jobs,
+**All five run automatically as long as `npm start` / PM2 is alive.** No extra cron jobs,
 no separate worker process, no intervention needed.
 
 Alerts fire when an open paper trade's live price comes within `ALERT_PROXIMITY_PCT` (default 2%)
@@ -324,11 +343,13 @@ quantdesk/
         │   ├── registry.ts            # maps providerId -> adapter instance
         │   ├── schemas.ts             # zod BarSchema, SymbolMetaSchema
         │   ├── ingest.ts              # bulk ingest orchestration
+        │   ├── intraday-ingest.ts     # intraday bar ingest for auto-trade universe
         │   ├── poller.ts              # incremental EOD refresh logic
         │   ├── resample.ts            # resample daily -> weekly bars
-        │   ├── universe.ts            # load/validate symbol universe JSON
+        │   ├── universe.ts            # load/validate symbol universe JSON + autoTradeUniverse()
         │   └── providers/
         │       ├── yahoo.ts           # Yahoo Finance adapter (default, no key needed)
+        │       ├── alpaca.ts          # Alpaca Markets adapter (free IEX real-time, intraday + batch)
         │       ├── twelve-data.ts     # Twelve Data adapter (requires API key)
         │       └── _template.ts       # copy-me stub for new providers
         ├── indicators/
@@ -353,8 +374,13 @@ quantdesk/
         │   ├── engine.ts              # bar-by-bar simulator (fills at next bar open)
         │   ├── fills.ts               # fill price math: slippage, stop/target, P&L
         │   └── metrics.ts             # return %, CAGR, win rate, Sharpe, max drawdown
+        ├── market/
+        │   ├── hours.ts               # isUsMarketOpen(), isNearMarketClose() - DST-aware ET, NYSE holidays
+        │   ├── markets.ts             # market hours, open/closed status per exchange
+        │   └── snapshot.ts            # index/market snapshot queries
         ├── paper/
         │   ├── broker.ts              # open/close paper positions, mark-to-market
+        │   ├── auto-trade.ts          # automated intraday paper-trading engine (runAutoTrade)
         │   └── tradebook.ts           # aggregate stats per strategy
         ├── scan/
         │   └── scanner.ts             # run strategy across watchlist -> signals
@@ -471,6 +497,11 @@ interface DataProvider {
 }
 ```
 
+Optional batch method for multi-symbol efficiency (Alpaca implements it):
+```ts
+getHistoryBatch?(symbols: string[], timeframe: Timeframe, from: string, to: string): Promise<Record<string, Bar[]>>;
+```
+
 Adding a new provider = one new file in `providers/` + one line in `registry.ts`. Zero changes elsewhere.
 
 ---
@@ -543,7 +574,39 @@ TWELVE_DATA_API_KEY=your_key_here
 
 ---
 
+## Auto-trading quick-start
+
+```bash
+# 1. Get a free Alpaca paper account at https://app.alpaca.markets/signup
+# 2. Add to .env.local (paper keys start with PK...)
+ALPACA_KEY_ID=PKxxxxxxxx
+ALPACA_SECRET_KEY=xxxxxxxx
+TELEGRAM_BOT_TOKEN=<from @BotFather>
+TELEGRAM_CHAT_ID=<your chat id>
+
+# 3. Enable dry-run first (Telegram-only, no DB writes)
+AUTO_TRADE_ENABLED=1
+AUTO_TRADE_DRY_RUN=1
+
+# 4. Start server and click TRIGGER NOW on /paper to test immediately
+npm run dev
+
+# 5. Once happy with Telegram signals, flip to live paper trades
+AUTO_TRADE_DRY_RUN=0
+# Restart server. Cron fires every 15 min during US RTH (9:30-16:00 ET).
+```
+
+Auto-trade flow per tick:
+1. Ingest fresh 15m bars from Alpaca (IEX real-time feed, free)
+2. Run all strategies → build consensus (default: ≥2 must agree)
+3. Psychology filters: daily-loss halt, max-trades/day cap, no re-entry on stopped symbol, no entries within 30 min of close
+4. Risk-size at 1% equity/trade → `openPaperTrade` (broker enforces budget + risk gates)
+5. Telegram entry notification (symbol, qty, entry/stop/target, R:R, agreeing strategies)
+6. EOD sweep closes positions that hit stop/target → Telegram exit notification
+
+---
+
 ## Out of scope
 
-Real-money order routing, auto-trading, user accounts, multi-tenant, in-app YouTube
-transcription. Single-user local research tool only.
+Real-money order routing, user accounts, multi-tenant, in-app YouTube
+transcription. Single-user local research tool only. Auto-trading is paper-only.

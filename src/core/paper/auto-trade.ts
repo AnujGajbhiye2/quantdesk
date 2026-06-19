@@ -145,7 +145,7 @@ async function tg(text: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function runAutoTrade(
-  opts: { timeframe?: Timeframe } = {},
+  opts: { timeframe?: Timeframe; bypassMarketHours?: boolean } = {},
 ): Promise<AutoTradeSummary> {
   const t0     = Date.now();
   const cfg    = loadConfig();
@@ -173,7 +173,7 @@ export async function runAutoTrade(
     return summary;
   }
 
-  const marketOpen = isUsMarketOpen(now);
+  const marketOpen = opts.bypassMarketHours || isUsMarketOpen(now);
   summary.marketOpen = marketOpen;
 
   if (!marketOpen) {
