@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import DublinClock from '@/components/primitives/DublinClock';
 import NewPaperTrade from '@/components/trade/NewPaperTrade';
 import AccountStrip from '@/components/panels/AccountStrip';
+import AutoTradePanel from '@/components/panels/AutoTradePanel';
 import type { AccountSummary } from '@/core/paper/account';
 import { fmtMoney, curGlyph } from '@/core/format/currency';
 import type { TradeBook } from '@/core/paper/tradebook';
@@ -632,6 +633,9 @@ export default function PaperPage() {
           }).then(() => loadData());
         }}
       />
+
+      {/* Auto-trade status panel */}
+      <AutoTradePanel />
 
       {/* New trade form */}
       <NewPaperTrade onOpened={handleOpened} />

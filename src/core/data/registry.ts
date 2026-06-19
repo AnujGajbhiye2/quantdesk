@@ -1,6 +1,7 @@
 import type { DataProvider } from './DataProvider';
 import { YahooProvider } from './providers/yahoo';
 import { TwelveDataProvider } from './providers/twelve-data';
+import { AlpacaProvider } from './providers/alpaca';
 
 /**
  * Global provider registry.
@@ -45,6 +46,16 @@ register(new YahooProvider());
 // Twelve Data - free API key at twelvedata.com (800 req/day, 8 req/min)
 if (process.env.TWELVE_DATA_API_KEY) {
   register(new TwelveDataProvider({ apiKey: process.env.TWELVE_DATA_API_KEY }));
+}
+
+// Alpaca Markets - free at alpaca.markets (no key = not registered)
+// Required for intraday bar ingest and auto-trading.
+// Get a free key at https://app.alpaca.markets/signup
+if (process.env.ALPACA_KEY_ID && process.env.ALPACA_SECRET_KEY) {
+  register(new AlpacaProvider({
+    keyId:     process.env.ALPACA_KEY_ID,
+    secretKey: process.env.ALPACA_SECRET_KEY,
+  }));
 }
 
 // Future example:

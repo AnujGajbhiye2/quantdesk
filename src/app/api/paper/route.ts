@@ -189,9 +189,35 @@ export async function POST(request: Request) {
         return NextResponse.json({ trades: withEstHold(trades) });
       }
 
+      case 'auto-status': {
+        // Read-only status: auto-trade config flags + today's auto trades.
+        const today = new Date().toISOString().slice(0, 10);
+        const allTrades = getPaperTrades();
+        const autoToday = allTrades.filter(
+          (t) => t.entryTime.slice(0, 10) === today && t.strategyId !== 'manual',
+        );
+        const openAutoToday = autoToday.filter((t) => t.status === 'open');
+        const closedAutoToday = autoToday.filter((t) => t.status === 'closed');
+        const todayPnl = closedAutoToday.reduce((s, t) => s + (t.pnl ?? 0), 0);
+        return NextResponse.json({
+          enabled:          process.env.AUTO_TRADE_ENABLED === '1',
+          dryRun:           process.env.AUTO_TRADE_DRY_RUN === '1',
+          timeframe:        process.env.AUTO_TRADE_TIMEFRAME ?? '15m',
+          minConsensus:     parseInt(process.env.AUTO_TRADE_MIN_CONSENSUS ?? '2', 10),
+          maxTradesPerDay:  parseInt(process.env.AUTO_TRADE_MAX_TRADES_PER_DAY ?? '5', 10),
+          dailyLossHaltPct: parseFloat(process.env.AUTO_TRADE_DAILY_LOSS_HALT_PCT ?? '0.03'),
+          today,
+          autoTradesToday:  autoToday.length,
+          openAutoToday:    openAutoToday.length,
+          closedAutoToday:  closedAutoToday.length,
+          todayPnlUsd:      todayPnl,
+          trades:           autoToday,
+        });
+      }
+
       default:
         return NextResponse.json(
-          { error: `Unknown action '${action}'. Valid: open, close, mark, project, tradebook, list, account, account-set` },
+          { error: `Unknown action '${action}'. Valid: open, close, mark, project, tradebook, list, account, account-set, auto-status` },
           { status: 400 },
         );
     }

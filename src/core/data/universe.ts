@@ -4,11 +4,33 @@ import type { UniverseEntry } from './ingest';
 import sp500 from '../../../scripts/universe/sp500.json';
 import nifty200 from '../../../scripts/universe/nifty200.json';
 import stoxx600 from '../../../scripts/universe/stoxx600.json';
+import gold from '../../../scripts/universe/gold.json';
 
 // stoxx600.json is a placeholder until populated via:
 //   npm run build-universe -- --only stoxx600
 //   npm run ingest -- --universe scripts/universe/stoxx600.json
-const CURATED_UNIVERSE = [...sp500, ...nifty200, ...stoxx600] as UniverseEntry[];
+const CURATED_UNIVERSE = [...sp500, ...nifty200, ...stoxx600, ...gold] as UniverseEntry[];
+
+// Symbols eligible for automated intraday trading: S&P 500 + gold instruments.
+// All routed through Alpaca (free IEX feed, US equities/ETFs).
+const SP500_SYMBOLS   = new Set((sp500 as UniverseEntry[]).map((e) => e.symbol));
+const GOLD_SYMBOLS    = new Set((gold  as UniverseEntry[]).map((e) => e.symbol));
+
+/**
+ * Universe eligible for automated intraday paper-trading.
+ * Only US instruments served by Alpaca (free tier).
+ */
+export function autoTradeUniverse(): UniverseEntry[] {
+  return dedupeUniverse(
+    (CURATED_UNIVERSE).filter((e) => SP500_SYMBOLS.has(e.symbol) || GOLD_SYMBOLS.has(e.symbol)),
+  ).map((e) => ({
+    ...e,
+    // Force providerId to alpaca for all auto-trade entries so intraday
+    // ingest routes to the correct provider. Fallback to 'yahoo' when
+    // Alpaca is not registered (i.e. keys not set).
+    providerId: 'alpaca',
+  }));
+}
 
 export interface KnownSymbol {
   symbol:     string;

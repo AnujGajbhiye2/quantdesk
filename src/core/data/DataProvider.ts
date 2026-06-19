@@ -97,4 +97,17 @@ export interface DataProvider {
    * Returns [] when unavailable. Validate with NewsItemSchema before returning.
    */
   getNews?(symbol: string, count?: number): Promise<NewsItem[]>;
+
+  /**
+   * Optional: fetch bars for multiple symbols in a single API call.
+   * Keyed by canonical symbol string. Providers that support batch should
+   * implement this for efficiency (avoids per-symbol rate-limit overhead).
+   * Falls back to individual getHistory calls when absent.
+   */
+  getHistoryBatch?(
+    symbols: string[],
+    timeframe: Timeframe,
+    from: string,
+    to: string,
+  ): Promise<Record<string, Bar[]>>;
 }

@@ -84,6 +84,55 @@ export async function register() {
     console.log(`[instrumentation] Stop/target monitor cron: "${monitorSchedule}" (${timezone})`);
   }
 
+  // ------------------------------------------------------------------
+  // Auto-trading cron - intraday signal scan + paper-trade execution
+  // ------------------------------------------------------------------
+  const autoTradeEnabled  = process.env.AUTO_TRADE_ENABLED === '1';
+  const autoTradeCron     = process.env.AUTO_TRADE_CRON ?? '*/15 9-16 * * 1-5';
+  const autoTradeTimezone = 'America/New_York';
+
+  if (!autoTradeEnabled) {
+    console.log('[instrumentation] Auto-trading disabled (AUTO_TRADE_ENABLED != 1). Set to 1 to enable.');
+  } else if (!cron.validate(autoTradeCron)) {
+    console.error(`[instrumentation] Invalid AUTO_TRADE_CRON: "${autoTradeCron}". Auto-trade cron not started.`);
+  } else {
+    const dryRun = process.env.AUTO_TRADE_DRY_RUN === '1';
+    const tf     = process.env.AUTO_TRADE_TIMEFRAME ?? '15m';
+    console.log(
+      `[instrumentation] Auto-trade cron: "${autoTradeCron}" (${autoTradeTimezone})` +
+      ` | timeframe: ${tf}` +
+      (dryRun ? ' | DRY RUN' : ' | LIVE PAPER'),
+    );
+
+    cron.schedule(
+      autoTradeCron,
+      async () => {
+        try {
+          const { ingestIntraday } = await import('@/core/data/intraday-ingest');
+          const ingest = await ingestIntraday(tf as import('@/core/types').Timeframe);
+          if (ingest.errors > 0) {
+            console.warn(`[auto-trade] ingest: ${ingest.symbols} symbols, ${ingest.barsAdded} bars, ${ingest.errors} error(s)`);
+          }
+
+          const { runAutoTrade } = await import('@/core/paper/auto-trade');
+          const result = await runAutoTrade({ timeframe: tf as import('@/core/types').Timeframe });
+
+          if (!result.marketOpen) return; // silent off-hours
+          console.log(
+            `[auto-trade] ${result.etTime} ET | entries:${result.entries.length}` +
+            ` exits:${result.exits.length} skips:${result.skips.length}` +
+            ` halted:${result.halted}` +
+            (result.dryRun ? ' [DRY RUN]' : ''),
+          );
+          if (result.haltReason) console.warn('[auto-trade] HALT:', result.haltReason);
+        } catch (err) {
+          console.error('[auto-trade] tick failed:', err);
+        }
+      },
+      { timezone: autoTradeTimezone },
+    );
+  }
+
   cron.schedule(
     monitorSchedule,
     async () => {
