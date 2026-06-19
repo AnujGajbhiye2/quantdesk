@@ -10,6 +10,7 @@ import type { TradeBook } from '@/core/paper/tradebook';
 import type { PaperTradeWithHold } from '@/core/paper/hold';
 import type { PaperTrade } from '@/core/types';
 import { useSettings } from '@/components/providers/SettingsProvider';
+import type { PendingFillResult } from '@/core/paper/broker';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -383,12 +384,12 @@ export default function PaperPage() {
   const [account,      setAccount]      = useState<AccountSummary | null>(null);
   const [sweeping,     setSweeping]     = useState(false);
   const [sweepMsg,     setSweepMsg]     = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed' | 'pending'>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('paper:statusFilter') : null;
-    return (saved === 'open' || saved === 'closed' || saved === 'pending') ? saved : 'all';
-  });
-  const [refreshing,   setRefreshing]   = useState(false);
-  const [lastRefresh,  setLastRefresh]  = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed' | 'pending'>('all');
+  const [refreshing,     setRefreshing]     = useState(false);
+  const [lastRefresh,    setLastRefresh]    = useState('');
+  const [checkingFills,  setCheckingFills]  = useState(false);
+  // keyed by trade.id - populated after CHECK FILLS or REFRESH PRICES
+  const [fillDiagnostics, setFillDiagnostics] = useState<Map<string, PendingFillResult>>(new Map());
   const { displayCurrency: displayCur, rates: fxRates, setDisplayCurrency: setDisplayCur } = useSettings();
 
   // Load data on mount (and after mutations)
@@ -418,6 +419,11 @@ export default function PaperPage() {
       };
       setMarks(new Map(markResults.map((m) => [m.trade.id, { unrealizedPnl: m.unrealizedPnl, unrealizedPnlPct: m.unrealizedPnlPct, markPrice: m.markPrice }])));
     }
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('paper:statusFilter');
+    if (saved === 'open' || saved === 'closed' || saved === 'pending') setStatusFilter(saved);
   }, []);
 
   useEffect(() => { void loadData(); }, [loadData]);
@@ -517,10 +523,37 @@ export default function PaperPage() {
     void loadData();
   }, [loadData]);
 
+  /**
+   * Check all resting limit orders against live quotes.
+   * Captures per-order diagnostics (current price vs limit, crossed?, reason)
+   * then reloads - any filled order moves from pending to open.
+   */
+  const handleCheckFills = useCallback(async () => {
+    setCheckingFills(true);
+    try {
+      const res = await fetch('/api/paper', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'fill-pending' }),
+      });
+      if (res.ok) {
+        const data = await res.json() as { fillResults: PendingFillResult[]; filled: number };
+        setFillDiagnostics(new Map(data.fillResults.map((r) => [r.trade.id, r])));
+      }
+      void loadData();
+    } finally {
+      setCheckingFills(false);
+    }
+  }, [loadData]);
+
   // Filtered view - no refetch needed, status lives on each trade object
   const visibleTrades = statusFilter === 'all'
     ? trades
     : trades.filter((t) => t.status === statusFilter);
+
+  // Pending orders - ALWAYS derived from full trades list, bypasses statusFilter
+  // This ensures resting limit orders are never hidden by the sticky filter.
+  const pendingOrders = trades.filter((t) => t.status === 'pending');
 
   /**
    * Convert a USD-denominated amount (from tradebook) to the selected display currency.
@@ -615,6 +648,153 @@ export default function PaperPage() {
               [ PERFORMANCE BY STRATEGY ]
             </div>
             <ByStrategyTable book={book} displayCur={displayCur} fromUSD={fromUSD} />
+          </div>
+        )}
+
+        {/* Pending / Resting Orders - always visible, independent of statusFilter */}
+        {pendingOrders.length > 0 && (
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ color: '#e6a817', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em', fontWeight: 700 }}>
+                [ PENDING / RESTING ORDERS ({pendingOrders.length}) ]
+              </span>
+              <button
+                onClick={() => void handleCheckFills()}
+                disabled={checkingFills}
+                style={{
+                  background:  'var(--bg-panel)',
+                  border:      '1px solid #e6a817',
+                  color:       checkingFills ? '#e6a817' : 'var(--text-muted)',
+                  fontFamily:  'var(--font-mono)',
+                  fontSize:    'var(--fs-xs)',
+                  padding:     '2px 8px',
+                  cursor:      'pointer',
+                }}
+              >
+                {checkingFills ? 'CHECKING...' : 'CHECK FILLS'}
+              </button>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)', fontFamily: 'var(--font-mono)' }}>
+              <thead>
+                <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>
+                  <th style={{ textAlign: 'left',   padding: '2px 6px', fontWeight: 400 }}>SYMBOL</th>
+                  <th style={{ textAlign: 'center', padding: '2px 6px', fontWeight: 400 }}>SIDE</th>
+                  <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>LIMIT</th>
+                  <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>CURRENT</th>
+                  <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>DISTANCE</th>
+                  <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>STOP</th>
+                  <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>TARGET</th>
+                  <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>QTY</th>
+                  <th style={{ textAlign: 'left',   padding: '2px 6px', fontWeight: 400 }}>REQUESTED</th>
+                  <th style={{ textAlign: 'left',   padding: '2px 6px', fontWeight: 400 }}>FILL CHECK</th>
+                  <th style={{ textAlign: 'center', padding: '2px 6px', fontWeight: 400 }}>ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingOrders.map((order) => {
+                  const diag   = fillDiagnostics.get(order.id);
+                  const limit  = order.entryPrice;
+                  const cur    = order.currency ?? 'USD';
+
+                  // Distance from limit (+ = favorable, - = needs to move further)
+                  let distPct: number | null = null;
+                  let distColor              = 'var(--text-muted)';
+                  let currentCell            = '--';
+                  if (diag?.quotePrice != null) {
+                    currentCell = fmtMoney(diag.quotePrice, cur);
+                    const raw   = (diag.quotePrice - limit) / limit * 100;
+                    // For long: positive raw = price above limit = further from fill (bad)
+                    // For short: negative raw = price below limit = further from fill (bad)
+                    distPct = order.side === 'long' ? raw : -raw;
+                    // distPct < 0 means approaching the fill
+                    distColor = distPct <= 0
+                      ? 'var(--color-up)'    // heading toward fill
+                      : 'var(--color-down)'; // moving away
+                  }
+
+                  // Fill-check status line
+                  let fillCheckNode: React.ReactNode = <span style={{ color: 'var(--text-muted)' }}>--</span>;
+                  if (diag) {
+                    const col = diag.action === 'filled'       ? 'var(--color-up)'
+                              : diag.action === 'fill-blocked' ? 'var(--color-down)'
+                              : diag.crossed                   ? '#e6a817'
+                              : 'var(--text-muted)';
+                    fillCheckNode = (
+                      <span style={{ color: col, whiteSpace: 'nowrap' }}
+                            title={diag.reason ?? ''}>
+                        {diag.action === 'filled'       ? `FILLED @ ${fmtMoney(diag.fillPrice ?? limit, cur)}`
+                         : diag.action === 'fill-blocked' ? 'BLOCKED (budget/risk)'
+                         : diag.reason ?? 'checking...'}
+                      </span>
+                    );
+                  }
+
+                  return (
+                    <tr key={order.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '3px 6px', color: 'var(--color-accent)', fontWeight: 600 }}>
+                        {order.symbol}
+                      </td>
+                      <td style={{ padding: '3px 6px', textAlign: 'center',
+                                   color: order.side === 'long' ? 'var(--color-up)' : 'var(--color-down)',
+                                   fontWeight: 700 }}>
+                        {order.side.toUpperCase()}
+                      </td>
+                      <td style={{ padding: '3px 6px', textAlign: 'right', color: '#e6a817', fontVariantNumeric: 'tabular-nums' }}>
+                        {fmtMoney(limit, cur)}
+                      </td>
+                      <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
+                                   color: diag?.quotePrice != null ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                        {currentCell}
+                      </td>
+                      <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
+                                   color: distPct != null ? distColor : 'var(--text-muted)' }}>
+                        {distPct != null
+                          ? `${distPct >= 0 ? '+' : ''}${distPct.toFixed(2)}%`
+                          : '--'}
+                      </td>
+                      <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
+                                   color: order.stopPrice != null ? 'var(--color-down)' : 'var(--text-muted)' }}>
+                        {order.stopPrice != null ? fmtMoney(order.stopPrice, cur) : '--'}
+                      </td>
+                      <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
+                                   color: order.targetPrice != null ? 'var(--color-up)' : 'var(--text-muted)' }}>
+                        {order.targetPrice != null ? fmtMoney(order.targetPrice, cur) : '--'}
+                      </td>
+                      <td style={{ padding: '3px 6px', textAlign: 'right', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                        {fmtNum(order.qty, 4)}
+                      </td>
+                      <td style={{ padding: '3px 6px', color: 'var(--text-muted)' }}>
+                        {fmtDate(order.entryTime)}
+                      </td>
+                      <td style={{ padding: '3px 6px', fontSize: 'var(--fs-xs)', maxWidth: 260, overflow: 'hidden',
+                                   textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {fillCheckNode}
+                      </td>
+                      <td style={{ padding: '3px 6px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => void handleCancel(order.id)}
+                          style={{
+                            background:  'var(--bg-panel)',
+                            border:      '1px solid var(--color-down)',
+                            color:       'var(--color-down)',
+                            fontFamily:  'var(--font-mono)',
+                            fontSize:    'var(--fs-xs)',
+                            padding:     '1px 6px',
+                            cursor:      'pointer',
+                          }}
+                        >
+                          CANCEL
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div style={{ marginTop: 6, fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
+              Resting limit orders - fill only when market price crosses the limit (not on gap-up/gap-down short of the limit).
+              CHECK FILLS runs the live-quote fill check and shows per-order diagnostics.
+            </div>
           </div>
         )}
 

@@ -54,7 +54,7 @@ vi.mock('@/core/notify/telegram', () => ({
 }));
 
 // Import broker AFTER mocks are registered
-const { openPaperTrade, closePaperTrade, markOpenTrades, projectTrade, DuplicateOpenTradeError } =
+const { openPaperTrade, closePaperTrade, markOpenTrades, projectTrade, DuplicateOpenTradeError, sweepPendingTrades } =
   await import('./broker');
 
 // ---------------------------------------------------------------------------
@@ -364,5 +364,122 @@ describe('projectTrade', () => {
 
     expect(result.trade.pnl).toBeCloseTo(expected.trades[0].pnl, 4);
     expect(result.trade.entryPrice).toBeCloseTo(expected.trades[0].entryPrice, 4);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// sweepPendingTrades - gap-safety verification
+//
+// Critical property: a limit order must ONLY fill when price actually crosses
+// the limit in the bar's range, never on a gap that does NOT reach the limit.
+// ---------------------------------------------------------------------------
+
+describe('sweepPendingTrades - gap safety', () => {
+  // Reusable pending trade shape (no DB needed - mockGetAll returns it directly)
+  const pendingLong: import('@/core/types').PaperTrade = {
+    id:         'p1',
+    strategyId: 'rsi',
+    symbol:     'AAPL',
+    side:       'long',
+    qty:        10,
+    entryPrice: 100,   // buy-limit at 100
+    entryTime:  '2024-01-01',
+    status:     'pending',
+    costs:      0,
+  };
+
+  const pendingShort: import('@/core/types').PaperTrade = {
+    ...pendingLong,
+    id:   'p2',
+    side: 'short',
+    entryPrice: 200,  // sell-limit at 200
+  };
+
+  beforeEach(() => {
+    // account = null -> no budget/risk checks in fillPendingTrade
+    mockGetActiveBySymbol.mockReturnValue(undefined);
+    mockFillPending.mockImplementation(() => {});  // no-op DB call
+  });
+
+  // --- BUY-LIMIT (long) ---
+
+  it('buy-limit: gap-UP bar (low > limit) does NOT fill', () => {
+    // price gaps above limit and never comes back - bar entirely above 100
+    const gapUpBar = { time: '2024-01-02', open: 110, high: 115, low: 108, close: 112, volume: 1000 };
+    mockGetAll.mockReturnValue([pendingLong]);
+    mockGetBars.mockReturnValue([
+      { ...gapUpBar, time: '2024-01-01' }, // order bar
+      gapUpBar,                             // post-order bar: low=108 > limit=100 -> no fill
+    ]);
+
+    const results = sweepPendingTrades();
+    expect(results).toHaveLength(1);
+    expect(results[0].action).toBe('still-pending');
+    expect(mockFillPending).not.toHaveBeenCalled();
+  });
+
+  it('buy-limit: bar TOUCHES limit (low == limit, open above) fills at limit', () => {
+    // bar opens above 100, dips exactly to 100 (low=100 <= limit=100)
+    const touchBar = { time: '2024-01-02', open: 105, high: 108, low: 100, close: 103, volume: 1000 };
+    mockGetAll.mockReturnValue([pendingLong]);
+    mockGetBars.mockReturnValue([
+      { ...touchBar, time: '2024-01-01' }, // order bar
+      touchBar,                             // post-order: low=100 == limit -> fill at min(open=105, limit=100) = 100
+    ]);
+
+    const results = sweepPendingTrades();
+    expect(results).toHaveLength(1);
+    expect(results[0].action).toBe('filled');
+    // rawFill = min(open=105, limit=100) = 100; slippage applied by fillPendingTrade
+    expect(results[0].fillPrice).toBe(100);
+    expect(mockFillPending).toHaveBeenCalledOnce();
+  });
+
+  it('buy-limit: gap-DOWN open below limit fills at open (better price than limit)', () => {
+    // price gaps down through the limit: open=95 < limit=100
+    const gapDownBar = { time: '2024-01-02', open: 95, high: 98, low: 90, close: 94, volume: 1000 };
+    mockGetAll.mockReturnValue([pendingLong]);
+    mockGetBars.mockReturnValue([
+      { ...gapDownBar, time: '2024-01-01' }, // order bar
+      gapDownBar,                              // post-order: low=90 <= limit=100 -> fill at min(open=95, limit=100) = 95
+    ]);
+
+    const results = sweepPendingTrades();
+    expect(results).toHaveLength(1);
+    expect(results[0].action).toBe('filled');
+    // Gets the better price (open=95 < limit=100)
+    expect(results[0].fillPrice).toBe(95);
+  });
+
+  // --- SELL-LIMIT (short) ---
+
+  it('sell-limit: gap-DOWN bar (high < limit) does NOT fill', () => {
+    // price gaps below limit and never rises to it - bar entirely below 200
+    const gapDownBar = { time: '2024-01-02', open: 185, high: 190, low: 180, close: 183, volume: 1000 };
+    mockGetAll.mockReturnValue([pendingShort]);
+    mockGetBars.mockReturnValue([
+      { ...gapDownBar, time: '2024-01-01' },
+      gapDownBar, // high=190 < limit=200 -> no fill
+    ]);
+
+    const results = sweepPendingTrades();
+    expect(results).toHaveLength(1);
+    expect(results[0].action).toBe('still-pending');
+    expect(mockFillPending).not.toHaveBeenCalled();
+  });
+
+  it('sell-limit: bar REACHES limit (high >= limit) fills at max(open, limit)', () => {
+    // bar opens below 200, rallies above 200
+    const reachBar = { time: '2024-01-02', open: 195, high: 205, low: 193, close: 202, volume: 1000 };
+    mockGetAll.mockReturnValue([pendingShort]);
+    mockGetBars.mockReturnValue([
+      { ...reachBar, time: '2024-01-01' },
+      reachBar, // high=205 >= limit=200 -> fill at max(open=195, limit=200) = 200
+    ]);
+
+    const results = sweepPendingTrades();
+    expect(results).toHaveLength(1);
+    expect(results[0].action).toBe('filled');
+    expect(results[0].fillPrice).toBe(200);
   });
 });

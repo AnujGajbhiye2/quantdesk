@@ -430,10 +430,15 @@ export function createPendingTrade(input: OpenTradeInput): PaperTrade {
 }
 
 export interface PendingFillResult {
-  trade:      PaperTrade;
-  action:     'filled' | 'fill-blocked' | 'still-pending';
-  fillPrice?: number;
-  fillTime?:  string;
+  trade:       PaperTrade;
+  action:      'filled' | 'fill-blocked' | 'still-pending';
+  fillPrice?:  number;
+  fillTime?:   string;
+  // diagnostic fields - populated by fillPendingTradesWithQuotes (live-quote path)
+  quotePrice?: number;   // live quote price seen during this check
+  limitPrice?: number;   // trade.entryPrice (the resting limit)
+  crossed?:    boolean;  // did the quote cross the limit this check
+  reason?:     string;   // human-readable note: 'resting - 2.1% away', 'crossed - filled at limit', etc.
 }
 
 /**
@@ -545,10 +550,12 @@ export function sweepPendingTrades(timeframe: Timeframe = '1d'): PendingFillResu
       if (rawFill !== undefined) {
         const filledTrade = fillPendingTrade(trade, rawFill, bar.time);
         results.push({
-          trade:     filledTrade ?? trade,
-          action:    filledTrade ? 'filled' : 'fill-blocked',
-          fillPrice: rawFill,
-          fillTime:  bar.time,
+          trade:      filledTrade ?? trade,
+          action:     filledTrade ? 'filled' : 'fill-blocked',
+          fillPrice:  rawFill,
+          fillTime:   bar.time,
+          limitPrice: limit,
+          reason:     filledTrade ? 'bar crossed limit - filled' : 'bar crossed limit but budget/risk blocked',
         });
         filled = true;
         break;
@@ -556,7 +563,7 @@ export function sweepPendingTrades(timeframe: Timeframe = '1d'): PendingFillResu
     }
 
     if (!filled) {
-      results.push({ trade, action: 'still-pending' });
+      results.push({ trade, action: 'still-pending', limitPrice: limit, reason: 'no bar has crossed the limit yet' });
     }
   }
 
@@ -578,11 +585,13 @@ export async function fillPendingTradesWithQuotes(
   const results: PendingFillResult[] = [];
 
   for (const trade of pendingTrades) {
+    const limit = trade.entryPrice;
+
     const meta = metaBySymbol.get(trade.symbol);
     if (!meta) continue;
     const provider = getProvider(meta.providerId);
     if (typeof provider.getQuote !== 'function') {
-      results.push({ trade, action: 'still-pending' });
+      results.push({ trade, action: 'still-pending', limitPrice: limit, reason: 'provider has no live quote' });
       continue;
     }
 
@@ -590,39 +599,51 @@ export async function fillPendingTradesWithQuotes(
     try {
       quote = await provider.getQuote(trade.symbol);
     } catch {
-      results.push({ trade, action: 'still-pending' });
+      results.push({ trade, action: 'still-pending', limitPrice: limit, reason: 'no live quote available' });
       continue;
     }
 
     if (!quote || !isFinite(quote.price) || quote.price <= 0) {
-      results.push({ trade, action: 'still-pending' });
+      results.push({ trade, action: 'still-pending', limitPrice: limit, reason: 'no live quote available' });
       continue;
     }
 
     // Skip if the quote is older than the latest bar (stale data)
     const latestBarTime = getLatestBarTime(trade.symbol, timeframe);
     if (latestBarTime && quote.time.slice(0, 10) < latestBarTime) {
-      results.push({ trade, action: 'still-pending' });
+      results.push({
+        trade, action: 'still-pending', limitPrice: limit,
+        quotePrice: quote.price, reason: 'stale quote (older than last bar)',
+      });
       continue;
     }
 
-    const limit   = trade.entryPrice;
     const crossed = trade.side === 'long'
       ? quote.price <= limit
       : quote.price >= limit;
 
     if (!crossed) {
-      results.push({ trade, action: 'still-pending' });
+      const dist = (Math.abs(quote.price - limit) / limit * 100).toFixed(2);
+      results.push({
+        trade, action: 'still-pending', limitPrice: limit,
+        quotePrice: quote.price, crossed: false,
+        reason: `resting - ${dist}% from limit`,
+      });
       continue;
     }
 
     // Fill at the limit price (conservative: guaranteed price, not gap-through)
-    const filledTrade = fillPendingTrade(trade, limit, quote.time.slice(0, 10));
+    const fillTime    = quote.time.slice(0, 10);
+    const filledTrade = fillPendingTrade(trade, limit, fillTime);
     results.push({
-      trade:     filledTrade ?? trade,
-      action:    filledTrade ? 'filled' : 'fill-blocked',
-      fillPrice: limit,
-      fillTime:  quote.time.slice(0, 10),
+      trade:      filledTrade ?? trade,
+      action:     filledTrade ? 'filled' : 'fill-blocked',
+      fillPrice:  limit,
+      fillTime,
+      limitPrice: limit,
+      quotePrice: quote.price,
+      crossed:    true,
+      reason:     filledTrade ? 'crossed - filled at limit' : 'crossed but budget/risk blocked',
     });
   }
 
