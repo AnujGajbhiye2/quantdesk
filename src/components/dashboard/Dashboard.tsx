@@ -983,8 +983,9 @@ export default function Dashboard({
               defaultLayout={scanLayout.defaultLayout ?? { 'scan-results': 58, 'scan-gainers': 42 }}
               onLayoutChanged={scanLayout.onLayoutChanged}
               style={{ height: "100%" }}
+              suppressHydrationWarning
             >
-              <Panel id="scan-results" defaultSize={58} minSize={25}>
+              <Panel id="scan-results" defaultSize={58} minSize={25} suppressHydrationWarning>
                 <ScanResultsPanel
                   rows={scanSort.sorted}
                   selected={selected}
@@ -994,7 +995,7 @@ export default function Dashboard({
                 />
               </Panel>
               <ResizeHandle orientation="horizontal" />
-              <Panel id="scan-gainers" defaultSize={42} minSize={20}>
+              <Panel id="scan-gainers" defaultSize={42} minSize={20} suppressHydrationWarning>
                 <GainersLosersPanel rows={visibleRows} />
               </Panel>
             </Group>
@@ -1007,8 +1008,9 @@ export default function Dashboard({
               defaultLayout={signalsLayout.defaultLayout ?? { 'sig-dashboard': 50, 'sig-ideas': 50 }}
               onLayoutChanged={signalsLayout.onLayoutChanged}
               style={{ height: "100%" }}
+              suppressHydrationWarning
             >
-              <Panel id="sig-dashboard" defaultSize={50} minSize={25}>
+              <Panel id="sig-dashboard" defaultSize={50} minSize={25} suppressHydrationWarning>
                 <SignalDashboardPanel
                   rows={visibleRows}
                   signals={visibleSignals}
@@ -1017,7 +1019,7 @@ export default function Dashboard({
                 />
               </Panel>
               <ResizeHandle orientation="horizontal" />
-              <Panel id="sig-ideas" defaultSize={50} minSize={25}>
+              <Panel id="sig-ideas" defaultSize={50} minSize={25} suppressHydrationWarning>
                 <TradeIdeasPanel
                   ideas={visibleIdeas}
                   onTake={onTakeIdea}
@@ -1037,25 +1039,27 @@ export default function Dashboard({
               defaultLayout={riskVLayout.defaultLayout ?? { 'risk-top': 28, 'risk-trades': 72 }}
               onLayoutChanged={riskVLayout.onLayoutChanged}
               style={{ height: "100%" }}
+              suppressHydrationWarning
             >
-              <Panel id="risk-top" defaultSize={28} minSize={15}>
+              <Panel id="risk-top" defaultSize={28} minSize={15} suppressHydrationWarning>
                 <Group
                   orientation="horizontal"
                   defaultLayout={riskTopLayout.defaultLayout ?? { 'risk-gauges': 33, 'risk-edge': 67 }}
                   onLayoutChanged={riskTopLayout.onLayoutChanged}
                   style={{ height: "100%" }}
+                  suppressHydrationWarning
                 >
-                  <Panel id="risk-gauges" defaultSize={33} minSize={20}>
+                  <Panel id="risk-gauges" defaultSize={33} minSize={20} suppressHydrationWarning>
                     <RiskPanel exposure={riskExposure} account={account} />
                   </Panel>
                   <ResizeHandle orientation="horizontal" />
-                  <Panel id="risk-edge" defaultSize={67} minSize={30}>
+                  <Panel id="risk-edge" defaultSize={67} minSize={30} suppressHydrationWarning>
                     <StrategyEdgePanel book={book} backtestWinRates={backtestWinRates} />
                   </Panel>
                 </Group>
               </Panel>
               <ResizeHandle orientation="vertical" />
-              <Panel id="risk-trades" defaultSize={72} minSize={25}>
+              <Panel id="risk-trades" defaultSize={72} minSize={25} suppressHydrationWarning>
                 <TradesPanel trades={visibleTrades} marks={marks} />
               </Panel>
             </Group>

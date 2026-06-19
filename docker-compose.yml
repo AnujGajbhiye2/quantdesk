@@ -1,0 +1,13 @@
+services:
+  quantdesk:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data      # SQLite DB persists here
+      - ./logs:/app/logs      # PM2 / app logs
+    environment:
+      - NODE_ENV=production
