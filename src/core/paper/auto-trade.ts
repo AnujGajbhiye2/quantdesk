@@ -31,6 +31,10 @@ import type { ConsensusSignal } from '@/core/scan/consensus';
 import { recommendTrade, capIdeaToCash } from '@/core/signals/recommend';
 import { sendTelegram, telegramConfigured } from '@/core/notify/telegram';
 import type { SweepResult } from '@/core/paper/broker';
+import { isTradingHalted } from '@/core/paper/halt';
+import { classifyFreshness } from '@/core/notify/freshness';
+import { getLatestBarTime } from '@/core/db/bars';
+import { getFlag, setFlag } from '@/core/db/flags';
 
 // ---------------------------------------------------------------------------
 // Config (all from env with safe defaults)
@@ -305,6 +309,37 @@ export async function runAutoTrade(
   );
 
   // ------------------------------------------------------------------
+  // 7b. Manual halt check (persistent kill switch set via /halt command)
+  // ------------------------------------------------------------------
+  const manualHalt = isTradingHalted();
+  if (manualHalt.halted) {
+    summary.halted     = true;
+    summary.haltReason = `Manual halt: ${manualHalt.reason}`;
+    // Exits (step 2) have already run above - positions keep being managed.
+    // Only new entries are blocked from here.
+    summary.durationMs = Date.now() - t0;
+    return summary;
+  }
+
+  // ------------------------------------------------------------------
+  // 7c. No-budget warning: auto-trade armed but drawdown breaker inactive
+  // ------------------------------------------------------------------
+  if (!cashAcc && cfg.enabled) {
+    // Warn once per day max - the heartbeat also surfaces this; this is a
+    // louder intraday signal so the user notices before a trading day passes.
+    const warnKey = `no_budget_warned_${new Date().toISOString().slice(0, 10)}`;
+    const warned  = getFlag(warnKey);
+    if (!warned) {
+      try { setFlag(warnKey, '1'); } catch { /* non-fatal */ }
+      await tg(
+        '[AUTO-TRADE] WARNING: AUTO_TRADE_ENABLED=1 but no budget is set.\n' +
+        'The drawdown circuit-breaker is INACTIVE and no trades will open.\n' +
+        'Set a budget in /settings to activate the breaker and enable entries.',
+      );
+    }
+  }
+
+  // ------------------------------------------------------------------
   // 8. For each consensus signal: psychology filters -> size -> execute
   // ------------------------------------------------------------------
   for (const c of consensus) {
@@ -427,6 +462,30 @@ export async function runAutoTrade(
         ? Math.abs(cappedIdea.targetPrice - cappedIdea.entryPrice) / cappedIdea.entryPrice
         : undefined;
 
+      // Trade provenance: capture indicator values (embedded in signal reasons),
+      // params used, consensus detail, and data freshness at signal time.
+      const leadParams = leadStrategy.params.parse({});
+      const latestBar  = getLatestBarTime(sym, tf);
+      const fresh      = classifyFreshness(latestBar, now, Number(tf.replace(/\D/g, '')) * 15);
+      const journalWhy = {
+        leadStrategyId,
+        leadParams,
+        allStrategyIds:    c.strategyIds,
+        agreeCount:        c.agreeCount,
+        totalStrategies:   totalStrats,
+        signalReasons:     Object.fromEntries(
+          c.strategyIds.map((id) => [id, c.reasons[id] ?? '']),
+        ),
+        dataFreshness: {
+          latestBarTime: latestBar,
+          ageMinutes:    fresh.ageMinutes,
+          stale:         fresh.stale,
+          label:         fresh.label,
+        },
+        equity,
+        rr:            cappedIdea.rr,
+      };
+
       openPaperTrade({
         strategyId:     leadStrategyId,
         symbol:         sym,
@@ -437,6 +496,7 @@ export async function runAutoTrade(
         targetPct:      targetPctComputed,
         _overrideQty:   cappedIdea.qty,
         notes:          `auto:${c.strategyIds.join(',')} consensus=${c.agreeCount}/${totalStrats}`,
+        journalWhy,
       });
 
       summary.entries.push(entryObj);

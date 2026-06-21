@@ -88,7 +88,7 @@ export interface AccountStateUSD {
   equity:          number;
 }
 
-export type RiskRule = 'drawdown-halt' | 'max-open-trades' | 'position-concentration' | 'total-open-risk' | 'correlated-cluster';
+export type RiskRule = 'drawdown-halt' | 'manual-halt' | 'max-open-trades' | 'position-concentration' | 'total-open-risk' | 'correlated-cluster';
 
 export type RiskCheckResult =
   | { ok: true }

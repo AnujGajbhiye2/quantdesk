@@ -31,6 +31,7 @@ import { checkRisk, riskLimitsFromEnv, type RiskRule } from '@/core/risk/checks'
 import { openPositionsUSD } from '@/core/risk/exposure';
 import { toUSD } from '@/core/format/fx';
 import type { Strategy, StrategyContext, StrategyDecision } from '@/core/strategy/Strategy';
+import { isTradingHalted } from '@/core/paper/halt';
 
 // ---------------------------------------------------------------------------
 // Open
@@ -126,6 +127,16 @@ export function openPaperTrade(input: OpenTradeInput): PaperTrade {
   const existing = getActivePaperTradeBySymbol(symbol);
   if (existing) {
     throw new DuplicateOpenTradeError(symbol, existing.id);
+  }
+
+  // Backstop: manual halt switch blocks all new entries regardless of caller.
+  // Exits/sweeps/closes are intentionally unaffected.
+  const haltState = isTradingHalted();
+  if (haltState.halted) {
+    throw new RiskCheckError(
+      'manual-halt',
+      `Trading halted: ${haltState.reason ?? 'manual halt active'}. Send /resume via Telegram or clear via the DB to lift.`,
+    );
   }
 
   void commission; // stored at close; declared here for interface completeness

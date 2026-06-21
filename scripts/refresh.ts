@@ -107,6 +107,21 @@ async function main() {
     );
   }
 
+  // Daily heartbeat - fires every time the refresh script runs so the operator
+  // can confirm the system is alive and data is fresh. Best-effort; never
+  // blocks the process or changes the exit code.
+  try {
+    const { sendDailyHeartbeat } = await import('../src/core/notify/heartbeat');
+    await sendDailyHeartbeat({
+      totalBars,
+      symbolCount: results.length,
+      refreshErrors: errors,
+      post,
+    });
+  } catch (err) {
+    console.warn('Heartbeat send failed (non-fatal):', err);
+  }
+
   if (errors > 0) process.exit(1);
 }
 

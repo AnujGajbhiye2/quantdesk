@@ -61,6 +61,19 @@ export async function register() {
             `[cron] edge stats done. ${e.rows} rows (${e.recomputed} recomputed), ${e.durationMs}ms.`,
           );
         }
+
+        // Daily heartbeat - fires every trading day; its absence signals failure
+        try {
+          const { sendDailyHeartbeat } = await import('@/core/notify/heartbeat');
+          await sendDailyHeartbeat({
+            totalBars,
+            symbolCount: results.length,
+            refreshErrors: errors,
+            post,
+          });
+        } catch (err) {
+          console.error('[cron] heartbeat failed:', err);
+        }
       } catch (err) {
         console.error('[cron] EOD refresh failed:', err);
       }
@@ -136,6 +149,14 @@ export async function register() {
   cron.schedule(
     monitorSchedule,
     async () => {
+      // Poll Telegram for inbound commands (/halt, /resume, /status) first
+      try {
+        const { pollTelegramCommands } = await import('@/core/notify/commands');
+        await pollTelegramCommands();
+      } catch (err) {
+        console.error('[monitor] command poll failed:', err);
+      }
+
       try {
         // Check resting limit orders against live quotes first; fills fire Telegram
         const { fillPendingTradesWithQuotes } = await import('@/core/paper/broker');
