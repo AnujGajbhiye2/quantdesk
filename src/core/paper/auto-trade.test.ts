@@ -83,10 +83,6 @@ const STUB_BARS: Bar[] = Array.from({ length: 50 }, (_, i) => ({
   open: 100 + i * 0.1, high: 101 + i * 0.1, low: 99 + i * 0.1, close: 100.5 + i * 0.1, volume: 1000,
 }));
 
-vi.mock('@/core/db/bars', () => ({
-  getRecentBars: () => STUB_BARS,
-}));
-
 // Scanner - returns entry signal for each strategy by default
 const mockScanSymbol = vi.fn((sym: string, _bars: Bar[], strategy: { id: string }) => ({
   signal:   { symbol: sym, time: '2025-06-18T14:30:00Z', side: 'long', strategyId: strategy.id, reason: 'test' },
@@ -125,6 +121,31 @@ vi.mock('@/core/signals/recommend', () => ({
 vi.mock('@/core/notify/telegram', () => ({
   telegramConfigured: () => false,
   sendTelegram:       async () => true,
+}));
+
+// Halt switch - not halted by default in auto-trade tests
+vi.mock('@/core/paper/halt', () => ({
+  isTradingHalted: () => ({ halted: false }),
+  setTradingHalt:  () => {},
+  clearTradingHalt: () => {},
+}));
+
+// Flags - no-op (used for no-budget warning dedup key)
+vi.mock('@/core/db/flags', () => ({
+  getFlag:    () => null,
+  setFlag:    () => {},
+  deleteFlag: () => {},
+}));
+
+// Freshness - not stale in tests
+vi.mock('@/core/notify/freshness', () => ({
+  classifyFreshness: () => ({ latestBarTime: '2025-06-18', ageMinutes: 15, stale: false, label: 'fresh (15m ago)' }),
+}));
+
+// getLatestBarTime - needed for journalWhy
+vi.mock('@/core/db/bars', () => ({
+  getRecentBars:    () => STUB_BARS,
+  getLatestBarTime: () => '2025-06-18T14:30:00Z',
 }));
 
 // ---------------------------------------------------------------------------

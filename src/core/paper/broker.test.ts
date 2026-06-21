@@ -47,6 +47,13 @@ vi.mock('@/core/db/journal', () => ({
   getJournalEntries:    () => [],
 }));
 
+// Halt switch - default to not halted in broker tests
+vi.mock('@/core/paper/halt', () => ({
+  isTradingHalted: () => ({ halted: false }),
+  setTradingHalt:  () => {},
+  clearTradingHalt: () => {},
+}));
+
 // Telegram - no-op in tests
 vi.mock('@/core/notify/telegram', () => ({
   telegramConfigured: () => false,
