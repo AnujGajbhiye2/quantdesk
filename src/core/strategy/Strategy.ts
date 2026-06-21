@@ -13,6 +13,7 @@
 import { z } from 'zod';
 import type { Bar } from '@/core/types';
 import type { IndicatorOutput } from '@/core/indicators/registry';
+import type { RegimeRequirement } from '@/core/market/regime';
 
 // ---------------------------------------------------------------------------
 // Context (what strategies can see per bar)
@@ -73,6 +74,27 @@ export interface Strategy {
    * Used by the engine to normalise raw params and by the UI for param forms.
    */
   readonly params: z.ZodTypeAny;
+  /**
+   * Optional market-level precondition. When present, the scanner and backtest
+   * engine suppress entry signals until the regime requirement is satisfied.
+   * onBar() is never aware of this - it remains pure.
+   *
+   * Examples:
+   *   { kind: 'market-trend', index: '^GSPC', over: 'sma', period: 200 }
+   *   { kind: 'adx', index: '^GSPC', max: 20 }   // ranging - for MR strategies
+   *   { kind: 'volatility', index: '^VIX', max: 30 }
+   */
+  readonly regime?: RegimeRequirement;
+  /**
+   * Strategy quality tier.
+   * 'baseline' - single-indicator textbook patterns (RSI<30, golden cross, etc.).
+   *   Use for learning and comparison. Do not allocate real capital without
+   *   walk-forward validation and a regime filter.
+   * 'production' - trend-filtered, multi-condition entries with defined stop/target/time
+   *   exits. Suitable candidates for walk-forward testing and live paper-trading.
+   * Omitting tier is equivalent to 'baseline'.
+   */
+  readonly tier?: 'baseline' | 'production';
   /**
    * Called once per bar with a no-look-ahead context.
    * @param ctx       Causal view: frozen bars[0..i] + precomputed indicator slices.

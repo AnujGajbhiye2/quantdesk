@@ -5,6 +5,7 @@ import { get as getStrategy } from '@/core/strategy/registry';
 import { makeContext, type IndicatorCache } from '@/core/strategy/context';
 import { getBars, getAllSymbols } from '@/core/db/bars';
 import { insertSignals } from '@/core/db/signals';
+import { checkRegime } from '@/core/market/regime';
 
 export interface ScanOpts {
   strategyId: string;
@@ -95,6 +96,12 @@ export interface ScanResult {
   signals:  Signal[];
   /** Raw scan results (signal + decision + bars) for building trade ideas downstream. */
   rawResults: ScanSymbolResult[];
+  /**
+   * Whether the strategy's regime requirement was met at scan time.
+   * false means the strategy declared a regime precondition that was not
+   * satisfied - no signals were generated. null means no requirement.
+   */
+  regimeAligned: boolean | null;
 }
 
 export function scan(opts: ScanOpts): ScanResult {
@@ -102,6 +109,22 @@ export function scan(opts: ScanOpts): ScanResult {
   const parsedParams = strategy.params.parse(opts.rawParams ?? {});
   const timeframe    = opts.timeframe ?? '1d';
   const symbols      = opts.symbols ?? getAllSymbols().map((s) => s.symbol);
+
+  // --- Regime gate (strategy-level, checked once before the symbol loop) ---
+  let regimeAligned: boolean | null = null;
+  if (strategy.regime) {
+    const req = strategy.regime;
+    try {
+      const indexStored = getBars(req.index, timeframe);
+      const indexBars   = opts.excludeToday === false ? indexStored : dropPartialToday(indexStored);
+      regimeAligned = checkRegime(req, indexBars);
+    } catch {
+      regimeAligned = true; // index not ingested yet - neutral pass
+    }
+    if (regimeAligned === false) {
+      return { signals: [], rawResults: [], regimeAligned: false };
+    }
+  }
 
   const signals:    Signal[]           = [];
   const rawResults: ScanSymbolResult[] = [];
@@ -124,5 +147,5 @@ export function scan(opts: ScanOpts): ScanResult {
     insertSignals(signals);
   }
 
-  return { signals, rawResults };
+  return { signals, rawResults, regimeAligned };
 }

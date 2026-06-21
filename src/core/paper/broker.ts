@@ -155,11 +155,14 @@ export function openPaperTrade(input: OpenTradeInput): PaperTrade {
       throw new InsufficientFundsError(costUSD, summary.cash);
     }
 
-    // Risk management rules (concentration, open risk, trade count, drawdown halt)
+    // Risk management rules (concentration, open risk, trade count, drawdown halt,
+    // correlated-cluster). Pass candidate bars so correlation can be computed.
     const candidateStop = stopTargetPrices(side, fillPrice, stopPct, targetPct).stopPrice;
+    let candidateBars: ReturnType<typeof getBars> | undefined;
+    try { candidateBars = getBars(symbol, '1d'); } catch { /* no bars - skip corr */ }
     const risk = checkRisk(
       { startingBalance: summary.startingBalance, equity: summary.equity },
-      openPositionsUSD(),
+      openPositionsUSD(candidateBars),
       {
         symbol,
         costUSD,

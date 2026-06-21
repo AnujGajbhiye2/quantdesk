@@ -2,12 +2,13 @@ import 'server-only';
 import type { Signal, Timeframe } from '@/core/types';
 import type { Strategy } from '@/core/strategy/Strategy';
 import { get as getStrategy, list as listStrategies } from '@/core/strategy/registry';
-import { getAllSymbols, getLatestBarTime, getRecentBars } from '@/core/db/bars';
+import { getAllSymbols, getBars, getLatestBarTime, getRecentBars } from '@/core/db/bars';
 import { insertSignals } from '@/core/db/signals';
 import type { IndicatorCache } from '@/core/strategy/context';
 import { scanSymbol, dropPartialToday, type ScanSymbolResult } from './scanner';
 import { ScanCache } from './cache';
 import { buildConsensus, type ConsensusSignal } from './consensus';
+import { checkRegime } from '@/core/market/regime';
 
 /**
  * Cross-strategy, cross-market scanner.
@@ -68,10 +69,22 @@ export function scanAll(opts: ScanAllOpts = {}): ScanAllResult {
   const cache     = getScanCache();
 
   // Resolve strategies and pre-parse default params once, outside the loops.
-  const strategies: Array<{ strategy: Strategy; parsedParams: unknown }> =
+  // Also pre-evaluate regime alignment per strategy (strategy-level gate).
+  const strategies: Array<{ strategy: Strategy; parsedParams: unknown; regimeAligned: boolean }> =
     listStrategies().map(({ id }) => {
       const strategy = getStrategy(id);
-      return { strategy, parsedParams: strategy.params.parse({}) };
+      let regimeAligned = true;
+      if (strategy.regime) {
+        try {
+          const req = strategy.regime;
+          const indexStored = getBars(req.index, timeframe);
+          const indexBars   = opts.excludeToday === false ? indexStored : dropPartialToday(indexStored);
+          regimeAligned = checkRegime(req, indexBars);
+        } catch {
+          regimeAligned = true; // index not ingested - neutral pass
+        }
+      }
+      return { strategy, parsedParams: strategy.params.parse({}), regimeAligned };
     });
 
   const signals:    Signal[]           = [];
@@ -98,7 +111,8 @@ export function scanAll(opts: ScanAllOpts = {}): ScanAllResult {
     const indicators: IndicatorCache =
       bars === series.bars ? series.indicators : new Map();
 
-    for (const { strategy, parsedParams } of strategies) {
+    for (const { strategy, parsedParams, regimeAligned } of strategies) {
+      if (!regimeAligned) continue; // strategy regime precondition not met
       try {
         const result = scanSymbol(
           symbol,

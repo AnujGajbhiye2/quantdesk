@@ -23,6 +23,7 @@ export class MACrossoverStrategy implements Strategy {
   readonly id          = 'ma-crossover';
   readonly name        = 'SMA Crossover';
   readonly description = 'Enter long on golden cross (fast SMA above slow SMA); exit on death cross.';
+  readonly tier        = 'baseline' as const;
   readonly params      = paramsSchema;
 
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision {

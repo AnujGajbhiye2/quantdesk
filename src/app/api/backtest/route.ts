@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getBars, getAllSymbols } from '@/core/db/bars';
 import { get as getStrategy } from '@/core/strategy/registry';
 import { runBacktest } from '@/core/backtest/engine';
+import { runWalkForward } from '@/core/backtest/walkforward';
 import { maxHoldBars } from '@/core/config';
 import { scanSymbol, dropPartialToday } from '@/core/scan/scanner';
 import { recommendTrade } from '@/core/signals/recommend';
@@ -48,6 +49,14 @@ export async function POST(request: Request) {
       commission?:  number;
       slippagePct?: number;
       fillOn?:      'next_open' | 'close';
+      /** Pass 'walkforward' to get a WalkForwardResult instead of a BacktestResult. */
+      mode?:        'standard' | 'walkforward';
+      /** Walk-forward config (only used when mode='walkforward'). */
+      wf?: {
+        mode?:      'rolling' | 'anchored';
+        trainFrac?: number;
+        windows?:   number;
+      };
     };
 
     if (!body.strategyId) {
@@ -70,6 +79,25 @@ export async function POST(request: Request) {
     }
 
     const strategy = getStrategy(body.strategyId);
+
+    // Walk-forward mode: return WalkForwardResult directly (no currentIdea/projection).
+    if (body.mode === 'walkforward') {
+      const wfResult = runWalkForward({
+        strategy,
+        bars,
+        rawParams:    body.rawParams ?? {},
+        mode:         body.wf?.mode      ?? 'rolling',
+        trainFrac:    body.wf?.trainFrac ?? 0.7,
+        windows:      body.wf?.windows   ?? 5,
+        commission:   body.commission,
+        slippagePct:  body.slippagePct,
+        initialEquity: 10_000,
+        barsPerYear:  252,
+        maxHoldBars:  maxHoldBars(),
+      });
+      return NextResponse.json({ mode: 'walkforward', symbol: body.symbol, ...wfResult });
+    }
+
     const result   = runBacktest({
       strategy,
       bars,

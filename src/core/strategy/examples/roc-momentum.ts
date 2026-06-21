@@ -32,6 +32,7 @@ export class RocMomentumStrategy implements Strategy {
   readonly id          = 'roc-momentum';
   readonly name        = 'ROC Momentum';
   readonly description = 'Enter long when rate-of-change exceeds threshold and price is above EMA trend filter; exit when momentum fades.';
+  readonly tier        = 'baseline' as const;
   readonly params      = paramsSchema;
 
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision {

@@ -25,6 +25,7 @@ export class DownStreakStrategy implements Strategy {
   readonly id          = 'down-streak';
   readonly name        = 'Down-Streak Reversion';
   readonly description = 'Buy 3+ consecutive lower closes in a long-term uptrend; exit on first up-close, 2.5x ATR stop, or 7-bar time stop.';
+  readonly tier        = 'production' as const;
   readonly params      = paramsSchema;
 
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision {

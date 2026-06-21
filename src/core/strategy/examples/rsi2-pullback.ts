@@ -28,6 +28,7 @@ export class Rsi2PullbackStrategy implements Strategy {
   readonly id          = 'rsi2-pullback';
   readonly name        = 'RSI-2 Pullback';
   readonly description = 'Buy deep RSI(2) oversold dips in a long-term uptrend (close > SMA200); exit on snap-back, 2x ATR stop, or 10-bar time stop.';
+  readonly tier        = 'production' as const;
   readonly params      = paramsSchema;
 
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision {

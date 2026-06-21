@@ -30,6 +30,7 @@ export class DonchianBreakoutStrategy implements Strategy {
   readonly id          = 'donchian-breakout';
   readonly name        = 'Donchian Channel Breakout';
   readonly description = 'Enter long on close above N-bar high; exit on close below N-bar low or ATR trailing stop.';
+  readonly tier        = 'baseline' as const;
   readonly params      = paramsSchema;
 
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision {

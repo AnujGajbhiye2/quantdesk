@@ -27,6 +27,7 @@ import type { Bar, Timeframe } from '@/core/types';
 import type { Strategy } from '../strategy/Strategy';
 import { makeContext, type IndicatorCache } from '../strategy/context';
 import { computeMetrics } from './metrics';
+import { buildRegimeMap, lookupRegime } from '../market/regime';
 import {
   entryFillPrice,
   exitFillPrice,
@@ -34,7 +35,9 @@ import {
   realizedPnl,
   markToMarket,
   qtyForCash,
+  type SlippageFn,
 } from './fills';
+import { compute as computeIndicator } from '../indicators/registry';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -72,7 +75,14 @@ export interface BacktestMetrics {
   avgLossPct: number;
   profitFactor: number;     // gross wins / gross losses; Infinity if no losses
   maxDrawdownPct: number;   // positive % (e.g. 15 = 15% drawdown)
-  sharpe: number;           // annualised, rf=0
+  sharpe: number;           // annualised, rf=0, computed over ALL bars (incl. flat)
+  /**
+   * Sharpe computed over in-market bars only (bars where a position was open).
+   * Avoids the flat-bar bias that inflates Sharpe for part-time strategies by
+   * including zero-return days in the std denominator.
+   * NaN when exposure is zero (no trades held for at least 2 bars).
+   */
+  exposureSharpe: number;
   exposurePct: number;      // % of bars in a position
   numTrades: number;
   avgHoldingBars: number;
@@ -96,8 +106,13 @@ export interface BacktestConfig {
   fillOn?: 'next_open' | 'close';
   /** Commission per fill in currency. Default 0. */
   commission?: number;
-  /** Adverse slippage fraction per market fill. Default 0.0005 (0.05%). */
+  /** Flat adverse slippage fraction per market fill. Default 0.0005 (0.05%). Ignored when slippageFn is set. */
   slippagePct?: number;
+  /**
+   * Optional volatility-scaled slippage function. Overrides slippagePct when provided.
+   * Receives the fill bar and ATR% (ATR/close). Use fills.atrScaledSlippage() or custom.
+   */
+  slippageFn?: SlippageFn;
   /** Starting equity. Default 10_000. */
   initialEquity?: number;
   /** Bars per year for Sharpe/CAGR annualisation. Default 252 (daily). */
@@ -109,6 +124,14 @@ export interface BacktestConfig {
    */
   maxHoldBars?: number;
   timeframe?: Timeframe;
+  /**
+   * Index bar series keyed by symbol (e.g. { '^GSPC': [...] }).
+   * Required to backtest a strategy that declares a regime requirement.
+   * When provided, entry signals are suppressed on bars where the regime
+   * precondition is not met - the same gate applied by the live scanner.
+   * Omitting this map disables regime filtering in the backtest.
+   */
+  regimeBars?: Record<string, readonly Bar[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -157,7 +180,27 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     initialEquity = 10_000,
     barsPerYear  = 252,
     maxHoldBars,
+    regimeBars,
+    slippageFn,
   } = config;
+
+  // Pre-compute ATR% for each bar when a slippageFn is provided (O(n) once).
+  // atrPctArr[i] = ATR(14)[i] / bars[i].close, or 0 when NaN (warm-up).
+  const atrPctArr: number[] | null = slippageFn
+    ? (() => {
+        const atr = computeIndicator('atr', bars as Bar[], { period: 14 }) as number[];
+        return atr.map((v, i) => {
+          const close = bars[i].close;
+          return Number.isFinite(v) && close > 0 ? v / close : 0;
+        });
+      })()
+    : null;
+
+  /** Resolve the effective slippage fraction at bar i */
+  function slippageAt(i: number): number {
+    if (slippageFn && atrPctArr) return slippageFn(bars[i] as Bar, atrPctArr[i]);
+    return slippagePct;
+  }
 
   const n = bars.length;
 
@@ -168,6 +211,19 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
 
   // Parse params once before the hot loop
   const parsedParams: unknown = strategy.params.parse(rawParams);
+
+  // Pre-compute regime map (O(n)) when the strategy declares a precondition
+  // and the caller supplied index bars. Regime is checked at entry time only.
+  let regimeMap: Map<string, boolean> | null = null;
+  let regimeSortedDates: string[] | null = null;
+  if (strategy.regime && regimeBars) {
+    const req = strategy.regime;
+    const idxBars = regimeBars[req.index];
+    if (idxBars && idxBars.length > 0) {
+      regimeMap = buildRegimeMap(req, idxBars);
+      regimeSortedDates = Array.from(regimeMap.keys()).sort();
+    }
+  }
 
   const cache: IndicatorCache = new Map();
   const trades: TradeRecord[] = [];
@@ -186,7 +242,7 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
 
   function applyLongEntry(bar: Bar, pending: PendingEntry, barIndex: number): void {
     const rawOpen = fillOn === 'next_open' ? bar.open : bar.close;
-    const fillPrice = entryFillPrice('long', rawOpen, slippagePct);
+    const fillPrice = entryFillPrice('long', rawOpen, slippageAt(barIndex));
     const qty = qtyForCash(cash, pending.sizePct, fillPrice);
 
     cash -= fillPrice * qty + commission;
@@ -211,7 +267,7 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
 
   function applyShortEntry(bar: Bar, pending: PendingEntry, barIndex: number): void {
     const rawOpen = fillOn === 'next_open' ? bar.open : bar.close;
-    const fillPrice = entryFillPrice('short', rawOpen, slippagePct);
+    const fillPrice = entryFillPrice('short', rawOpen, slippageAt(barIndex));
     const qty = qtyForCash(cash, pending.sizePct, fillPrice);
 
     // Short sale: receive proceeds, pay commission
@@ -332,9 +388,9 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       const rawOpen = fillOn === 'next_open' ? bar.open : bar.close;
       const exitReason = exit.kind === 'time' ? 'time' : 'signal';
       if (trade.side === 'long') {
-        closeLong(exitFillPrice('long', rawOpen, slippagePct), i, bar.time, exitReason, exit.reason);
+        closeLong(exitFillPrice('long', rawOpen, slippageAt(i)), i, bar.time, exitReason, exit.reason);
       } else {
-        closeShort(exitFillPrice('short', rawOpen, slippagePct), i, bar.time, exitReason, exit.reason);
+        closeShort(exitFillPrice('short', rawOpen, slippageAt(i)), i, bar.time, exitReason, exit.reason);
       }
       pendingExit = null;
     }
@@ -342,6 +398,10 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     // C. Intrabar stop/target check
     // Conservative rule: if BOTH stop and target are hit in the same bar, stop fills
     // first (worst outcome for the held side). This prevents over-reporting wins.
+    //
+    // Stop fills: apply adverse slippage to the stop price - real stops gap through
+    // the level on fast moves / gap opens. Targets fill at the exact price (limit-
+    // order equivalent; no slippage applied is already conservative for limit orders).
     if (openTrade !== null) {
       const { side, stopPrice, targetPrice } = openTrade;
 
@@ -350,9 +410,8 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
         const targetHit = targetPrice != null && bar.high >= targetPrice;
 
         if (stopHit || targetHit) {
-          // Conservative: if both, assume stop fills first
           if (stopHit) {
-            closeLong(stopPrice!, i, bar.time, 'stop');
+            closeLong(exitFillPrice('long', stopPrice!, slippageAt(i)), i, bar.time, 'stop');
           } else {
             closeLong(targetPrice!, i, bar.time, 'target');
           }
@@ -363,7 +422,7 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
 
         if (stopHit || targetHit) {
           if (stopHit) {
-            closeShort(stopPrice!, i, bar.time, 'stop');
+            closeShort(exitFillPrice('short', stopPrice!, slippageAt(i)), i, bar.time, 'stop');
           } else {
             closeShort(targetPrice!, i, bar.time, 'target');
           }
@@ -407,7 +466,15 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     // G. Queue pending fills for next bar
     // Final-bar guard: if i === n-1 there is no next bar to fill on; ignore entry signals.
     if (i < n - 1) {
+      // Regime gate: suppress entry when the strategy's precondition is not met.
+      // Uses the regime state at bar i (the signal bar), looked up from the
+      // pre-computed map. Exits are never suppressed by regime.
+      const regimeOk = regimeMap == null
+        ? true
+        : lookupRegime(regimeMap, bar.time, regimeSortedDates ?? undefined);
+
       if (
+        regimeOk &&
         (decision.action === 'enter_long' || decision.action === 'enter_short') &&
         position === 'flat'
       ) {
@@ -499,6 +566,7 @@ function emptyResult(
       profitFactor:   0,
       maxDrawdownPct: 0,
       sharpe:         0,
+      exposureSharpe: NaN,
       exposurePct:    0,
       numTrades:      0,
       avgHoldingBars: 0,

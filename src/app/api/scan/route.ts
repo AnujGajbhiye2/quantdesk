@@ -112,11 +112,12 @@ export async function POST(request: Request) {
     const scanned = body.symbols?.length ?? allMeta.length;
 
     return NextResponse.json({
-      signals:    result.signals,
-      ideas:      enriched,
+      signals:      result.signals,
+      ideas:        enriched,
       edges,
       scanned,
-      durationMs: Date.now() - start,
+      regimeAligned: result.regimeAligned,
+      durationMs:   Date.now() - start,
     });
   } catch (err) {
     console.error('[POST /api/scan]', err);

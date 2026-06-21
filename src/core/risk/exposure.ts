@@ -1,5 +1,6 @@
 import 'server-only';
 import { getPaperTrades } from '@/core/db/paper';
+import { getBars } from '@/core/db/bars';
 import { toUSD } from '@/core/format/fx';
 import {
   positionRiskUSD,
@@ -7,6 +8,8 @@ import {
   type OpenPositionUSD,
   type RiskLimits,
 } from './checks';
+import { rollingCorrelation } from './correlation';
+import type { Bar } from '@/core/types';
 
 /**
  * Current risk exposure derived from open paper trades (USD).
@@ -24,14 +27,33 @@ export interface RiskExposure {
   largestPosition: { symbol: string; costUSD: number } | null;
 }
 
-export function openPositionsUSD(): OpenPositionUSD[] {
+/**
+ * Build OpenPositionUSD[] for the current open trades.
+ * When candidateBars is provided, also computes rolling-return correlation
+ * between each open position and the candidate symbol (for the correlated-
+ * cluster risk rule). Pass candidateBars only at trade-open time to avoid
+ * the extra DB reads on every exposure poll.
+ */
+export function openPositionsUSD(candidateBars?: readonly Bar[]): OpenPositionUSD[] {
   return getPaperTrades({ status: 'open' }).map((t) => {
     const costUSD = toUSD(t.entryPrice * t.qty, t.currency);
     const stopRiskUSD =
       t.stopPrice != null
         ? toUSD(Math.abs(t.entryPrice - t.stopPrice) * t.qty, t.currency)
         : null;
-    return { symbol: t.symbol, costUSD, stopRiskUSD };
+
+    let corrToCandidate: number | null = null;
+    if (candidateBars && candidateBars.length > 0) {
+      try {
+        const openBars = getBars(t.symbol, '1d');
+        const corr = rollingCorrelation(candidateBars, openBars);
+        corrToCandidate = Number.isFinite(corr) ? corr : null;
+      } catch {
+        // bars not available - skip correlation for this position
+      }
+    }
+
+    return { symbol: t.symbol, costUSD, stopRiskUSD, corrToCandidate };
   });
 }
 

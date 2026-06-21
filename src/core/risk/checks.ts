@@ -10,6 +10,7 @@
  * - total open risk: simultaneous stop-outs stay survivable
  * - max open trades: attention and correlation discipline
  * - drawdown halt: a system that is losing badly must stop trading, not "win it back"
+ * - correlated-cluster: 3 correlated longs is 1 big bet, not 3 independent ones
  */
 
 export interface RiskLimits {
@@ -21,6 +22,19 @@ export interface RiskLimits {
   maxOpenTrades: number;
   /** Halt all new entries when equity has fallen this % below the starting budget. */
   haltDrawdownPct: number;
+  /**
+   * Rolling-return correlation threshold above which two positions are considered
+   * part of the same "cluster". When the candidate's correlation to any open
+   * position exceeds this AND the combined cluster risk exceeds clusterRiskPct,
+   * the entry is blocked. Default 0.7.
+   */
+  corrThreshold: number;
+  /**
+   * Max combined stop-loss risk for any correlated cluster as % of equity.
+   * Prevents building a levered sector bet through per-trade 1% sizing.
+   * Default 3 (%).
+   */
+  clusterRiskPct: number;
 }
 
 export const DEFAULT_RISK_LIMITS: RiskLimits = {
@@ -28,6 +42,8 @@ export const DEFAULT_RISK_LIMITS: RiskLimits = {
   maxOpenRiskPct:  6,
   maxOpenTrades:   8,
   haltDrawdownPct: 20,
+  corrThreshold:   0.7,
+  clusterRiskPct:  3,
 };
 
 /** Resolve limits from env with NaN-safe fallbacks to the defaults. */
@@ -41,6 +57,8 @@ export function riskLimitsFromEnv(env: NodeJS.ProcessEnv = process.env): RiskLim
     maxOpenRiskPct:  num('RISK_MAX_OPEN_RISK_PCT', DEFAULT_RISK_LIMITS.maxOpenRiskPct),
     maxOpenTrades:   num('RISK_MAX_OPEN_TRADES',   DEFAULT_RISK_LIMITS.maxOpenTrades),
     haltDrawdownPct: num('RISK_HALT_DRAWDOWN_PCT', DEFAULT_RISK_LIMITS.haltDrawdownPct),
+    corrThreshold:   num('RISK_CORR_THRESHOLD',    DEFAULT_RISK_LIMITS.corrThreshold),
+    clusterRiskPct:  num('RISK_CLUSTER_RISK_PCT',  DEFAULT_RISK_LIMITS.clusterRiskPct),
   };
 }
 
@@ -51,6 +69,12 @@ export interface OpenPositionUSD {
   costUSD:   number;
   /** Stop-loss risk (|entry - stop| * qty) in USD; null = no stop set. */
   stopRiskUSD: number | null;
+  /**
+   * Rolling-return correlation between this position and the candidate trade.
+   * Computed externally (core/risk/correlation.ts) and passed in to keep
+   * checkRisk pure (no bar loading here). null = not computed / not available.
+   */
+  corrToCandidate?: number | null;
 }
 
 export interface CandidateTradeUSD {
@@ -64,7 +88,7 @@ export interface AccountStateUSD {
   equity:          number;
 }
 
-export type RiskRule = 'drawdown-halt' | 'max-open-trades' | 'position-concentration' | 'total-open-risk';
+export type RiskRule = 'drawdown-halt' | 'max-open-trades' | 'position-concentration' | 'total-open-risk' | 'correlated-cluster';
 
 export type RiskCheckResult =
   | { ok: true }
@@ -138,6 +162,33 @@ export function checkRisk(
         `(limit ${limits.maxOpenRiskPct}% of equity = $${maxRisk.toFixed(2)}). ` +
         `A bad week must stay survivable - reduce size or close positions.`,
     };
+  }
+
+  // 5. Correlated cluster risk
+  // If any open position has a high correlation to the candidate AND the
+  // combined cluster risk (stop-loss risk of both) exceeds the cluster cap,
+  // block the entry. This catches "three tech stocks = one big bet" scenarios
+  // that per-trade 1% sizing completely misses.
+  // corrToCandidate is pre-computed by the caller using core/risk/correlation.ts.
+  // When null/undefined (data unavailable), this rule is skipped.
+  const clusterMaxRisk = equity * (limits.clusterRiskPct / 100);
+  for (const open of openTrades) {
+    const corr = open.corrToCandidate;
+    if (corr == null || !Number.isFinite(corr)) continue;
+    if (Math.abs(corr) < limits.corrThreshold) continue;
+    const clusterRisk = positionRiskUSD(open) + positionRiskUSD(candidate);
+    if (clusterRisk > clusterMaxRisk) {
+      return {
+        ok: false,
+        rule: 'correlated-cluster',
+        message:
+          `Correlated cluster: ${candidate.symbol} has ${(corr * 100).toFixed(0)}% rolling ` +
+          `correlation to open position ${open.symbol}. Combined cluster risk ` +
+          `$${clusterRisk.toFixed(2)} exceeds the ${limits.clusterRiskPct}% cluster cap ` +
+          `($${clusterMaxRisk.toFixed(2)}). Three correlated positions is one levered bet - ` +
+          `close ${open.symbol} first or reduce size.`,
+      };
+    }
   }
 
   return { ok: true };

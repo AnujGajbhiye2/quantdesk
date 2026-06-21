@@ -26,6 +26,7 @@ export class RSIReversionStrategy implements Strategy {
   readonly id          = 'rsi-reversion';
   readonly name        = 'RSI Mean Reversion';
   readonly description = 'Enter long when RSI drops below oversold; exit when RSI recovers above exit level.';
+  readonly tier        = 'baseline' as const;
   readonly params      = paramsSchema;
 
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision {

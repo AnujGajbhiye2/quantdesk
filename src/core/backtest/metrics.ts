@@ -26,6 +26,14 @@ export function computeMetrics(
   initialEquity: number,
   barsPerYear = 252,
 ): BacktestMetrics {
+  // Build a set of bar indices where a position was open (inclusive on both ends).
+  // Used to filter the equity curve for the exposure-adjusted Sharpe.
+  const inPositionBars = new Set<number>();
+  for (const t of trades) {
+    for (let b = t.entryBar; b <= t.exitBar; b++) {
+      inPositionBars.add(b);
+    }
+  }
   const n = equityCurve.length;
   const finalEquity = n > 0 ? equityCurve[n - 1].equity : initialEquity;
 
@@ -75,20 +83,36 @@ export function computeMetrics(
   maxDrawdownPct = Math.abs(maxDrawdownPct);
 
   // --- Sharpe (annualised, rf=0) ---
-  // Use per-bar equity returns
+  // Full-curve Sharpe: includes flat/cash bars (zero returns). This is the
+  // conventional "strategy Sharpe" accounting for the time not invested.
+  // Exposure Sharpe: only in-market bars. Avoids the flat-bar std deflation
+  // that inflates Sharpe for part-time strategies (e.g. 15% exposure means
+  // 85% of returns are exactly zero, pushing std toward zero artificially).
+  function annualisedSharpe(returns: number[]): number {
+    if (returns.length < 2) return 0;
+    const mean = returns.reduce((s, r) => s + r, 0) / returns.length;
+    const variance = returns.reduce((s, r) => s + (r - mean) ** 2, 0) / (returns.length - 1);
+    const std = Math.sqrt(variance);
+    return std > 0 ? (mean / std) * Math.sqrt(barsPerYear) : 0;
+  }
+
   let sharpe = 0;
+  let exposureSharpe = NaN;
   if (n >= 2) {
-    const returns: number[] = [];
+    const allReturns: number[] = [];
+    const inMarketReturns: number[] = [];
     for (let i = 1; i < n; i++) {
       const prev = equityCurve[i - 1].equity;
-      if (prev > 0) returns.push((equityCurve[i].equity - prev) / prev);
+      if (prev > 0) {
+        const r = (equityCurve[i].equity - prev) / prev;
+        allReturns.push(r);
+        // Bar i is "in market" when the position was open at that bar index
+        if (inPositionBars.has(i)) inMarketReturns.push(r);
+      }
     }
-    if (returns.length >= 2) {
-      const mean = returns.reduce((s, r) => s + r, 0) / returns.length;
-      const variance =
-        returns.reduce((s, r) => s + (r - mean) ** 2, 0) / (returns.length - 1);
-      const std = Math.sqrt(variance);
-      if (std > 0) sharpe = (mean / std) * Math.sqrt(barsPerYear);
+    sharpe = annualisedSharpe(allReturns);
+    if (inMarketReturns.length >= 2) {
+      exposureSharpe = annualisedSharpe(inMarketReturns);
     }
   }
 
@@ -106,6 +130,7 @@ export function computeMetrics(
     profitFactor,
     maxDrawdownPct,
     sharpe,
+    exposureSharpe,
     exposurePct,
     numTrades,
     avgHoldingBars,

@@ -46,11 +46,12 @@ export function get(id: string): Strategy {
   return s;
 }
 
-export function list(): { id: string; name: string; description: string }[] {
-  return Array.from(_registry.values()).map(({ id, name, description }) => ({
+export function list(): { id: string; name: string; description: string; tier: 'baseline' | 'production' }[] {
+  return Array.from(_registry.values()).map(({ id, name, description, tier }) => ({
     id,
     name,
     description,
+    tier: tier ?? 'baseline',
   }));
 }
 

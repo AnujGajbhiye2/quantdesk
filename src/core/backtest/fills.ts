@@ -6,7 +6,50 @@
  *
  * Conservative choices documented inline - these prevent the system from over-reporting
  * returns.
+ *
+ * Slippage model:
+ *   Default: flat fraction (0.0005 = 5 bps). Suitable for mega-cap liquid names.
+ *   Scaled (optional): caller supplies a SlippageFn that takes the bar and ATR%
+ *   and returns a slippage fraction. Used to penalise small/mid-caps more honestly.
+ *   The engine accepts slippageFn in BacktestConfig; fills.ts stays stateless.
  */
+
+import type { Bar } from '@/core/types';
+
+// ---------------------------------------------------------------------------
+// Slippage function type
+// ---------------------------------------------------------------------------
+
+/**
+ * A function that returns the slippage fraction for a given fill.
+ * Receives the fill bar and the current ATR as a fraction of close price
+ * (atrPct = ATR / close). Returns a fraction (e.g. 0.0005 = 5 bps).
+ *
+ * Preset factory functions are provided below.
+ */
+export type SlippageFn = (bar: Bar, atrPct: number) => number;
+
+/**
+ * Flat slippage: always returns the same fraction regardless of volatility.
+ * Default for the backtest engine.
+ */
+export function flatSlippage(fraction: number): SlippageFn {
+  return () => fraction;
+}
+
+/**
+ * ATR-scaled slippage: slippage grows proportionally with ATR%.
+ * Models the real-world observation that spread/impact costs are wider
+ * in volatile or illiquid conditions.
+ *
+ * formula: base + scale * atrPct
+ * e.g. base=0.0002, scale=0.1 means:
+ *   - low-vol stock (ATR 0.5%): 0.0002 + 0.1*0.005 = 0.0007 (7 bps)
+ *   - high-vol stock (ATR 3%):  0.0002 + 0.1*0.03  = 0.0032 (32 bps)
+ */
+export function atrScaledSlippage(base = 0.0002, scale = 0.1): SlippageFn {
+  return (_bar, atrPct) => base + scale * Math.max(0, atrPct);
+}
 
 // ---------------------------------------------------------------------------
 // Entry / exit fill prices (adverse slippage)

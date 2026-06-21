@@ -25,6 +25,7 @@ export class BollingerReversionStrategy implements Strategy {
   readonly id          = 'bollinger-reversion';
   readonly name        = 'Bollinger Band Mean Reversion';
   readonly description = 'Enter long when price drops below lower BB; exit when price recovers to the middle band (SMA).';
+  readonly tier        = 'baseline' as const;
   readonly params      = paramsSchema;
 
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision {

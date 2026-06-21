@@ -31,6 +31,7 @@ export class StochReversalStrategy implements Strategy {
   readonly id          = 'stoch-reversal';
   readonly name        = 'Stochastic Oversold Reversal';
   readonly description = 'Enter long when Stochastic %K crosses above %D from the oversold zone; exit in overbought territory.';
+  readonly tier        = 'baseline' as const;
   readonly params      = paramsSchema;
 
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision {

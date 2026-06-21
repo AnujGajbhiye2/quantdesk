@@ -27,6 +27,7 @@ export class EmaPullbackStrategy implements Strategy {
   readonly id          = 'ema-pullback';
   readonly name        = 'EMA20 Pullback Trend';
   readonly description = 'In an SMA50 > SMA200 uptrend, buy the reclaim after price dips to EMA20; 2x ATR stop, 4x ATR target (2R), 21-bar time stop.';
+  readonly tier        = 'production' as const;
   readonly params      = paramsSchema;
 
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision {

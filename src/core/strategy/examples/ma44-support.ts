@@ -29,6 +29,7 @@ export class Ma44SupportStrategy implements Strategy {
   readonly id          = 'ma44-support';
   readonly name        = 'SMA44 Support Bounce';
   readonly description = 'In an SMA200 uptrend, buy when price dips to touch SMA44 then closes back above it; 2x ATR stop, 4x ATR target (2R), 21-bar time stop.';
+  readonly tier        = 'production' as const;
   readonly params      = paramsSchema;
 
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision {

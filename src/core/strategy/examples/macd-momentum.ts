@@ -24,6 +24,7 @@ export class MACDMomentumStrategy implements Strategy {
   readonly id          = 'macd-momentum';
   readonly name        = 'MACD Momentum';
   readonly description = 'Enter long when MACD crosses above signal with positive histogram; exit on cross-under.';
+  readonly tier        = 'baseline' as const;
   readonly params      = paramsSchema;
 
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision {
