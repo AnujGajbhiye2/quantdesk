@@ -20,6 +20,9 @@ const paramsSchema = z.object({
   stopPct:    z.number().positive().optional(),
   targetPct:  z.number().positive().optional(),
   sizePct:    z.number().positive().max(1).default(1),
+  adxPeriod:  z.number().int().positive().default(14),
+  /** Entry suppressed when symbol ADX >= adxMax (trending). Default 100 = gate off. */
+  adxMax:     z.number().positive().default(100),
 });
 
 export class RSIReversionStrategy implements Strategy {
@@ -36,6 +39,10 @@ export class RSIReversionStrategy implements Strategy {
 
     if (ctx.position === 'flat') {
       if (Number.isFinite(rsiNow) && rsiNow < p.oversold) {
+        // ADX ranging gate: skip entry when trending (NaN = warm-up, pass)
+        const adxArr = ctx.indicator('adx', { period: p.adxPeriod }) as number[];
+        const adxNow = adxArr[ctx.i];
+        if (Number.isFinite(adxNow) && adxNow >= p.adxMax) return { action: 'hold' };
         return {
           action:    'enter_long',
           stopPct:   p.stopPct,

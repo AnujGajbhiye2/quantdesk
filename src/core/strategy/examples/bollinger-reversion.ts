@@ -15,10 +15,13 @@ import { z } from 'zod';
 import type { Strategy, StrategyContext, StrategyDecision } from '../Strategy';
 
 const paramsSchema = z.object({
-  period:  z.number().int().positive().default(20),
-  stddev:  z.number().positive().default(2),
-  stopPct: z.number().positive().optional(),
-  sizePct: z.number().positive().max(1).default(1),
+  period:    z.number().int().positive().default(20),
+  stddev:    z.number().positive().default(2),
+  stopPct:   z.number().positive().optional(),
+  sizePct:   z.number().positive().max(1).default(1),
+  adxPeriod: z.number().int().positive().default(14),
+  /** Entry suppressed when symbol ADX >= adxMax (trending). Default 100 = gate off. */
+  adxMax:    z.number().positive().default(100),
 });
 
 export class BollingerReversionStrategy implements Strategy {
@@ -44,6 +47,10 @@ export class BollingerReversionStrategy implements Strategy {
 
     if (ctx.position === 'flat') {
       if (close < lower) {
+        // ADX ranging gate: skip entry when trending (NaN = warm-up, pass)
+        const adxArr = ctx.indicator('adx', { period: p.adxPeriod }) as number[];
+        const adxNow = adxArr[ctx.i];
+        if (Number.isFinite(adxNow) && adxNow >= p.adxMax) return { action: 'hold' };
         return {
           action:  'enter_long',
           stopPct: p.stopPct,
