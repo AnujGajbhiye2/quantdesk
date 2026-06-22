@@ -47,6 +47,38 @@ export interface ScanSymbolResult {
   bars:     readonly Bar[];
 }
 
+/** Full evaluation result including hold decisions (used for decision logging). */
+export interface EvaluateSymbolResult {
+  decision: StrategyDecision;
+  bars:     readonly Bar[];
+  /** ISO time of the bar that was evaluated (last bar in the series). */
+  barTime:  string;
+}
+
+/**
+ * Evaluate a strategy on the latest bar of the given series.
+ * Returns the full decision including 'hold'. Returns null if there are fewer
+ * than 2 bars (insufficient data to evaluate).
+ *
+ * Unlike scanSymbol, this does not filter out hold decisions, making it
+ * suitable for decision logging (Section 2 of the session dashboard).
+ *
+ * Pass a shared cache to reuse indicator outputs across strategies on the
+ * same bar series (the cache key includes indicator id + params, so sharing
+ * is safe as long as the bars are identical).
+ */
+export function evaluateSymbol(
+  bars:         readonly Bar[],
+  strategy:     Strategy,
+  parsedParams: unknown,
+  cache:        IndicatorCache = new Map(),
+): EvaluateSymbolResult | null {
+  if (bars.length < 2) return null;
+  const ctx      = makeContext(bars as Bar[], bars.length - 1, 'flat', cache);
+  const decision = strategy.onBar(ctx, parsedParams);
+  return { decision, bars, barTime: bars[bars.length - 1].time };
+}
+
 /**
  * Evaluate a strategy on the latest bar of the given series.
  * Returns null if there are fewer than 2 bars or the decision is 'hold'.
@@ -61,11 +93,10 @@ export function scanSymbol(
   parsedParams: unknown,
   cache:        IndicatorCache = new Map(),
 ): ScanSymbolResult | null {
-  if (bars.length < 2) return null;
+  const evaluated = evaluateSymbol(bars, strategy, parsedParams, cache);
+  if (!evaluated) return null;
 
-  const ctx      = makeContext(bars as Bar[], bars.length - 1, 'flat', cache);
-  const decision = strategy.onBar(ctx, parsedParams);
-
+  const { decision } = evaluated;
   if (decision.action === 'hold') return null;
 
   const side: Signal['side'] =

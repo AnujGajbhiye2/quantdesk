@@ -5,10 +5,11 @@ import { get as getStrategy, listLive as listLiveStrategies } from '@/core/strat
 import { getAllSymbols, getBars, getLatestBarTime, getRecentBars } from '@/core/db/bars';
 import { insertSignals } from '@/core/db/signals';
 import type { IndicatorCache } from '@/core/strategy/context';
-import { scanSymbol, dropPartialToday, type ScanSymbolResult } from './scanner';
+import { evaluateSymbol, dropPartialToday, type ScanSymbolResult } from './scanner';
 import { ScanCache } from './cache';
 import { buildConsensus, type ConsensusSignal } from './consensus';
 import { checkRegime } from '@/core/market/regime';
+import { insertScanRun, insertDecisions, pruneOldRuns, type DecisionRow } from '@/core/db/runs';
 
 /**
  * Cross-strategy, cross-market scanner.
@@ -51,6 +52,12 @@ export interface ScanAllOpts {
    * signal generation. Only post-close paths (EOD cron) may pass false.
    */
   excludeToday?: boolean;
+  /**
+   * When set, write a scan_runs row and full decision_log (one row per
+   * symbol x strategy, including no-fire holds) at the end of the run.
+   * Omit for ad-hoc scans that should not appear on the session dashboard.
+   */
+  logRun?: { trigger: 'eod-cron' | 'manual' | 'api' };
 }
 
 export interface ScanAllResult {
@@ -60,13 +67,16 @@ export interface ScanAllResult {
   scanned:    number;
   totalStrategies: number;
   durationMs: number;
+  /** Set when logRun was passed and the run was successfully persisted. */
+  runId?: number;
 }
 
 export function scanAll(opts: ScanAllOpts = {}): ScanAllResult {
-  const started   = Date.now();
-  const timeframe = opts.timeframe ?? '1d';
-  const symbols   = opts.symbols ?? getAllSymbols().map((s) => s.symbol);
-  const cache     = getScanCache();
+  const startedAt  = new Date().toISOString();
+  const started    = Date.now();
+  const timeframe  = opts.timeframe ?? '1d';
+  const symbols    = opts.symbols ?? getAllSymbols().map((s) => s.symbol);
+  const cache      = getScanCache();
 
   // Resolve strategies and pre-parse default params once, outside the loops.
   // Also pre-evaluate regime alignment per strategy (strategy-level gate).
@@ -88,8 +98,9 @@ export function scanAll(opts: ScanAllOpts = {}): ScanAllResult {
       return { strategy, parsedParams: strategy.params.parse({}), regimeAligned };
     });
 
-  const signals:    Signal[]           = [];
-  const rawResults: ScanSymbolResult[] = [];
+  const signals:      Signal[]           = [];
+  const rawResults:   ScanSymbolResult[] = [];
+  const decisionRows: DecisionRow[]      = [];
   let scanned = 0;
 
   for (const symbol of symbols) {
@@ -113,18 +124,54 @@ export function scanAll(opts: ScanAllOpts = {}): ScanAllResult {
       bars === series.bars ? series.indicators : new Map();
 
     for (const { strategy, parsedParams, regimeAligned } of strategies) {
-      if (!regimeAligned) continue; // strategy regime precondition not met
+      if (!regimeAligned) {
+        // Strategy regime precondition not met - log as hold with reason
+        if (opts.logRun) {
+          decisionRows.push({
+            runId:      0, // filled in after insertScanRun
+            symbol,
+            strategyId: strategy.id,
+            barTime:    bars.length > 0 ? bars[bars.length - 1].time : new Date().toISOString().slice(0, 10),
+            fired:      0,
+            action:     'hold',
+            reason:     'regime filter blocked - market conditions not aligned',
+          });
+        }
+        continue;
+      }
       try {
-        const result = scanSymbol(
-          symbol,
-          bars,
-          strategy,
-          parsedParams,
-          indicators,
-        );
-        if (result) {
-          signals.push(result.signal);
-          rawResults.push(result);
+        const evaluated = evaluateSymbol(bars, strategy, parsedParams, indicators);
+        if (!evaluated) continue;
+
+        const { decision } = evaluated;
+        const fired = decision.action !== 'hold';
+
+        if (opts.logRun) {
+          decisionRows.push({
+            runId:      0, // filled in after insertScanRun
+            symbol,
+            strategyId: strategy.id,
+            barTime:    evaluated.barTime,
+            fired:      fired ? 1 : 0,
+            action:     decision.action,
+            reason:     decision.reason ?? null,
+          });
+        }
+
+        if (fired) {
+          const side: Signal['side'] =
+            decision.action === 'enter_long'  ? 'long'
+            : decision.action === 'enter_short' ? 'short'
+            : 'flat'; // 'exit'
+          const signal: Signal = {
+            symbol,
+            time:       evaluated.barTime,
+            side,
+            reason:     decision.reason ?? '',
+            strategyId: strategy.id,
+          };
+          signals.push(signal);
+          rawResults.push({ signal, decision, bars });
         }
       } catch {
         // skip strategy on error for this symbol
@@ -147,12 +194,44 @@ export function scanAll(opts: ScanAllOpts = {}): ScanAllResult {
     insertSignals(signals);
   }
 
+  const durationMs = Date.now() - started;
+
+  let runId: number | undefined;
+
+  if (opts.logRun) {
+    try {
+      runId = insertScanRun({
+        startedAt,
+        finishedAt:       new Date().toISOString(),
+        timeframe,
+        trigger:          opts.logRun.trigger,
+        symbolsScanned:   scanned,
+        strategiesCount:  strategies.length,
+        evaluations:      scanned * strategies.length,
+        signalsGenerated: signals.length,
+        // tradesOpened / tradesClosed are updated by the caller (post-refresh)
+        // after sweeping via updateScanRunCounts(runId, opened, closed).
+        tradesOpened:     0,
+        tradesClosed:     0,
+        durationMs,
+      });
+      // Backfill the runId into collected decision rows
+      for (const r of decisionRows) r.runId = runId;
+      insertDecisions(decisionRows);
+      pruneOldRuns(30);
+    } catch (err) {
+      // Non-fatal: run logging failure must not break the scan result
+      console.error('[scan-all] run logging failed:', err);
+    }
+  }
+
   return {
     signals,
     rawResults,
     consensus,
     scanned,
     totalStrategies: strategies.length,
-    durationMs: Date.now() - started,
+    durationMs,
+    runId,
   };
 }

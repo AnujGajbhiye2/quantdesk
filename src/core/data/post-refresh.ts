@@ -3,6 +3,7 @@ import { sweepOpenTrades, sweepPendingTrades, type SweepResult, type PendingFill
 import { scanAll, type ScanAllResult } from '@/core/scan/scan-all';
 import { computeEdgeForUniverse, type ComputeEdgeResult } from '@/core/edge/compute';
 import { invalidateSnapshotCache } from '@/core/market/snapshot';
+import { updateScanRunCounts } from '@/core/db/runs';
 
 /**
  * Tasks that must run after every EOD data refresh, regardless of how the
@@ -51,7 +52,25 @@ export function postRefreshTasks(): PostRefreshSummary {
     // excludeToday: false - post-refresh runs after market close (EOD cron or
     // refresh script), where today's bar is final and MUST be scanned;
     // dropping it would make every signal a day late.
-    summary.scan.result = scanAll({ persist: true, excludeToday: false });
+    // logRun: writes scan_runs + decision_log rows used by /dashboard/session.
+    summary.scan.result = scanAll({
+      persist:      true,
+      excludeToday: false,
+      logRun:       { trigger: 'eod-cron' },
+    });
+
+    // Back-fill trade counts now that sweep is complete
+    const runId      = summary.scan.result?.runId;
+    const closed     = (summary.sweep.results ?? []).filter((r) => r.action !== 'still-open').length;
+    // EOD scan itself does not open trades; new opens come from intraday auto-trade.
+    // Count paper_trades opened since scan started (best-effort, 0 when auto-trade is off).
+    if (runId != null) {
+      try {
+        updateScanRunCounts(runId, 0, closed);
+      } catch {
+        // Non-fatal
+      }
+    }
   } catch (err) {
     summary.scan.error = err instanceof Error ? err.message : String(err);
   }

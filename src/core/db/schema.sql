@@ -134,3 +134,54 @@ CREATE TABLE IF NOT EXISTS app_flags (
   value      TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+
+-- One row per EOD data ingestion run (refreshUniverse call).
+-- Only error details are stored per-symbol; successful symbols are counted only.
+-- Keeps last 30 runs via pruneOldIngestRuns() in ingest-log.ts.
+CREATE TABLE IF NOT EXISTS ingest_runs (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at     TEXT    NOT NULL,
+  finished_at    TEXT    NOT NULL,
+  trigger        TEXT    NOT NULL,    -- 'eod-cron' | 'manual' | 'api'
+  total_symbols  INTEGER NOT NULL,
+  total_bars     INTEGER NOT NULL,
+  error_count    INTEGER NOT NULL DEFAULT 0,
+  errors_json    TEXT    NOT NULL DEFAULT '[]',  -- JSON: [{symbol, error}]
+  duration_ms    INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_ingest_runs_started ON ingest_runs(started_at DESC);
+
+-- One row per logged EOD scan run. Written by post-refresh when logRun is set.
+-- Used by /dashboard/session to show last-run metadata and detect stale runs (>26h).
+CREATE TABLE IF NOT EXISTS scan_runs (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at        TEXT    NOT NULL,
+  finished_at       TEXT    NOT NULL,
+  timeframe         TEXT    NOT NULL,
+  trigger           TEXT    NOT NULL,    -- 'eod-cron' | 'manual' | 'api'
+  symbols_scanned   INTEGER NOT NULL,
+  strategies_count  INTEGER NOT NULL,
+  evaluations       INTEGER NOT NULL,    -- symbols_scanned * strategies_count
+  signals_generated INTEGER NOT NULL,
+  trades_opened     INTEGER NOT NULL DEFAULT 0,
+  trades_closed     INTEGER NOT NULL DEFAULT 0,
+  duration_ms       INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_scan_runs_started ON scan_runs(started_at DESC);
+
+-- One row per (run, symbol, strategy) evaluation. Captures fired AND no-fire
+-- decisions so the session dashboard can show per-symbol reasoning.
+-- Strategies must populate StrategyDecision.reason on hold branches for useful output.
+CREATE TABLE IF NOT EXISTS decision_log (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id      INTEGER NOT NULL,
+  symbol      TEXT    NOT NULL,
+  strategy_id TEXT    NOT NULL,
+  bar_time    TEXT    NOT NULL,          -- date of the bar evaluated (YYYY-MM-DD)
+  fired       INTEGER NOT NULL,          -- 1 = signal fired, 0 = hold/no-fire
+  action      TEXT    NOT NULL,          -- enter_long | enter_short | exit | hold
+  reason      TEXT,                      -- null when strategy does not supply one
+  FOREIGN KEY (run_id) REFERENCES scan_runs(id)
+);
+CREATE INDEX IF NOT EXISTS idx_decision_log_run    ON decision_log(run_id);
+CREATE INDEX IF NOT EXISTS idx_decision_log_runsym ON decision_log(run_id, symbol);

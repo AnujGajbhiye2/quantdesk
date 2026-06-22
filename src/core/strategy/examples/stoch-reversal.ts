@@ -45,7 +45,7 @@ export class StochReversalStrategy implements Strategy {
       dperiod: p.dperiod,
     }) as { k: number[]; d: number[] };
 
-    if (ctx.i < 1) return { action: 'hold' };
+    if (ctx.i < 1) return { action: 'hold', reason: 'need at least 2 bars' };
 
     const kNow  = stoch.k[ctx.i];
     const dNow  = stoch.d[ctx.i];
@@ -57,7 +57,9 @@ export class StochReversalStrategy implements Strategy {
       !Number.isFinite(dNow) ||
       !Number.isFinite(kPrev) ||
       !Number.isFinite(dPrev)
-    ) return { action: 'hold' };
+    ) {
+      return { action: 'hold', reason: `warming up - Stoch(${p.kperiod},${p.kslow},${p.dperiod}) not ready` };
+    }
 
     // Bullish cross: K crosses above D while in oversold zone
     const crossedUp = kPrev <= dPrev && kNow > dNow;
@@ -68,7 +70,9 @@ export class StochReversalStrategy implements Strategy {
         // ADX ranging gate: skip entry when trending (NaN = warm-up, pass)
         const adxArr = ctx.indicator('adx', { period: p.adxPeriod }) as number[];
         const adxNow = adxArr[ctx.i];
-        if (Number.isFinite(adxNow) && adxNow >= p.adxMax) return { action: 'hold' };
+        if (Number.isFinite(adxNow) && adxNow >= p.adxMax) {
+          return { action: 'hold', reason: `ADX=${adxNow.toFixed(1)} >= ${p.adxMax} - trending, gate blocked` };
+        }
         return {
           action:    'enter_long',
           stopPct:   p.stopPct,
@@ -77,6 +81,10 @@ export class StochReversalStrategy implements Strategy {
           reason:    `Stoch K=${kNow.toFixed(1)} crossed above D=${dNow.toFixed(1)} in oversold zone`,
         };
       }
+      if (!oversold) {
+        return { action: 'hold', reason: `Stoch K=${kNow.toFixed(1)}, D=${dNow.toFixed(1)} - not in oversold zone (<=${p.oversoldLevel})` };
+      }
+      return { action: 'hold', reason: `Stoch K=${kNow.toFixed(1)}, D=${dNow.toFixed(1)} - no bullish cross (K must cross above D)` };
     }
 
     if (ctx.position === 'long') {
@@ -86,6 +94,7 @@ export class StochReversalStrategy implements Strategy {
           reason: `Stoch K=${kNow.toFixed(1)} reached overbought ${p.overboughtLevel}`,
         };
       }
+      return { action: 'hold', reason: `Stoch K=${kNow.toFixed(1)} < ${p.overboughtLevel} overbought - waiting` };
     }
 
     return { action: 'hold' };

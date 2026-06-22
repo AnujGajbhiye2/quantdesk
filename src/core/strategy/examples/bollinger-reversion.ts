@@ -43,14 +43,18 @@ export class BollingerReversionStrategy implements Strategy {
     const lower  = bb.lower[ctx.i];
     const middle = bb.middle[ctx.i];
 
-    if (!Number.isFinite(lower) || !Number.isFinite(middle)) return { action: 'hold' };
+    if (!Number.isFinite(lower) || !Number.isFinite(middle)) {
+      return { action: 'hold', reason: `warming up - BB(${p.period}) not ready` };
+    }
 
     if (ctx.position === 'flat') {
       if (close < lower) {
         // ADX ranging gate: skip entry when trending (NaN = warm-up, pass)
         const adxArr = ctx.indicator('adx', { period: p.adxPeriod }) as number[];
         const adxNow = adxArr[ctx.i];
-        if (Number.isFinite(adxNow) && adxNow >= p.adxMax) return { action: 'hold' };
+        if (Number.isFinite(adxNow) && adxNow >= p.adxMax) {
+          return { action: 'hold', reason: `ADX=${adxNow.toFixed(1)} >= ${p.adxMax} - trending, gate blocked` };
+        }
         return {
           action:  'enter_long',
           stopPct: p.stopPct,
@@ -58,6 +62,7 @@ export class BollingerReversionStrategy implements Strategy {
           reason:  `close ${close.toFixed(2)} < lower BB ${lower.toFixed(2)}`,
         };
       }
+      return { action: 'hold', reason: `close ${close.toFixed(2)} >= lower BB ${lower.toFixed(2)} - not oversold` };
     }
 
     if (ctx.position === 'long') {
@@ -67,6 +72,7 @@ export class BollingerReversionStrategy implements Strategy {
           reason: `close ${close.toFixed(2)} recovered to mid BB ${middle.toFixed(2)}`,
         };
       }
+      return { action: 'hold', reason: `close ${close.toFixed(2)} < mid BB ${middle.toFixed(2)} - still below target` };
     }
 
     return { action: 'hold' };

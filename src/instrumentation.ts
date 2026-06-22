@@ -38,6 +38,7 @@ export async function register() {
     schedule,
     async () => {
       console.log('[cron] EOD refresh started...');
+      const ingestStartedAt = new Date().toISOString();
       try {
         const results = await refreshUniverse();
         const totalBars = results.reduce((sum, r) => sum + r.barsAdded, 0);
@@ -45,6 +46,17 @@ export async function register() {
         console.log(
           `[cron] EOD refresh done. ${results.length} symbols, ${totalBars} new bars, ${errors} error(s).`,
         );
+
+        // Persist ingest run for session dashboard
+        try {
+          const { buildIngestRunInput, insertIngestRun, pruneOldIngestRuns } = await import('@/core/db/ingest-log');
+          const input = buildIngestRunInput(results, ingestStartedAt, 'eod-cron');
+          insertIngestRun(input);
+          pruneOldIngestRuns(30);
+        } catch (err) {
+          console.error('[cron] ingest log write failed (non-fatal):', err);
+        }
+
         const post = postRefreshTasks();
         if (post.sweep.error) console.error('[cron] sweep failed:', post.sweep.error);
         if (post.scan.error)  console.error('[cron] scan-all failed:', post.scan.error);

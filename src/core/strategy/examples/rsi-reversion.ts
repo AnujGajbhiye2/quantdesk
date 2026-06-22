@@ -38,11 +38,16 @@ export class RSIReversionStrategy implements Strategy {
     const rsiNow = rsi[ctx.i];
 
     if (ctx.position === 'flat') {
-      if (Number.isFinite(rsiNow) && rsiNow < p.oversold) {
+      if (!Number.isFinite(rsiNow)) {
+        return { action: 'hold', reason: `warming up - RSI(${p.period}) not ready` };
+      }
+      if (rsiNow < p.oversold) {
         // ADX ranging gate: skip entry when trending (NaN = warm-up, pass)
         const adxArr = ctx.indicator('adx', { period: p.adxPeriod }) as number[];
         const adxNow = adxArr[ctx.i];
-        if (Number.isFinite(adxNow) && adxNow >= p.adxMax) return { action: 'hold' };
+        if (Number.isFinite(adxNow) && adxNow >= p.adxMax) {
+          return { action: 'hold', reason: `ADX=${adxNow.toFixed(1)} >= ${p.adxMax} - trending, gate blocked` };
+        }
         return {
           action:    'enter_long',
           stopPct:   p.stopPct,
@@ -51,15 +56,20 @@ export class RSIReversionStrategy implements Strategy {
           reason:    `RSI(${p.period})=${rsiNow.toFixed(1)} < ${p.oversold} oversold`,
         };
       }
+      return { action: 'hold', reason: `RSI(${p.period})=${rsiNow.toFixed(1)} >= ${p.oversold} - not oversold` };
     }
 
     if (ctx.position === 'long') {
-      if (Number.isFinite(rsiNow) && rsiNow > p.exitLevel) {
+      if (!Number.isFinite(rsiNow)) {
+        return { action: 'hold', reason: `warming up - RSI(${p.period}) not ready` };
+      }
+      if (rsiNow > p.exitLevel) {
         return {
           action: 'exit',
           reason: `RSI(${p.period})=${rsiNow.toFixed(1)} > ${p.exitLevel} exit level`,
         };
       }
+      return { action: 'hold', reason: `RSI(${p.period})=${rsiNow.toFixed(1)} <= ${p.exitLevel} - waiting for recovery` };
     }
 
     return { action: 'hold' };

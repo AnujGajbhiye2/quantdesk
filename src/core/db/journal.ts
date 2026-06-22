@@ -48,6 +48,27 @@ export function recordJournalOutcome(tradeId: string, outcome: Record<string, un
   `).run(new Date().toISOString(), JSON.stringify(outcome), tradeId);
 }
 
+/**
+ * Return a map from trade_id to exitReason for a set of trade IDs.
+ * Used by the session dashboard to show exit reasons in the trade history table.
+ */
+export function getExitReasons(tradeIds: string[]): Map<string, string> {
+  if (tradeIds.length === 0) return new Map();
+  const db   = getDb();
+  const placeholders = tradeIds.map(() => '?').join(',');
+  const rows = db
+    .prepare(`SELECT trade_id, outcome FROM journal WHERE trade_id IN (${placeholders}) AND outcome IS NOT NULL`)
+    .all(...tradeIds) as Array<{ trade_id: string; outcome: string | null }>;
+  const result = new Map<string, string>();
+  for (const r of rows) {
+    const parsed = parse(r.outcome);
+    if (parsed && typeof parsed['exitReason'] === 'string') {
+      result.set(r.trade_id, parsed['exitReason'] as string);
+    }
+  }
+  return result;
+}
+
 export function getJournalEntries(limit = 200): JournalEntry[] {
   const db = getDb();
   const rows = db

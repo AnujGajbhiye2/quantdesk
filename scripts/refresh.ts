@@ -18,6 +18,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { refreshUniverse, type UniverseEntry } from '../src/core/data/ingest';
 import { postRefreshTasks } from '../src/core/data/post-refresh';
+import { buildIngestRunInput, insertIngestRun, pruneOldIngestRuns } from '../src/core/db/ingest-log';
 
 function parseArgs(): { universePath?: string } {
   const args = process.argv.slice(2);
@@ -51,6 +52,7 @@ async function main() {
     console.log('Refreshing all symbols stored in DB...');
   }
 
+  const ingestStartedAt = new Date().toISOString();
   const results = await refreshUniverse(universe);
 
   let totalBars = 0;
@@ -69,6 +71,15 @@ async function main() {
   }
 
   console.log(`\nDone. ${results.length - errors}/${results.length} symbols checked, ${totalBars} new bars. ${errors} error(s).`);
+
+  // Persist ingest run for session dashboard
+  try {
+    const input = buildIngestRunInput(results, ingestStartedAt, 'manual');
+    insertIngestRun(input);
+    pruneOldIngestRuns(30);
+  } catch (err) {
+    console.warn('Ingest log write failed (non-fatal):', err);
+  }
 
   // Post-refresh: sweep open paper trades, then run the all-strategies scan
   console.log('\nRunning post-refresh tasks (sweep + scan-all)...');

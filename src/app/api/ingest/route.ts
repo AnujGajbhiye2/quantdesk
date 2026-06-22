@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { refreshUniverse, ingestUniverse, type UniverseEntry } from '@/core/data/ingest';
+import { buildIngestRunInput, insertIngestRun, pruneOldIngestRuns } from '@/core/db/ingest-log';
 
 /**
  * POST /api/ingest
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
       }
     }
 
+    const ingestStartedAt = new Date().toISOString();
     const results =
       mode === 'full' && universe
         ? await ingestUniverse(universe)
@@ -41,6 +43,14 @@ export async function POST(request: Request) {
 
     const totalBars = results.reduce((sum, r) => sum + r.barsAdded, 0);
     const errors = results.filter((r) => r.error).length;
+
+    try {
+      const input = buildIngestRunInput(results, ingestStartedAt, 'api');
+      insertIngestRun(input);
+      pruneOldIngestRuns(30);
+    } catch {
+      // non-fatal
+    }
 
     return NextResponse.json({ results, totalBars, errors });
   } catch (err) {
