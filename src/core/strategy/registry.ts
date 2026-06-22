@@ -26,6 +26,26 @@ import { Ma44SupportStrategy }        from './examples/ma44-support';
  * with a clear report if it misbehaves. Zero cost in production.
  */
 
+/**
+ * Live-eligible strategy IDs.
+ *
+ * Only these three strategies run on the live intraday scan and auto-trade path.
+ * All other registered strategies are available for backtesting and UI research
+ * but are excluded from live signal generation.
+ *
+ * DISABLED strategies (do not add to this set without walk-forward validation):
+ *   roc-momentum  - BROKEN: zero trades generated across entire SP500 OOS run.
+ *                   Entry threshold too aggressive; never triggers in normal conditions.
+ *   atr-trend     - BROKEN: negative Sharpe in OOS walk-forward (-0.4 to -0.8).
+ *                   Systematic underperformance; not suitable for capital allocation.
+ *   All others    - Not walk-forward validated for live paper trading.
+ */
+const LIVE_STRATEGY_IDS = new Set<string>([
+  'bollinger-reversion',
+  'rsi-reversion',
+  'stoch-reversal',
+]);
+
 const _registry = new Map<string, Strategy>();
 
 export function register(strategy: Strategy): void {
@@ -53,6 +73,14 @@ export function list(): { id: string; name: string; description: string; tier: '
     description,
     tier: tier ?? 'baseline',
   }));
+}
+
+/**
+ * Returns only the live-eligible strategies for the intraday scan and auto-trade path.
+ * Use list() for backtesting and research UI (all registered strategies).
+ */
+export function listLive(): { id: string; name: string; description: string; tier: 'baseline' | 'production' }[] {
+  return list().filter(({ id }) => LIVE_STRATEGY_IDS.has(id));
 }
 
 // Seed built-in strategies

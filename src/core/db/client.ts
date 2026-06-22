@@ -3,7 +3,7 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const DB_PATH = path.join(process.cwd(), 'data', 'quantdesk.db');
+const DB_PATH = process.env.DB_PATH ?? path.join(process.cwd(), 'data', 'quantdesk.db');
 const SCHEMA_PATH = path.join(process.cwd(), 'src', 'core', 'db', 'schema.sql');
 
 let _db: Database.Database | null = null;

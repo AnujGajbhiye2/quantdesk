@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS journal (
 );
 
 -- Key-value flag store for operational state (halt switch, Telegram cursor,
--- heartbeat sequence). Persists across process restarts; applied idempotently
+-- heartbeat sequence). Persists across process restarts, applied idempotently
 -- at startup by the existing schema execution in db/client.ts.
 CREATE TABLE IF NOT EXISTS app_flags (
   key        TEXT PRIMARY KEY,

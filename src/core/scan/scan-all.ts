@@ -1,7 +1,7 @@
 import 'server-only';
 import type { Signal, Timeframe } from '@/core/types';
 import type { Strategy } from '@/core/strategy/Strategy';
-import { get as getStrategy, list as listStrategies } from '@/core/strategy/registry';
+import { get as getStrategy, listLive as listLiveStrategies } from '@/core/strategy/registry';
 import { getAllSymbols, getBars, getLatestBarTime, getRecentBars } from '@/core/db/bars';
 import { insertSignals } from '@/core/db/signals';
 import type { IndicatorCache } from '@/core/strategy/context';
@@ -70,8 +70,9 @@ export function scanAll(opts: ScanAllOpts = {}): ScanAllResult {
 
   // Resolve strategies and pre-parse default params once, outside the loops.
   // Also pre-evaluate regime alignment per strategy (strategy-level gate).
+  // listLiveStrategies() limits to the three walk-forward-validated live strategies.
   const strategies: Array<{ strategy: Strategy; parsedParams: unknown; regimeAligned: boolean }> =
-    listStrategies().map(({ id }) => {
+    listLiveStrategies().map(({ id }) => {
       const strategy = getStrategy(id);
       let regimeAligned = true;
       if (strategy.regime) {

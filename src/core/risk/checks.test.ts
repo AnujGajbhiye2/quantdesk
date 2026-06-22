@@ -21,7 +21,7 @@ describe('checkRisk', () => {
 
   it('drawdown halt blocks everything once equity falls past the limit', () => {
     const result = checkRisk(
-      { startingBalance: 1000, equity: 799 }, // 20.1% down, limit 20%
+      { startingBalance: 1000, equity: 879 }, // 12.1% down, limit 12%
       [],
       { symbol: 'A', costUSD: 10, stopRiskUSD: 1 },
     );
@@ -31,7 +31,7 @@ describe('checkRisk', () => {
 
   it('drawdown just inside the limit still trades', () => {
     const result = checkRisk(
-      { startingBalance: 1000, equity: 801 },
+      { startingBalance: 1000, equity: 881 }, // 11.9% down, just inside 12% limit
       [],
       { symbol: 'A', costUSD: 10, stopRiskUSD: 1 },
     );

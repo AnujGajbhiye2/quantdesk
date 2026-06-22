@@ -68,7 +68,8 @@ vi.mock('@/core/paper/account', () => ({
 
 // Strategies
 vi.mock('@/core/strategy/registry', () => ({
-  list: () => [{ id: 'strat-a', name: 'A', description: '' }, { id: 'strat-b', name: 'B', description: '' }],
+  listLive: () => [{ id: 'strat-a', name: 'A', description: '' }, { id: 'strat-b', name: 'B', description: '' }],
+  list:     () => [{ id: 'strat-a', name: 'A', description: '' }, { id: 'strat-b', name: 'B', description: '' }],
   get:  (id: string) => ({
     id,
     name: id,

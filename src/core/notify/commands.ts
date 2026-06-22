@@ -55,7 +55,7 @@ async function buildStatusText(): Promise<string> {
     const unrealized = marks.reduce((s, m) => s + m.unrealizedPnl, 0);
     const acc = buildAccountSummary(cashAcc, unrealized);
     const ddPct = ((cashAcc.startingBalance - acc.equity) / cashAcc.startingBalance) * 100;
-    const haltPct = Number(process.env.RISK_HALT_DRAWDOWN_PCT ?? 20);
+    const haltPct = Number(process.env.RISK_HALT_DRAWDOWN_PCT ?? 12);
     ddLine = `DD: ${ddPct.toFixed(1)}% (halt at -${haltPct}% of $${cashAcc.startingBalance.toFixed(0)})`;
   } else {
     ddLine = 'DD breaker: INACTIVE - no budget set';

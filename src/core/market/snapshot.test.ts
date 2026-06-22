@@ -11,6 +11,7 @@ const mockGetBars       = vi.fn();
 vi.mock('@/core/db/bars', () => ({
   getAllSymbols:   (...args: unknown[]) => mockGetAllSymbols(...args),
   getBars:         (...args: unknown[]) => mockGetBars(...args),
+  getRecentBars:   (...args: unknown[]) => mockGetBars(...args),
   getLatestClose:  vi.fn(),
 }));
 
@@ -23,7 +24,7 @@ vi.mock('@/core/indicators/registry', () => ({
   listIndicators:  vi.fn(() => []),
 }));
 
-const { getMarketSnapshot } = await import('./snapshot');
+const { getMarketSnapshot, invalidateSnapshotCache } = await import('./snapshot');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -55,6 +56,7 @@ function makeBars(closes: number[]): Bar[] {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  invalidateSnapshotCache();
   mockGetAllSymbols.mockReturnValue([META]);
   // Default: compute returns NaN-padded arrays (simulates warm-up)
   mockCompute.mockReturnValue(Array(25).fill(NaN));

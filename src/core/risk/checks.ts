@@ -40,8 +40,12 @@ export interface RiskLimits {
 export const DEFAULT_RISK_LIMITS: RiskLimits = {
   maxPositionPct:  25,
   maxOpenRiskPct:  6,
-  maxOpenTrades:   8,
-  haltDrawdownPct: 20,
+  // 4 concurrent positions: SP500 MR strategies correlate in drawdown; more than 4 is one big bet.
+  maxOpenTrades:   4,
+  // Halt permanently at 12% portfolio drawdown from starting budget.
+  // OOS walk-forward max DD for these MR strategies is ~8-10%; 12% = 1.5x OOS max DD.
+  // Requires manual reset (new starting budget) to lift - not auto-resuming.
+  haltDrawdownPct: 12,
   corrThreshold:   0.7,
   clusterRiskPct:  3,
 };

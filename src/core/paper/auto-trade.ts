@@ -24,7 +24,7 @@ import { getActivePaperTradeBySymbol, getPaperTrades } from '@/core/db/paper';
 import { openPaperTrade, sweepOpenTrades, DuplicateOpenTradeError } from '@/core/paper/broker';
 import { markOpenTrades } from '@/core/paper/broker';
 import { computeCashAccount, buildAccountSummary } from '@/core/paper/account';
-import { list as listStrategies, get as getStrategy } from '@/core/strategy/registry';
+import { listLive as listStrategies, get as getStrategy } from '@/core/strategy/registry';
 import { scanSymbol } from '@/core/scan/scanner';
 import { buildConsensus } from '@/core/scan/consensus';
 import type { ConsensusSignal } from '@/core/scan/consensus';
@@ -67,7 +67,9 @@ function loadConfig(): AutoTradeConfig {
     timeframe:        tf,
     minConsensus:     parseInt(process.env.AUTO_TRADE_MIN_CONSENSUS ?? '2', 10),
     maxTradesPerDay:  parseInt(process.env.AUTO_TRADE_MAX_TRADES_PER_DAY ?? '5', 10),
-    dailyLossHaltPct: parseFloat(process.env.AUTO_TRADE_DAILY_LOSS_HALT_PCT ?? '0.03'),
+    // 2% intraday loss halt: stops a bad day from compounding into a bad week.
+    // OOS daily P&L for these MR strategies rarely exceeds +/-1.5% on normal days.
+    dailyLossHaltPct: parseFloat(process.env.AUTO_TRADE_DAILY_LOSS_HALT_PCT ?? '0.02'),
   };
 }
 
