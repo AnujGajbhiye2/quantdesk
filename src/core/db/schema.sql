@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS app_flags (
 );
 
 -- One row per EOD data ingestion run (refreshUniverse call).
--- Only error details are stored per-symbol; successful symbols are counted only.
+-- Only error details are stored per-symbol (successful symbols are counted only).
 -- Keeps last 30 runs via pruneOldIngestRuns() in ingest-log.ts.
 CREATE TABLE IF NOT EXISTS ingest_runs (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
