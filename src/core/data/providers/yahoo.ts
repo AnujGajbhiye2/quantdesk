@@ -105,9 +105,13 @@ export class YahooProvider implements DataProvider {
    * Yahoo uses the same symbol notation for most US equities.
    * For ADRs, forex, or indices the caller should pass the Yahoo-style symbol directly
    * (e.g. 'EURUSD=X', '^GSPC'). Override here when canonical != Yahoo symbol.
+   *
+   * Class-share tickers use dot notation in the canonical universe (e.g. BRK.B, BF.B)
+   * but Yahoo expects a hyphen (BRK-B, BF-B). Map trailing .<UPPER> to -<UPPER>.
    */
   toProviderSymbol(symbol: string): string {
-    return symbol;
+    // BRK.B -> BRK-B, BF.B -> BF-B  (only trailing single-letter class suffix)
+    return symbol.replace(/\.([A-Z])$/, '-$1');
   }
 
   async getHistory(

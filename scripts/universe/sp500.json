@@ -488,7 +488,7 @@
     "providerId": "yahoo"
   },
   {
-    "symbol": "BRK-B",
+    "symbol": "BRK.B",
     "name": "Berkshire Hathaway",
     "assetClass": "equity",
     "currency": "USD",
@@ -608,8 +608,8 @@
     "providerId": "yahoo"
   },
   {
-    "symbol": "BF-B",
-    "name": "Brown–Forman",
+    "symbol": "BF.B",
+    "name": "Brown\u2013Forman",
     "assetClass": "equity",
     "currency": "USD",
     "exchange": "NYSE",
@@ -1457,7 +1457,7 @@
   },
   {
     "symbol": "EL",
-    "name": "Estée Lauder Companies (The)",
+    "name": "Est\u00e9e Lauder Companies (The)",
     "assetClass": "equity",
     "currency": "USD",
     "exchange": "NYSE",
@@ -2769,7 +2769,7 @@
   },
   {
     "symbol": "ORLY",
-    "name": "O’Reilly Automotive",
+    "name": "O\u2019Reilly Automotive",
     "assetClass": "equity",
     "currency": "USD",
     "exchange": "NYSE",
@@ -4021,30 +4021,6 @@
     "assetClass": "equity",
     "currency": "USD",
     "exchange": "NYSE",
-    "providerId": "yahoo"
-  },
-  {
-    "symbol": "^GSPC",
-    "name": "S&P 500 Index",
-    "assetClass": "index",
-    "currency": "USD",
-    "exchange": "SNP",
-    "providerId": "yahoo"
-  },
-  {
-    "symbol": "^IXIC",
-    "name": "NASDAQ Composite",
-    "assetClass": "index",
-    "currency": "USD",
-    "exchange": "NMS",
-    "providerId": "yahoo"
-  },
-  {
-    "symbol": "^DJI",
-    "name": "Dow Jones Industrial Avg",
-    "assetClass": "index",
-    "currency": "USD",
-    "exchange": "DJI",
     "providerId": "yahoo"
   }
 ]

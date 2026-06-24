@@ -11,6 +11,7 @@
  *   scripts/universe/sp500.json     - S&P 500 constituents (from Wikipedia)
  *   scripts/universe/nifty200.json  - NIFTY 200 constituents (from NSE India CSV)
  *   scripts/universe/stoxx600.json  - STOXX Europe 600 constituents (from Wikipedia)
+ *   scripts/universe/reference.json - Non-tradeable regime reference indices (^GSPC etc.)
  *
  * Run periodically (e.g. quarterly) to refresh index membership.
  * If a live fetch fails, the existing file is preserved.
@@ -65,8 +66,8 @@ async function buildSP500(): Promise<UniverseEntry[]> {
 
     const rawSymbol = extractText(cells[0] ?? '').replace(/\n/g, '').trim();
     const name      = extractText(cells[1] ?? '').trim();
-    // Some symbols use dots (BRK.B -> BRK-B on Yahoo)
-    const symbol    = rawSymbol.replace('.', '-');
+    // Keep dot notation (BRK.B, BF.B) - canonical for Alpaca. Yahoo adapter maps back via toProviderSymbol.
+    const symbol    = rawSymbol;
 
     if (!symbol || !name) continue;
 
@@ -80,16 +81,31 @@ async function buildSP500(): Promise<UniverseEntry[]> {
     });
   }
 
-  // Add index benchmarks
-  entries.push({ symbol: '^GSPC', name: 'S&P 500 Index',           assetClass: 'index', currency: 'USD', exchange: 'SNP', providerId: 'yahoo' });
-  entries.push({ symbol: '^IXIC', name: 'NASDAQ Composite',         assetClass: 'index', currency: 'USD', exchange: 'NMS', providerId: 'yahoo' });
-  entries.push({ symbol: '^DJI',  name: 'Dow Jones Industrial Avg', assetClass: 'index', currency: 'USD', exchange: 'DJI', providerId: 'yahoo' });
-
-  if (entries.length < 503) {
-    throw new Error(`Expected at least 500 S&P constituents + 3 benchmarks, got ${entries.length}`);
+  if (entries.length < 500) {
+    throw new Error(`Expected at least 500 S&P constituents, got ${entries.length}`);
   }
 
-  console.log(`  Found ${entries.length - 3} S&P 500 stocks + 3 index benchmarks`);
+  console.log(`  Found ${entries.length} S&P 500 stocks`);
+  return entries;
+}
+
+// ---------------------------------------------------------------------------
+// Reference indices (non-tradeable regime benchmarks)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds reference.json: non-tradeable index symbols used only for regime
+ * gating (e.g. ^GSPC for market-trend checks). These are NOT included in the
+ * auto-trade universe but ARE ingested via Yahoo for regime-filter bar data.
+ */
+async function buildReference(): Promise<UniverseEntry[]> {
+  console.log('Building reference index universe...');
+  const entries: UniverseEntry[] = [
+    { symbol: '^GSPC', name: 'S&P 500 Index',           assetClass: 'index', currency: 'USD', exchange: 'SNP', providerId: 'yahoo' },
+    { symbol: '^IXIC', name: 'NASDAQ Composite',         assetClass: 'index', currency: 'USD', exchange: 'NMS', providerId: 'yahoo' },
+    { symbol: '^DJI',  name: 'Dow Jones Industrial Avg', assetClass: 'index', currency: 'USD', exchange: 'DJI', providerId: 'yahoo' },
+  ];
+  console.log(`  ${entries.length} reference indices`);
   return entries;
 }
 
@@ -298,9 +314,10 @@ async function main() {
   const outDir = resolve(process.cwd(), 'scripts/universe');
 
   const tasks: { name: string; fn: () => Promise<UniverseEntry[]>; file: string }[] = [
-    { name: 'sp500',    fn: buildSP500,    file: `${outDir}/sp500.json`    },
-    { name: 'nifty200', fn: buildNifty200, file: `${outDir}/nifty200.json` },
-    { name: 'stoxx600', fn: buildStoxx600, file: `${outDir}/stoxx600.json` },
+    { name: 'sp500',     fn: buildSP500,     file: `${outDir}/sp500.json`     },
+    { name: 'nifty200',  fn: buildNifty200,  file: `${outDir}/nifty200.json`  },
+    { name: 'stoxx600',  fn: buildStoxx600,  file: `${outDir}/stoxx600.json`  },
+    { name: 'reference', fn: buildReference, file: `${outDir}/reference.json` },
   ].filter((t) => !only || t.name === only);
 
   for (const task of tasks) {

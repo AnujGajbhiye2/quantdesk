@@ -5,11 +5,17 @@ import sp500 from '../../../scripts/universe/sp500.json';
 import nifty200 from '../../../scripts/universe/nifty200.json';
 import stoxx600 from '../../../scripts/universe/stoxx600.json';
 import gold from '../../../scripts/universe/gold.json';
+import reference from '../../../scripts/universe/reference.json';
 
 // stoxx600.json is a placeholder until populated via:
 //   npm run build-universe -- --only stoxx600
 //   npm run ingest -- --universe scripts/universe/stoxx600.json
-const CURATED_UNIVERSE = [...sp500, ...nifty200, ...stoxx600, ...gold] as UniverseEntry[];
+//
+// reference.json holds non-tradeable regime benchmarks (^GSPC, ^IXIC, ^DJI).
+// These are included in CURATED_UNIVERSE so EOD ingest pulls their bars for
+// regime-gate evaluation. autoTradeUniverse() excludes them automatically
+// (they are not in SP500_SYMBOLS or GOLD_SYMBOLS after the sp500 clean).
+const CURATED_UNIVERSE = [...sp500, ...nifty200, ...stoxx600, ...gold, ...reference] as UniverseEntry[];
 
 // Symbols eligible for automated intraday trading: S&P 500 + gold instruments.
 // All routed through Alpaca (free IEX feed, US equities/ETFs).

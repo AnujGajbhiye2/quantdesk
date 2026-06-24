@@ -1,0 +1,26 @@
+[
+  {
+    "symbol": "^GSPC",
+    "name": "S&P 500 Index",
+    "assetClass": "index",
+    "currency": "USD",
+    "exchange": "SNP",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "^IXIC",
+    "name": "NASDAQ Composite",
+    "assetClass": "index",
+    "currency": "USD",
+    "exchange": "NMS",
+    "providerId": "yahoo"
+  },
+  {
+    "symbol": "^DJI",
+    "name": "Dow Jones Industrial Avg",
+    "assetClass": "index",
+    "currency": "USD",
+    "exchange": "DJI",
+    "providerId": "yahoo"
+  }
+]
