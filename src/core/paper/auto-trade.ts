@@ -424,7 +424,7 @@ export async function runAutoTrade(
       continue;
     }
 
-    const cappedIdea = capIdeaToCash(idea, cashAcc.cash);
+    const cappedIdea = capIdeaToCash(idea, cashAcc.cash, equity);
     if (cappedIdea.qty <= 0) {
       summary.skips.push({ symbol: sym, reason: 'no-budget', details: `Capped qty=0, cash=$${cashAcc.cash.toFixed(0)}` });
       continue;

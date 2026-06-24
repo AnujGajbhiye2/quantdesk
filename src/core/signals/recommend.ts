@@ -99,17 +99,35 @@ export function recommendTrade(
       : entryPrice - 1.5 * stopDist;
   }
 
+  // Validate stop price is sane before sizing
+  if (!Number.isFinite(stopPrice) || stopPrice <= 0) {
+    console.warn(`[recommend] ${signal.symbol}: invalid stopPrice=${stopPrice} - skipping trade`);
+    return null;
+  }
+  const rawStopDist = Math.abs(entryPrice - stopPrice);
+  if (rawStopDist < 1e-8) {
+    console.warn(`[recommend] ${signal.symbol}: stopPrice equals entryPrice - skipping trade`);
+    return null;
+  }
+
   // Risk-based quantity
   let sizing: ReturnType<typeof riskBasedQty>;
   try {
     sizing = riskBasedQty({ equity, riskPct, entryPrice, stopPrice });
-  } catch {
+  } catch (err) {
+    console.warn(`[recommend] ${signal.symbol}: sizing failed - ${err instanceof Error ? err.message : err}`);
     return null;
   }
 
-  const { qty, riskAmount } = sizing;
+  // Cap position value to 25% of equity - prevents oversized entries when stop
+  // distance is tiny relative to price.
+  const maxPositionValue = equity * 0.25;
+  const maxQtyByPosition = maxPositionValue / entryPrice;
+  const qty        = Math.min(sizing.qty, maxQtyByPosition);
   const stopDist   = Math.abs(entryPrice - stopPrice);
-  const targetDist = Math.abs(targetPrice - entryPrice);
+  const riskAmount = qty * stopDist;
+
+  const targetDist   = Math.abs(targetPrice - entryPrice);
   const rewardAmount = qty * targetDist;
   const rr           = stopDist > 0 ? targetDist / stopDist : 0;
 
@@ -133,15 +151,25 @@ export function recommendTrade(
 }
 
 /**
- * Scale an idea down so its entry cost never exceeds available cash
- * (budget mode). Risk and reward scale with qty; prices and R:R unchanged.
+ * Scale an idea down so its entry cost never exceeds the tighter of:
+ *   - 25% of equity (concentration limit)
+ *   - available cash
+ * Risk and reward scale with qty; prices and R:R unchanged.
  * cashInCurrency is the spendable cash converted to the idea's own currency.
  */
-export function capIdeaToCash(idea: TradeIdea, cashInCurrency: number): TradeIdea {
+export function capIdeaToCash(
+  idea: TradeIdea,
+  cashInCurrency: number,
+  equityInCurrency?: number,
+): TradeIdea {
   if (!(cashInCurrency > 0) || idea.entryPrice <= 0) {
     return { ...idea, qty: 0, riskAmount: 0, rewardAmount: 0 };
   }
-  const maxQty = cashInCurrency / idea.entryPrice;
+  const maxQtyByCash     = cashInCurrency / idea.entryPrice;
+  const maxQtyByPosition = equityInCurrency != null
+    ? (equityInCurrency * 0.25) / idea.entryPrice
+    : maxQtyByCash;
+  const maxQty = Math.min(maxQtyByCash, maxQtyByPosition);
   if (idea.qty <= maxQty) return idea;
   const scale = maxQty / idea.qty;
   return {

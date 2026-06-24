@@ -77,7 +77,7 @@ export async function POST(request: Request) {
         { equity, riskPct: body.riskPct },
       );
       if (idea && account) {
-        idea = capIdeaToCash(idea, fromUSD(Math.max(account.cash, 0), currency));
+        idea = capIdeaToCash(idea, fromUSD(Math.max(account.cash, 0), currency), equity);
       }
       if (idea) {
         ideas.push({ ...idea, currency });
