@@ -1,0 +1,29 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: SSH deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd ${{ secrets.EC2_APP_DIR }}
+            git pull origin main
+            npm ci
+            npm run build
+            pm2 restart quantdesk --update-env
+            sleep 10
+            pm2 show quantdesk | grep -q "online" || { echo "ERROR: quantdesk is not online after restart"; exit 1; }
+            echo "Deploy complete. quantdesk is online."
