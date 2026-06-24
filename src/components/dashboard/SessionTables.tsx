@@ -12,19 +12,50 @@ import type { ColumnDef } from '@tanstack/react-table';
 // Ingest errors table
 // ---------------------------------------------------------------------------
 
-export interface IngestErrorRow { symbol: string; error: string }
+export interface IngestErrorRow {
+  symbol:    string;
+  error:     string;
+  runAt:     string;
+  startedAt: string;
+}
 
 const INGEST_ERROR_COLS: ColumnDef<IngestErrorRow, unknown>[] = [
   { accessorKey: 'symbol', header: 'SYMBOL', meta: { accent: true } },
   {
+    id: 'time',
+    header: 'RUN TIME',
+    cell: ({ row: { original: r } }) => {
+      if (!r.runAt) return <span style={{ color: 'var(--text-muted)' }}>--</span>;
+      const dt = new Date(r.runAt);
+      return (
+        <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+          {dt.toISOString().slice(0, 16).replace('T', ' ')} UTC
+        </span>
+      );
+    },
+  },
+  {
+    id: 'duration',
+    header: 'ELAPSED',
+    cell: ({ row: { original: r } }) => {
+      if (!r.startedAt || !r.runAt) return '--';
+      const ms = new Date(r.runAt).getTime() - new Date(r.startedAt).getTime();
+      const s  = Math.round(ms / 1000);
+      return <span style={{ color: 'var(--text-muted)' }}>{s}s</span>;
+    },
+    meta: { numeric: true },
+  },
+  {
     accessorKey: 'error',
     header: 'ERROR',
-    cell: ({ getValue }) => <span style={{ color: 'var(--color-down)' }}>{getValue() as string}</span>,
+    cell: ({ getValue }) => (
+      <span style={{ color: 'var(--color-down)', whiteSpace: 'nowrap' }}>{getValue() as string}</span>
+    ),
   },
 ];
 
 export function IngestErrorsTable({ errors }: { errors: IngestErrorRow[] }) {
-  return <DataTable columns={INGEST_ERROR_COLS} data={errors} dense />;
+  return <DataTable columns={INGEST_ERROR_COLS} data={errors} dense enableSorting />;
 }
 
 // ---------------------------------------------------------------------------

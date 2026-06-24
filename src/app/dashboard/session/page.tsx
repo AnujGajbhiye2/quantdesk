@@ -212,8 +212,10 @@ export default function SessionPage() {
   }));
 
   const ingestErrorRows: IngestErrorRow[] = (latestIngest?.errors ?? []).map((e) => ({
-    symbol: e.symbol,
-    error:  e.error,
+    symbol:    e.symbol,
+    error:     e.error,
+    runAt:     latestIngest?.finishedAt ?? '',
+    startedAt: latestIngest?.startedAt ?? '',
   }));
 
   return (
