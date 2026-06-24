@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import DublinClock from '@/components/primitives/DublinClock';
 import NewPaperTrade from '@/components/trade/NewPaperTrade';
 import AccountStrip from '@/components/panels/AccountStrip';
@@ -12,6 +12,8 @@ import type { PaperTradeWithHold } from '@/core/paper/hold';
 import type { PaperTrade } from '@/core/types';
 import { useSettings } from '@/components/providers/SettingsProvider';
 import type { PendingFillResult } from '@/core/paper/broker';
+import { DataTable } from '@/components/table/DataTable';
+import type { ColumnDef } from '@tanstack/react-table';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -143,6 +145,17 @@ function OverallStats({
   );
 }
 
+interface StratRow {
+  id: string;
+  trades: number;
+  winRate: number;
+  pnlDisp: number;
+  mtmDisp: number;
+  avgPnlPct: number;
+  openUnrealizedPnl: number;
+  displayCur: string;
+}
+
 function ByStrategyTable({
   book,
   displayCur,
@@ -152,43 +165,61 @@ function ByStrategyTable({
   displayCur: string;
   fromUSD:    (usdAmount: number) => number;
 }) {
-  const entries = Object.entries(book.byStrategy)
-    .sort((a, b) => b[1].winRate - a[1].winRate);
-  if (entries.length === 0) {
+  const rows = useMemo<StratRow[]>(() =>
+    Object.entries(book.byStrategy)
+      .sort((a, b) => b[1].winRate - a[1].winRate)
+      .map(([id, stats]) => ({
+        id,
+        trades:            stats.trades,
+        winRate:           stats.winRate,
+        pnlDisp:           fromUSD(stats.totalPnl),
+        mtmDisp:           fromUSD(stats.openUnrealizedPnl),
+        avgPnlPct:         stats.avgPnlPct,
+        openUnrealizedPnl: stats.openUnrealizedPnl,
+        displayCur,
+      })),
+  [book, fromUSD, displayCur]);
+
+  const columns = useMemo<ColumnDef<StratRow, unknown>[]>(() => [
+    { accessorKey: 'id',       header: 'STRATEGY',                          meta: { accent: true } },
+    { accessorKey: 'trades',   header: 'TRADES',                             meta: { numeric: true } },
+    {
+      accessorKey: 'winRate',
+      header: 'WIN RATE',
+      cell: ({ getValue }) => <span style={{ fontWeight: 600 }}>{((getValue() as number) * 100).toFixed(1)}%</span>,
+      meta: { numeric: true },
+    },
+    {
+      accessorKey: 'pnlDisp',
+      header: `P&L CLOSED (${displayCur})`,
+      cell: ({ row }) => <span style={{ ...pnlStyle(row.original.pnlDisp), fontVariantNumeric: 'tabular-nums' }}>{fmtPnl(row.original.pnlDisp, row.original.displayCur)}</span>,
+      meta: { numeric: true },
+    },
+    {
+      accessorKey: 'mtmDisp',
+      header: `MTM OPEN (${displayCur})`,
+      cell: ({ row }) => {
+        if (row.original.openUnrealizedPnl === 0) return '--';
+        return <span style={{ ...pnlStyle(row.original.mtmDisp), fontVariantNumeric: 'tabular-nums' }}>{`~${fmtPnl(row.original.mtmDisp, row.original.displayCur)}`}</span>;
+      },
+      meta: { numeric: true },
+    },
+    {
+      accessorKey: 'avgPnlPct',
+      header: 'AVG P&L%',
+      cell: ({ getValue }) => {
+        const v = getValue() as number;
+        return <span style={{ ...pnlStyle(v) }}>{pct(v)}</span>;
+      },
+      meta: { numeric: true },
+    },
+  ], [displayCur]);
+
+  if (rows.length === 0) {
     return <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', padding: 8 }}>no strategy data</p>;
   }
-  return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
-      <thead>
-        <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>
-          <th style={{ textAlign: 'left',  padding: '4px 8px', fontWeight: 400 }}>STRATEGY</th>
-          <th style={{ textAlign: 'right', padding: '4px 8px', fontWeight: 400 }}>TRADES</th>
-          <th style={{ textAlign: 'right', padding: '4px 8px', fontWeight: 400 }}>WIN RATE</th>
-          <th style={{ textAlign: 'right', padding: '4px 8px', fontWeight: 400 }}>P&amp;L CLOSED ({displayCur})</th>
-          <th style={{ textAlign: 'right', padding: '4px 8px', fontWeight: 400 }}>MTM OPEN ({displayCur})</th>
-          <th style={{ textAlign: 'right', padding: '4px 8px', fontWeight: 400 }}>AVG P&amp;L%</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entries.map(([id, stats]) => {
-          const pnlDisp = fromUSD(stats.totalPnl);
-          const mtmDisp = fromUSD(stats.openUnrealizedPnl);
-          return (
-            <tr key={id} style={{ borderBottom: '1px solid var(--border)' }}>
-              <td style={{ padding: '4px 8px', color: 'var(--color-accent)', fontWeight: 600 }}>{id}</td>
-              <td style={{ padding: '4px 8px', textAlign: 'right' }}>{stats.trades}</td>
-              <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 600 }}>{(stats.winRate * 100).toFixed(1)}%</td>
-              <td style={{ padding: '4px 8px', textAlign: 'right', ...pnlStyle(pnlDisp) }}>{fmtPnl(pnlDisp, displayCur)}</td>
-              <td style={{ padding: '4px 8px', textAlign: 'right', ...pnlStyle(mtmDisp) }}>
-                {stats.openUnrealizedPnl !== 0 ? `~${fmtPnl(mtmDisp, displayCur)}` : '--'}
-              </td>
-              <td style={{ padding: '4px 8px', textAlign: 'right', ...pnlStyle(stats.avgPnlPct) }}>{pct(stats.avgPnlPct)}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  );
+
+  return <DataTable columns={columns} data={rows} enableSorting />;
 }
 
 function TradesTable({
@@ -206,172 +237,313 @@ function TradesTable({
   onClose:    (id: string) => void;
   onCancel:   (id: string) => void;
 }) {
-  /** Convert a native-currency amount to displayCur via USD pivot. */
+  const dispGlyph = curGlyph(displayCur) || displayCur;
+
   function cvt(amount: number, nativeCur: string): number {
     const nativeUsdRate = fxRates[nativeCur] ?? 1;
     const dispUsdRate   = fxRates[displayCur] ?? 1;
     return (amount * nativeUsdRate) / dispUsdRate;
   }
 
-  /** Format in displayCur; title (hover) shows original in nativeCur. */
   function fmtCvt(amount: number | undefined | null, nativeCur: string): { text: string; title: string } {
     if (amount == null || !isFinite(amount)) return { text: '--', title: '' };
     const converted = cvt(amount, nativeCur);
     const isDiff = nativeCur !== displayCur;
-    return {
-      text:  fmtMoney(converted, displayCur),
-      title: isDiff ? `${fmtMoney(amount, nativeCur)} (native)` : '',
-    };
+    return { text: fmtMoney(converted, displayCur), title: isDiff ? `${fmtMoney(amount, nativeCur)} (native)` : '' };
   }
+
+  const columns = useMemo<ColumnDef<PaperTradeWithHold, unknown>[]>(() => [
+    {
+      accessorKey: 'entryTime',
+      header: 'DATE',
+      cell: ({ getValue }) => <span style={{ color: 'var(--text-muted)' }}>{fmtDate(getValue() as string)}</span>,
+    },
+    { accessorKey: 'symbol', header: 'SYMBOL', meta: { accent: true } },
+    {
+      accessorKey: 'strategyId',
+      header: 'STRATEGY',
+      cell: ({ getValue }) => <span style={{ color: 'var(--text-muted)' }}>{getValue() as string}</span>,
+    },
+    {
+      accessorKey: 'side',
+      header: 'SIDE',
+      cell: ({ getValue }) => {
+        const side = getValue() as string;
+        return <span style={{ color: side === 'long' ? 'var(--color-up)' : 'var(--color-down)', fontWeight: 600 }}>{side.toUpperCase()}</span>;
+      },
+      meta: { align: 'center' },
+    },
+    {
+      id: 'entry',
+      header: `ENTRY (${dispGlyph})`,
+      cell: ({ row: { original: t } }) => {
+        const cur = t.currency ?? 'USD'; const ef = fmtCvt(t.entryPrice, cur);
+        return t.status === 'pending'
+          ? <span style={{ color: '#e6a817', fontVariantNumeric: 'tabular-nums' }} title={ef.title}>LIMIT {ef.text}</span>
+          : <span style={{ fontVariantNumeric: 'tabular-nums' }} title={ef.title}>{ef.text}</span>;
+      },
+      meta: { numeric: true },
+    },
+    {
+      id: 'cur',
+      header: `CUR (${dispGlyph})`,
+      cell: ({ row: { original: t } }) => {
+        if (t.status === 'pending') return '--';
+        const mark = t.status === 'open' ? marks.get(t.id) : undefined;
+        const cf = mark != null ? fmtCvt(mark.markPrice, t.currency ?? 'USD') : { text: '--', title: '' };
+        const color = mark != null ? (pnlStyle(mark.unrealizedPnl).color ?? undefined) : 'var(--text-muted)';
+        return <span style={{ color, fontVariantNumeric: 'tabular-nums' }} title={cf.title}>{cf.text}</span>;
+      },
+      meta: { numeric: true },
+    },
+    {
+      id: 'stop',
+      header: `STOP (${dispGlyph})`,
+      cell: ({ row: { original: t } }) => {
+        const sf = t.stopPrice != null ? fmtCvt(t.stopPrice, t.currency ?? 'USD') : { text: '--', title: '' };
+        return <span style={{ color: 'var(--color-down)', fontVariantNumeric: 'tabular-nums' }} title={sf.title}>{sf.text}</span>;
+      },
+      meta: { numeric: true },
+    },
+    {
+      id: 'target',
+      header: `TARGET (${dispGlyph})`,
+      cell: ({ row: { original: t } }) => {
+        const tf = t.targetPrice != null ? fmtCvt(t.targetPrice, t.currency ?? 'USD') : { text: '--', title: '' };
+        return <span style={{ color: 'var(--color-up)', fontVariantNumeric: 'tabular-nums' }} title={tf.title}>{tf.text}</span>;
+      },
+      meta: { numeric: true },
+    },
+    {
+      accessorKey: 'qty',
+      header: 'QTY',
+      cell: ({ getValue }) => <span style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{fmtNum(getValue() as number, 4)}</span>,
+      meta: { numeric: true },
+    },
+    {
+      id: 'exit',
+      header: `EXIT (${dispGlyph})`,
+      cell: ({ row: { original: t } }) => {
+        const ef = t.exitPrice != null ? fmtCvt(t.exitPrice, t.currency ?? 'USD') : { text: '--', title: '' };
+        return <span style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }} title={ef.title}>{ef.text}</span>;
+      },
+      meta: { numeric: true },
+    },
+    {
+      id: 'pnl',
+      header: `P&L (${dispGlyph})`,
+      cell: ({ row: { original: t } }) => {
+        if (t.status === 'pending') return '--';
+        const cur   = t.currency ?? 'USD';
+        const mark  = t.status === 'open' ? marks.get(t.id) : undefined;
+        const isMtm = mark != null;
+        const rawPnl = isMtm ? mark.unrealizedPnl : t.pnl;
+        if (rawPnl == null) return '--';
+        const pnlConverted = cvt(rawPnl, cur);
+        return (
+          <span style={{ ...pnlStyle(pnlConverted), fontVariantNumeric: 'tabular-nums' }}
+                title={rawPnl != null && cur !== displayCur ? `${fmtPnl(rawPnl, cur)} (native)` : undefined}>
+            {isMtm ? '~' : ''}{fmtPnl(pnlConverted, displayCur)}
+          </span>
+        );
+      },
+      meta: { numeric: true },
+    },
+    {
+      id: 'pnlPct',
+      header: 'P&L%',
+      cell: ({ row: { original: t } }) => {
+        if (t.status === 'pending') return '--';
+        const mark = t.status === 'open' ? marks.get(t.id) : undefined;
+        const isMtm = mark != null;
+        const displayPnlPct = isMtm ? mark.unrealizedPnlPct : t.pnlPct;
+        if (displayPnlPct == null) return '--';
+        return <span style={{ ...pnlStyle(displayPnlPct) }}>{isMtm ? '~' : ''}{pct(displayPnlPct)}</span>;
+      },
+      meta: { numeric: true },
+    },
+    {
+      id: 'hold',
+      header: 'EST HOLD',
+      cell: ({ row: { original: t } }) => {
+        if (t.status === 'pending') return '--';
+        const hold = holdCell(t);
+        return <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }} title={hold.title}>{hold.text}</span>;
+      },
+    },
+    {
+      accessorKey: 'status',
+      header: 'STATUS',
+      cell: ({ getValue }) => {
+        const s = getValue() as string;
+        const color = s === 'open' ? 'var(--color-accent)' : s === 'pending' ? '#e6a817' : 'var(--text-muted)';
+        return <span style={{ color }}>{s.toUpperCase()}</span>;
+      },
+      meta: { align: 'center' },
+    },
+    {
+      id: 'action',
+      header: 'ACTION',
+      cell: ({ row: { original: t } }) => {
+        if (t.status === 'open') {
+          return (
+            <button onClick={() => onClose(t.id)}
+              style={{ background: 'var(--bg-panel)', border: '1px solid var(--color-down)', color: 'var(--color-down)', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)', padding: '1px 6px', cursor: 'pointer' }}>
+              CLOSE
+            </button>
+          );
+        }
+        if (t.status === 'pending') {
+          return (
+            <button onClick={() => onCancel(t.id)}
+              style={{ background: 'var(--bg-panel)', border: '1px solid #e6a817', color: '#e6a817', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)', padding: '1px 6px', cursor: 'pointer' }}>
+              CANCEL
+            </button>
+          );
+        }
+        return null;
+      },
+      meta: { align: 'center' },
+    },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [displayCur, marks, fxRates, onClose, onCancel, dispGlyph]);
 
   if (trades.length === 0) {
     return <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', padding: 8 }}>no trades yet</p>;
   }
 
-  const dispGlyph = curGlyph(displayCur) || displayCur;
+  return <DataTable columns={columns} data={[...trades].reverse()} enableSorting />;
+}
 
-  return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
-      <thead>
-        <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>
-          <th style={{ textAlign: 'left',  padding: '3px 6px', fontWeight: 400 }}>DATE</th>
-          <th style={{ textAlign: 'left',  padding: '3px 6px', fontWeight: 400 }}>SYMBOL</th>
-          <th style={{ textAlign: 'left',  padding: '3px 6px', fontWeight: 400 }}>STRATEGY</th>
-          <th style={{ textAlign: 'center',padding: '3px 6px', fontWeight: 400 }}>SIDE</th>
-          <th style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}>ENTRY ({dispGlyph})</th>
-          <th
-            style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}
-            title="latest stored close for open trades - what the position is worth right now"
-          >
-            CUR ({dispGlyph})
-          </th>
-          <th style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}>STOP ({dispGlyph})</th>
-          <th style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}>TARGET ({dispGlyph})</th>
-          <th style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}>QTY</th>
-          <th style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}>EXIT ({dispGlyph})</th>
-          <th style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}>P&amp;L ({dispGlyph})</th>
-          <th style={{ textAlign: 'right', padding: '3px 6px', fontWeight: 400 }}>P&amp;L%</th>
-          <th
-            style={{ textAlign: 'left', padding: '3px 6px', fontWeight: 400 }}
-            title="open: historical median winner hold time (not a forecast); closed: actual days held"
-          >
-            EST HOLD
-          </th>
-          <th style={{ textAlign: 'center',padding: '3px 6px', fontWeight: 400 }}>STATUS</th>
-          <th style={{ textAlign: 'center',padding: '3px 6px', fontWeight: 400 }}>ACTION</th>
-        </tr>
-      </thead>
-      <tbody>
-        {[...trades].reverse().map((t) => {
-          const cur           = t.currency ?? 'USD';
-          const mark          = t.status === 'open' ? marks.get(t.id) : undefined;
-          const isMtm         = mark != null;
-          const rawPnl        = isMtm ? mark.unrealizedPnl    : t.pnl;
-          const displayPnlPct = isMtm ? mark.unrealizedPnlPct : t.pnlPct;
-          const hold          = holdCell(t);
+// ---------------------------------------------------------------------------
+// Pending orders table
+// ---------------------------------------------------------------------------
 
-          // Convert price fields to displayCur
-          const entryFmt  = fmtCvt(t.entryPrice, cur);
-          const curFmt    = mark != null ? fmtCvt(mark.markPrice, cur) : { text: '--', title: '' };
-          const stopFmt   = t.stopPrice   != null ? fmtCvt(t.stopPrice,   cur) : { text: '--', title: '' };
-          const targetFmt = t.targetPrice != null ? fmtCvt(t.targetPrice, cur) : { text: '--', title: '' };
-          const exitFmt   = t.exitPrice   != null ? fmtCvt(t.exitPrice,   cur) : { text: '--', title: '' };
+function PendingOrdersTable({
+  orders,
+  fillDiagnostics,
+  displayCur,
+  fxRates,
+  onCancel,
+}: {
+  orders:          PaperTradeWithHold[];
+  fillDiagnostics: Map<string, PendingFillResult>;
+  displayCur:      string;
+  fxRates:         Record<string, number>;
+  onCancel:        (id: string) => void;
+}) {
+  void fxRates; void displayCur; // reserved for future currency conversion on this table
+  const columns = useMemo<ColumnDef<PaperTradeWithHold, unknown>[]>(() => [
+    { accessorKey: 'symbol', header: 'SYMBOL', meta: { accent: true } },
+    {
+      accessorKey: 'side',
+      header: 'SIDE',
+      cell: ({ getValue }) => {
+        const side = getValue() as string;
+        return <span style={{ color: side === 'long' ? 'var(--color-up)' : 'var(--color-down)', fontWeight: 700 }}>{side.toUpperCase()}</span>;
+      },
+      meta: { align: 'center' },
+    },
+    {
+      id: 'limit',
+      header: 'LIMIT',
+      cell: ({ row: { original: o } }) => (
+        <span style={{ color: '#e6a817', fontVariantNumeric: 'tabular-nums' }}>
+          {fmtMoney(o.entryPrice, o.currency ?? 'USD')}
+        </span>
+      ),
+      meta: { numeric: true },
+    },
+    {
+      id: 'current',
+      header: 'CURRENT',
+      cell: ({ row: { original: o } }) => {
+        const diag = fillDiagnostics.get(o.id);
+        if (diag?.quotePrice == null) return <span style={{ color: 'var(--text-muted)' }}>--</span>;
+        return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(diag.quotePrice, o.currency ?? 'USD')}</span>;
+      },
+      meta: { numeric: true },
+    },
+    {
+      id: 'distance',
+      header: 'DISTANCE',
+      cell: ({ row: { original: o } }) => {
+        const diag = fillDiagnostics.get(o.id);
+        if (diag?.quotePrice == null) return <span style={{ color: 'var(--text-muted)' }}>--</span>;
+        const raw    = (diag.quotePrice - o.entryPrice) / o.entryPrice * 100;
+        const distPct = o.side === 'long' ? raw : -raw;
+        const color   = distPct <= 0 ? 'var(--color-up)' : 'var(--color-down)';
+        return <span style={{ color, fontVariantNumeric: 'tabular-nums' }}>{distPct >= 0 ? '+' : ''}{distPct.toFixed(2)}%</span>;
+      },
+      meta: { numeric: true },
+    },
+    {
+      id: 'stop',
+      header: 'STOP',
+      cell: ({ row: { original: o } }) => (
+        <span style={{ color: o.stopPrice != null ? 'var(--color-down)' : 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+          {o.stopPrice != null ? fmtMoney(o.stopPrice, o.currency ?? 'USD') : '--'}
+        </span>
+      ),
+      meta: { numeric: true },
+    },
+    {
+      id: 'target',
+      header: 'TARGET',
+      cell: ({ row: { original: o } }) => (
+        <span style={{ color: o.targetPrice != null ? 'var(--color-up)' : 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+          {o.targetPrice != null ? fmtMoney(o.targetPrice, o.currency ?? 'USD') : '--'}
+        </span>
+      ),
+      meta: { numeric: true },
+    },
+    {
+      accessorKey: 'qty',
+      header: 'QTY',
+      cell: ({ getValue }) => <span style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{fmtNum(getValue() as number, 4)}</span>,
+      meta: { numeric: true },
+    },
+    {
+      accessorKey: 'entryTime',
+      header: 'REQUESTED',
+      cell: ({ getValue }) => <span style={{ color: 'var(--text-muted)' }}>{fmtDate(getValue() as string)}</span>,
+    },
+    {
+      id: 'fillCheck',
+      header: 'FILL CHECK',
+      cell: ({ row: { original: o } }) => {
+        const diag = fillDiagnostics.get(o.id);
+        if (!diag) return <span style={{ color: 'var(--text-muted)' }}>--</span>;
+        const col = diag.action === 'filled'       ? 'var(--color-up)'
+                  : diag.action === 'fill-blocked' ? 'var(--color-down)'
+                  : diag.crossed                   ? '#e6a817'
+                  : 'var(--text-muted)';
+        const text = diag.action === 'filled'       ? `FILLED @ ${fmtMoney(diag.fillPrice ?? o.entryPrice, o.currency ?? 'USD')}`
+                   : diag.action === 'fill-blocked' ? 'BLOCKED (budget/risk)'
+                   : diag.reason ?? 'checking...';
+        return (
+          <span style={{ color: col, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', maxWidth: 260 }}
+                title={diag.reason ?? ''}>
+            {text}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'action',
+      header: 'ACTION',
+      cell: ({ row: { original: o } }) => (
+        <button onClick={() => onCancel(o.id)}
+          style={{ background: 'var(--bg-panel)', border: '1px solid var(--color-down)', color: 'var(--color-down)', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)', padding: '1px 6px', cursor: 'pointer' }}>
+          CANCEL
+        </button>
+      ),
+      meta: { align: 'center' },
+    },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [fillDiagnostics, onCancel]);
 
-          // P&L: convert native pnl to displayCur
-          const pnlConverted = rawPnl != null ? cvt(rawPnl, cur) : null;
-
-          // For pending rows, prices are just the limit price - no mark
-          const isPending = t.status === 'pending';
-
-          return (
-            <tr key={t.id} style={{ borderBottom: '1px solid var(--border)' }}>
-              <td style={{ padding: '3px 6px', color: 'var(--text-muted)' }}>{fmtDate(t.entryTime)}</td>
-              <td style={{ padding: '3px 6px', color: 'var(--color-accent)', fontWeight: 600 }}>{t.symbol}</td>
-              <td style={{ padding: '3px 6px', color: 'var(--text-muted)' }}>{t.strategyId}</td>
-              <td style={{ padding: '3px 6px', textAlign: 'center', color: t.side === 'long' ? 'var(--color-up)' : 'var(--color-down)', fontWeight: 600 }}>
-                {t.side.toUpperCase()}
-              </td>
-              <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }} title={entryFmt.title}>
-                {isPending ? <span style={{ color: '#e6a817' }}>LIMIT {entryFmt.text}</span> : entryFmt.text}
-              </td>
-              <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', ...(mark != null ? pnlStyle(mark.unrealizedPnl) : { color: 'var(--text-muted)' }) }} title={curFmt.title}>
-                {isPending ? '--' : curFmt.text}
-              </td>
-              <td style={{ padding: '3px 6px', textAlign: 'right', color: 'var(--color-down)', fontVariantNumeric: 'tabular-nums' }} title={stopFmt.title}>
-                {stopFmt.text}
-              </td>
-              <td style={{ padding: '3px 6px', textAlign: 'right', color: 'var(--color-up)', fontVariantNumeric: 'tabular-nums' }} title={targetFmt.title}>
-                {targetFmt.text}
-              </td>
-              <td style={{ padding: '3px 6px', textAlign: 'right', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                {fmtNum(t.qty, 4)}
-              </td>
-              <td style={{ padding: '3px 6px', textAlign: 'right', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }} title={exitFmt.title}>
-                {exitFmt.text}
-              </td>
-              <td style={{ padding: '3px 6px', textAlign: 'right', ...pnlStyle(pnlConverted) }}
-                  title={rawPnl != null && cur !== displayCur ? `${fmtPnl(rawPnl, cur)} (native)` : undefined}>
-                {pnlConverted != null && !isPending
-                  ? `${isMtm ? '~' : ''}${fmtPnl(pnlConverted, displayCur)}`
-                  : '--'}
-              </td>
-              <td style={{ padding: '3px 6px', textAlign: 'right', ...pnlStyle(displayPnlPct ?? null) }}>
-                {displayPnlPct != null && !isPending ? `${isMtm ? '~' : ''}${pct(displayPnlPct)}` : '--'}
-              </td>
-              <td style={{ padding: '3px 6px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }} title={hold.title}>
-                {isPending ? '--' : hold.text}
-              </td>
-              <td style={{
-                padding: '3px 6px',
-                textAlign: 'center',
-                color: t.status === 'open'
-                  ? 'var(--color-accent)'
-                  : t.status === 'pending'
-                    ? '#e6a817'
-                    : 'var(--text-muted)',
-              }}>
-                {t.status.toUpperCase()}
-              </td>
-              <td style={{ padding: '3px 6px', textAlign: 'center' }}>
-                {t.status === 'open' && (
-                  <button
-                    onClick={() => onClose(t.id)}
-                    style={{
-                      background:   'var(--bg-panel)',
-                      border:       '1px solid var(--color-down)',
-                      color:        'var(--color-down)',
-                      fontFamily:   'var(--font-mono)',
-                      fontSize:     'var(--fs-xs)',
-                      padding:      '1px 6px',
-                      cursor:       'pointer',
-                    }}
-                  >
-                    CLOSE
-                  </button>
-                )}
-                {t.status === 'pending' && (
-                  <button
-                    onClick={() => onCancel(t.id)}
-                    style={{
-                      background:   'var(--bg-panel)',
-                      border:       '1px solid #e6a817',
-                      color:        '#e6a817',
-                      fontFamily:   'var(--font-mono)',
-                      fontSize:     'var(--fs-xs)',
-                      padding:      '1px 6px',
-                      cursor:       'pointer',
-                    }}
-                  >
-                    CANCEL
-                  </button>
-                )}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  );
+  return <DataTable columns={columns} data={orders} dense />;
 }
 
 // ---------------------------------------------------------------------------
@@ -678,123 +850,13 @@ export default function PaperPage() {
                 {checkingFills ? 'CHECKING...' : 'CHECK FILLS'}
               </button>
             </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)', fontFamily: 'var(--font-mono)' }}>
-              <thead>
-                <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ textAlign: 'left',   padding: '2px 6px', fontWeight: 400 }}>SYMBOL</th>
-                  <th style={{ textAlign: 'center', padding: '2px 6px', fontWeight: 400 }}>SIDE</th>
-                  <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>LIMIT</th>
-                  <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>CURRENT</th>
-                  <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>DISTANCE</th>
-                  <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>STOP</th>
-                  <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>TARGET</th>
-                  <th style={{ textAlign: 'right',  padding: '2px 6px', fontWeight: 400 }}>QTY</th>
-                  <th style={{ textAlign: 'left',   padding: '2px 6px', fontWeight: 400 }}>REQUESTED</th>
-                  <th style={{ textAlign: 'left',   padding: '2px 6px', fontWeight: 400 }}>FILL CHECK</th>
-                  <th style={{ textAlign: 'center', padding: '2px 6px', fontWeight: 400 }}>ACTION</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pendingOrders.map((order) => {
-                  const diag   = fillDiagnostics.get(order.id);
-                  const limit  = order.entryPrice;
-                  const cur    = order.currency ?? 'USD';
-
-                  // Distance from limit (+ = favorable, - = needs to move further)
-                  let distPct: number | null = null;
-                  let distColor              = 'var(--text-muted)';
-                  let currentCell            = '--';
-                  if (diag?.quotePrice != null) {
-                    currentCell = fmtMoney(diag.quotePrice, cur);
-                    const raw   = (diag.quotePrice - limit) / limit * 100;
-                    // For long: positive raw = price above limit = further from fill (bad)
-                    // For short: negative raw = price below limit = further from fill (bad)
-                    distPct = order.side === 'long' ? raw : -raw;
-                    // distPct < 0 means approaching the fill
-                    distColor = distPct <= 0
-                      ? 'var(--color-up)'    // heading toward fill
-                      : 'var(--color-down)'; // moving away
-                  }
-
-                  // Fill-check status line
-                  let fillCheckNode: React.ReactNode = <span style={{ color: 'var(--text-muted)' }}>--</span>;
-                  if (diag) {
-                    const col = diag.action === 'filled'       ? 'var(--color-up)'
-                              : diag.action === 'fill-blocked' ? 'var(--color-down)'
-                              : diag.crossed                   ? '#e6a817'
-                              : 'var(--text-muted)';
-                    fillCheckNode = (
-                      <span style={{ color: col, whiteSpace: 'nowrap' }}
-                            title={diag.reason ?? ''}>
-                        {diag.action === 'filled'       ? `FILLED @ ${fmtMoney(diag.fillPrice ?? limit, cur)}`
-                         : diag.action === 'fill-blocked' ? 'BLOCKED (budget/risk)'
-                         : diag.reason ?? 'checking...'}
-                      </span>
-                    );
-                  }
-
-                  return (
-                    <tr key={order.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '3px 6px', color: 'var(--color-accent)', fontWeight: 600 }}>
-                        {order.symbol}
-                      </td>
-                      <td style={{ padding: '3px 6px', textAlign: 'center',
-                                   color: order.side === 'long' ? 'var(--color-up)' : 'var(--color-down)',
-                                   fontWeight: 700 }}>
-                        {order.side.toUpperCase()}
-                      </td>
-                      <td style={{ padding: '3px 6px', textAlign: 'right', color: '#e6a817', fontVariantNumeric: 'tabular-nums' }}>
-                        {fmtMoney(limit, cur)}
-                      </td>
-                      <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                                   color: diag?.quotePrice != null ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                        {currentCell}
-                      </td>
-                      <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                                   color: distPct != null ? distColor : 'var(--text-muted)' }}>
-                        {distPct != null
-                          ? `${distPct >= 0 ? '+' : ''}${distPct.toFixed(2)}%`
-                          : '--'}
-                      </td>
-                      <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                                   color: order.stopPrice != null ? 'var(--color-down)' : 'var(--text-muted)' }}>
-                        {order.stopPrice != null ? fmtMoney(order.stopPrice, cur) : '--'}
-                      </td>
-                      <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                                   color: order.targetPrice != null ? 'var(--color-up)' : 'var(--text-muted)' }}>
-                        {order.targetPrice != null ? fmtMoney(order.targetPrice, cur) : '--'}
-                      </td>
-                      <td style={{ padding: '3px 6px', textAlign: 'right', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                        {fmtNum(order.qty, 4)}
-                      </td>
-                      <td style={{ padding: '3px 6px', color: 'var(--text-muted)' }}>
-                        {fmtDate(order.entryTime)}
-                      </td>
-                      <td style={{ padding: '3px 6px', fontSize: 'var(--fs-xs)', maxWidth: 260, overflow: 'hidden',
-                                   textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {fillCheckNode}
-                      </td>
-                      <td style={{ padding: '3px 6px', textAlign: 'center' }}>
-                        <button
-                          onClick={() => void handleCancel(order.id)}
-                          style={{
-                            background:  'var(--bg-panel)',
-                            border:      '1px solid var(--color-down)',
-                            color:       'var(--color-down)',
-                            fontFamily:  'var(--font-mono)',
-                            fontSize:    'var(--fs-xs)',
-                            padding:     '1px 6px',
-                            cursor:      'pointer',
-                          }}
-                        >
-                          CANCEL
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <PendingOrdersTable
+              orders={pendingOrders}
+              fillDiagnostics={fillDiagnostics}
+              displayCur={displayCur}
+              fxRates={fxRates}
+              onCancel={(id) => void handleCancel(id)}
+            />
             <div style={{ marginTop: 6, fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
               Resting limit orders - fill only when market price crosses the limit (not on gap-up/gap-down short of the limit).
               CHECK FILLS runs the live-quote fill check and shows per-order diagnostics.

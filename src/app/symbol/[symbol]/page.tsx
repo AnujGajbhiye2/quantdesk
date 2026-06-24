@@ -7,6 +7,9 @@ import InfoTip from '@/components/primitives/InfoTip';
 import { fmtMoney } from '@/core/format/currency';
 import type { DossierResponse } from '@/app/api/dossier/route';
 import type { CaseFactor } from '@/core/dossier/case';
+import { DataTable } from '@/components/table/DataTable';
+import type { ColumnDef } from '@tanstack/react-table';
+import type { EdgeStats } from '@/core/edge/types';
 
 /**
  * Decision dossier: the four "analyst desks" (technical, edge and history,
@@ -64,6 +67,31 @@ const fmtPct = (v: number | null, digits = 1) =>
   v == null ? '--' : `${(v * 100).toFixed(digits)}%`;
 const fmtNum = (v: number | null, digits = 2) =>
   v == null ? '--' : v.toFixed(digits);
+
+const EDGE_COLS: ColumnDef<EdgeStats, unknown>[] = [
+  { accessorKey: 'strategyId', header: 'STRATEGY', meta: { accent: true } },
+  {
+    accessorKey: 'winRate',
+    header: 'WIN%',
+    cell: ({ getValue }) => fmtPct(getValue() as number, 0),
+    meta: { numeric: true },
+  },
+  {
+    accessorKey: 'profitFactor',
+    header: 'P-FACTOR',
+    cell: ({ getValue }) => {
+      const v = getValue() as number;
+      return v >= 9999 ? 'inf' : v.toFixed(2);
+    },
+    meta: { numeric: true },
+  },
+  {
+    accessorKey: 'numTrades',
+    header: 'TRADES',
+    cell: ({ getValue }) => <span style={{ color: 'var(--text-muted)' }}>{getValue() as number}</span>,
+    meta: { numeric: true },
+  },
+];
 const fmtBig = (v: number | null) => {
   if (v == null) return '--';
   if (v >= 1e12) return `${(v / 1e12).toFixed(2)}T`;
@@ -215,29 +243,12 @@ export default function SymbolDossierPage({ params }: { params: Promise<{ symbol
                   no edge stats yet - they compute on the nightly refresh
                 </div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-xs)' }}>
-                  <thead>
-                    <tr style={{ color: 'var(--text-muted)' }}>
-                      <th style={{ textAlign: 'left', padding: '2px 10px', fontWeight: 400 }}>STRATEGY</th>
-                      <th style={{ textAlign: 'right', padding: '2px 6px', fontWeight: 400 }}>WIN%</th>
-                      <th style={{ textAlign: 'right', padding: '2px 6px', fontWeight: 400 }}>P-FACTOR</th>
-                      <th style={{ textAlign: 'right', padding: '2px 10px', fontWeight: 400 }}>TRADES</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...dossier.edges]
-                      .sort((a, b) => b.profitFactor - a.profitFactor)
-                      .slice(0, 8)
-                      .map((e) => (
-                        <tr key={e.strategyId} style={{ opacity: e.numTrades < 15 ? 0.45 : 1 }}>
-                          <td style={{ padding: '2px 10px', color: 'var(--color-accent)' }}>{e.strategyId}</td>
-                          <td style={{ padding: '2px 6px', textAlign: 'right' }}>{fmtPct(e.winRate, 0)}</td>
-                          <td style={{ padding: '2px 6px', textAlign: 'right' }}>{e.profitFactor >= 9999 ? 'inf' : e.profitFactor.toFixed(2)}</td>
-                          <td style={{ padding: '2px 10px', textAlign: 'right', color: 'var(--text-muted)' }}>{e.numTrades}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+                <DataTable
+                  columns={EDGE_COLS}
+                  data={[...dossier.edges].sort((a, b) => b.profitFactor - a.profitFactor).slice(0, 8)}
+                  dense
+                  rowStyle={(row) => ({ opacity: row.numTrades < 15 ? 0.45 : 1 })}
+                />
               )}
               <div style={{ borderTop: '1px solid var(--border)', marginTop: 4 }}>
                 {kv('past long signals', String(dossier.history.longSignals))}

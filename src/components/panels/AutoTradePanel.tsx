@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { DataTable } from '@/components/table/DataTable';
+import type { ColumnDef } from '@tanstack/react-table';
 
 interface AutoTradeStatus {
   enabled:          boolean;
@@ -24,6 +26,55 @@ interface AutoTradeStatus {
 interface TriggerResult {
   ingest:    { symbols: number; barsAdded: number; errors: number };
   autoTrade: { entries: unknown[]; exits: unknown[]; skips: unknown[]; halted: boolean; haltReason?: string; dryRun: boolean };
+}
+
+type TradeItem = AutoTradeStatus['trades'][number];
+
+const AUTO_TRADE_COLS: ColumnDef<TradeItem, unknown>[] = [
+  { accessorKey: 'symbol', header: 'SYM' },
+  {
+    accessorKey: 'side',
+    header: 'SIDE',
+    cell: ({ getValue }) => {
+      const side = getValue() as string;
+      return <span style={{ color: side === 'long' ? 'var(--color-up)' : 'var(--color-down)' }}>{side.toUpperCase()}</span>;
+    },
+  },
+  {
+    accessorKey: 'status',
+    header: 'STATUS',
+    cell: ({ getValue }) => {
+      const s = getValue() as string;
+      return <span style={{ color: s === 'open' ? 'var(--color-accent)' : 'var(--text-muted)' }}>{s.toUpperCase()}</span>;
+    },
+  },
+  {
+    accessorKey: 'qty',
+    header: 'QTY',
+    cell: ({ getValue }) => (getValue() as number).toFixed(2),
+    meta: { numeric: true },
+  },
+  {
+    accessorKey: 'entryPrice',
+    header: 'ENTRY',
+    cell: ({ getValue }) => `$${(getValue() as number).toFixed(2)}`,
+    meta: { numeric: true },
+  },
+  {
+    accessorKey: 'pnl',
+    header: 'P&L',
+    cell: ({ getValue }) => {
+      const v = getValue() as number | null | undefined;
+      if (v == null) return <span style={{ color: 'var(--text-muted)' }}>-</span>;
+      const color = v > 0 ? 'var(--color-up)' : v < 0 ? 'var(--color-down)' : 'var(--text-muted)';
+      return <span style={{ color, fontVariantNumeric: 'tabular-nums' }}>{v >= 0 ? '+' : ''}${v.toFixed(2)}</span>;
+    },
+    meta: { numeric: true },
+  },
+];
+
+function AutoTradesTable({ trades, pnlColor: _ }: { trades: TradeItem[]; pnlColor: (v: number) => string }) {
+  return <DataTable columns={AUTO_TRADE_COLS} data={trades} dense />;
 }
 
 export default function AutoTradePanel() {
@@ -210,43 +261,7 @@ export default function AutoTradePanel() {
 
           {/* Today's auto trades table */}
           {status.trades.length > 0 && (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-xs)' }}>
-              <thead>
-                <tr style={{ color: 'var(--text-muted)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '2px 6px 2px 0' }}>SYM</th>
-                  <th style={{ padding: '2px 6px' }}>SIDE</th>
-                  <th style={{ padding: '2px 6px' }}>STATUS</th>
-                  <th style={{ padding: '2px 6px', textAlign: 'right' }}>QTY</th>
-                  <th style={{ padding: '2px 6px', textAlign: 'right' }}>ENTRY</th>
-                  <th style={{ padding: '2px 6px', textAlign: 'right' }}>P&amp;L</th>
-                </tr>
-              </thead>
-              <tbody>
-                {status.trades.map((t) => (
-                  <tr key={t.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '2px 6px 2px 0', color: 'var(--text-primary)' }}>{t.symbol}</td>
-                    <td style={{ padding: '2px 6px', color: t.side === 'long' ? 'var(--color-up)' : 'var(--color-down)' }}>
-                      {t.side.toUpperCase()}
-                    </td>
-                    <td style={{ padding: '2px 6px', color: t.status === 'open' ? 'var(--color-accent)' : 'var(--text-muted)' }}>
-                      {t.status.toUpperCase()}
-                    </td>
-                    <td style={{ padding: '2px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      {t.qty.toFixed(2)}
-                    </td>
-                    <td style={{ padding: '2px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      ${t.entryPrice.toFixed(2)}
-                    </td>
-                    <td style={{ padding: '2px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                      color: t.pnl != null ? pnlColor(t.pnl) : 'var(--text-muted)' }}>
-                      {t.pnl != null
-                        ? `${t.pnl >= 0 ? '+' : ''}$${t.pnl.toFixed(2)}`
-                        : '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <AutoTradesTable trades={status.trades} pnlColor={pnlColor} />
           )}
 
           {status.trades.length === 0 && (

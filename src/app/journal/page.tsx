@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import DublinClock from '@/components/primitives/DublinClock';
 import InfoTip from '@/components/primitives/InfoTip';
 import { fmtMoney } from '@/core/format/currency';
 import type { JournalRow, ComboReport } from '@/app/api/journal/route';
+import { DataTable } from '@/components/table/DataTable';
+import type { ColumnDef } from '@tanstack/react-table';
 
 /**
  * Trade journal + system report.
@@ -13,16 +15,64 @@ import type { JournalRow, ComboReport } from '@/app/api/journal/route';
  * TRUST/WATCH/AVOID - the closest honest answer to "what can I follow?".
  */
 
-function verdictColor(v: ComboReport['verdict']): string {
-  if (v === 'TRUST') return 'var(--color-up)';
-  if (v === 'AVOID') return 'var(--color-down)';
-  return 'var(--color-accent)';
-}
-
 function pnlColor(v: number | null | undefined): string {
   if (v == null || !isFinite(v)) return 'var(--text-muted)';
   return v >= 0 ? 'var(--color-up)' : 'var(--color-down)';
 }
+
+const REPORT_COLS: ColumnDef<ComboReport, unknown>[] = [
+  { accessorKey: 'strategyId', header: 'STRATEGY', meta: { accent: true } },
+  { accessorKey: 'market',     header: 'MARKET',   cell: ({ getValue }) => <span style={{ color: 'var(--text-muted)' }}>{getValue() as string}</span>, meta: { align: 'center' } },
+  {
+    accessorKey: 'verdict',
+    header: 'VERDICT',
+    cell: ({ getValue }) => {
+      const v = getValue() as ComboReport['verdict'];
+      const color = v === 'TRUST' ? 'var(--color-up)' : v === 'AVOID' ? 'var(--color-down)' : 'var(--color-accent)';
+      return <span style={{ color, fontWeight: 700 }}>{v}</span>;
+    },
+    meta: { align: 'center' },
+  },
+  {
+    accessorKey: 'trades',
+    header: 'TRADES',
+    cell: ({ getValue }) => <span style={{ color: 'var(--text-muted)' }}>{getValue() as number}</span>,
+    meta: { numeric: true },
+  },
+  {
+    accessorKey: 'liveWinRate',
+    header: 'LIVE WIN%',
+    cell: ({ getValue }) => `${((getValue() as number) * 100).toFixed(0)}%`,
+    meta: { numeric: true },
+  },
+  {
+    accessorKey: 'backtestWinRate',
+    header: 'BT WIN%',
+    cell: ({ getValue }) => {
+      const v = getValue() as number | null;
+      return <span style={{ color: 'var(--text-muted)' }}>{v != null ? `${(v * 100).toFixed(0)}%` : '--'}</span>;
+    },
+    meta: { numeric: true },
+  },
+  {
+    accessorKey: 'avgPnlPct',
+    header: 'AVG P&L%',
+    cell: ({ getValue }) => {
+      const v = getValue() as number;
+      return <span style={{ color: pnlColor(v) }}>{v >= 0 ? '+' : ''}{v.toFixed(2)}%</span>;
+    },
+    meta: { numeric: true },
+  },
+  {
+    accessorKey: 'totalPnlUSD',
+    header: 'P&L (USD)',
+    cell: ({ getValue }) => {
+      const v = getValue() as number;
+      return <span style={{ color: pnlColor(v), fontVariantNumeric: 'tabular-nums' }}>{v >= 0 ? '+' : '-'}${Math.abs(v).toFixed(2)}</span>;
+    },
+    meta: { numeric: true },
+  },
+];
 
 interface WhyShape {
   reason?: string;
@@ -104,40 +154,7 @@ export default function JournalPage() {
               no closed trades yet - the report builds itself as your paper trades close
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
-              <thead>
-                <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ textAlign: 'left',   padding: '3px 6px', fontWeight: 400 }}>STRATEGY</th>
-                  <th style={{ textAlign: 'center', padding: '3px 6px', fontWeight: 400 }}>MARKET</th>
-                  <th style={{ textAlign: 'center', padding: '3px 6px', fontWeight: 400 }}>VERDICT</th>
-                  <th style={{ textAlign: 'right',  padding: '3px 6px', fontWeight: 400 }}>TRADES</th>
-                  <th style={{ textAlign: 'right',  padding: '3px 6px', fontWeight: 400 }}>LIVE WIN%</th>
-                  <th style={{ textAlign: 'right',  padding: '3px 6px', fontWeight: 400 }}>BT WIN%</th>
-                  <th style={{ textAlign: 'right',  padding: '3px 6px', fontWeight: 400 }}>AVG P&amp;L%</th>
-                  <th style={{ textAlign: 'right',  padding: '3px 6px', fontWeight: 400 }}>P&amp;L (USD)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.map((r) => (
-                  <tr key={`${r.strategyId}|${r.market}`} style={{ borderBottom: '1px solid var(--border)' }} title={r.detail}>
-                    <td style={{ padding: '3px 6px', color: 'var(--color-accent)', fontWeight: 600 }}>{r.strategyId}</td>
-                    <td style={{ padding: '3px 6px', textAlign: 'center', color: 'var(--text-muted)' }}>{r.market}</td>
-                    <td style={{ padding: '3px 6px', textAlign: 'center', color: verdictColor(r.verdict), fontWeight: 700 }}>{r.verdict}</td>
-                    <td style={{ padding: '3px 6px', textAlign: 'right', color: 'var(--text-muted)' }}>{r.trades}</td>
-                    <td style={{ padding: '3px 6px', textAlign: 'right' }}>{(r.liveWinRate * 100).toFixed(0)}%</td>
-                    <td style={{ padding: '3px 6px', textAlign: 'right', color: 'var(--text-muted)' }}>
-                      {r.backtestWinRate != null ? `${(r.backtestWinRate * 100).toFixed(0)}%` : '--'}
-                    </td>
-                    <td style={{ padding: '3px 6px', textAlign: 'right', color: pnlColor(r.avgPnlPct) }}>
-                      {r.avgPnlPct >= 0 ? '+' : ''}{r.avgPnlPct.toFixed(2)}%
-                    </td>
-                    <td style={{ padding: '3px 6px', textAlign: 'right', color: pnlColor(r.totalPnlUSD), fontVariantNumeric: 'tabular-nums' }}>
-                      {r.totalPnlUSD >= 0 ? '+' : '-'}${Math.abs(r.totalPnlUSD).toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <DataTable columns={REPORT_COLS} data={report} enableSorting />
           )}
         </div>
 

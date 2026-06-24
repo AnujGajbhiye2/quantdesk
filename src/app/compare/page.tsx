@@ -1,69 +1,26 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DublinClock from '@/components/primitives/DublinClock';
 import SymbolTypeahead from '@/components/primitives/SymbolTypeahead';
 import InfoTip from '@/components/primitives/InfoTip';
 import { gloss, type GlossaryKey } from '@/core/glossary';
 import type { CompareRow } from '@/app/api/compare/route';
+import { DataTable } from '@/components/table/DataTable';
+import type { ColumnDef } from '@tanstack/react-table';
 
-// ---------------------------------------------------------------------------
-// Sorting
-// ---------------------------------------------------------------------------
+type GlossCol = { label: string; title: string; glossKey?: GlossaryKey };
 
-type SortKey =
-  | 'name'
-  | 'totalReturnPct'
-  | 'winRate'
-  | 'sharpe'
-  | 'maxDrawdownPct'
-  | 'numTrades'
-  | 'profitFactor';
-
-const COLUMNS: Array<{ key: SortKey; label: string; title: string; glossKey?: GlossaryKey }> = [
-  { key: 'name',           label: 'STRATEGY',  title: 'strategy name - click row to open in backtest' },
-  { key: 'totalReturnPct', label: 'RETURN %',  title: 'total return over the tested window', glossKey: 'totalReturn' },
-  { key: 'winRate',        label: 'WIN RATE',  title: 'share of closed trades that made money', glossKey: 'winRate' },
-  { key: 'sharpe',         label: 'SHARPE',    title: 'risk-adjusted return, annualised, rf=0', glossKey: 'sharpe' },
-  { key: 'maxDrawdownPct', label: 'MAX DD',    title: 'worst peak-to-trough equity drop', glossKey: 'maxDrawdown' },
-  { key: 'numTrades',      label: 'TRADES',    title: 'closed trades - below ~15 the stats mean little', glossKey: 'numTrades' },
-  { key: 'profitFactor',   label: 'P-FACTOR',  title: 'gross wins / gross losses; >1 = net winner', glossKey: 'profitFactor' },
-];
-
-function sortRows(rows: CompareRow[], key: SortKey, dir: 1 | -1): CompareRow[] {
-  return [...rows].sort((a, b) => {
-    if (key === 'name') return dir * a.name.localeCompare(b.name);
-    const av = a[key];
-    const bv = b[key];
-    // Errored rows (null/NaN metrics) always sink to the bottom
-    const aBad = av == null || !isFinite(av as number);
-    const bBad = bv == null || !isFinite(bv as number);
-    if (aBad && bBad) return 0;
-    if (aBad) return 1;
-    if (bBad) return -1;
-    return dir * ((av as number) - (bv as number));
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Formatting
-// ---------------------------------------------------------------------------
-
-function pct(v: number | null, digits = 1): string {
-  if (v == null || !isFinite(v)) return '--';
-  return `${v >= 0 ? '+' : ''}${v.toFixed(digits)}%`;
-}
-
-function num(v: number | null, digits = 2): string {
-  if (v == null || !isFinite(v)) return '--';
-  return v.toFixed(digits);
-}
-
-function signColor(v: number | null): string {
-  if (v == null || !isFinite(v)) return 'var(--text-muted)';
-  return v >= 0 ? 'var(--color-up)' : 'var(--color-down)';
-}
+const COL_META: Record<string, GlossCol> = {
+  name:           { label: 'STRATEGY',  title: 'strategy name - click row to open in backtest' },
+  totalReturnPct: { label: 'RETURN %',  title: 'total return over the tested window',            glossKey: 'totalReturn' },
+  winRate:        { label: 'WIN RATE',  title: 'share of closed trades that made money',          glossKey: 'winRate' },
+  sharpe:         { label: 'SHARPE',    title: 'risk-adjusted return, annualised, rf=0',          glossKey: 'sharpe' },
+  maxDrawdownPct: { label: 'MAX DD',    title: 'worst peak-to-trough equity drop',                glossKey: 'maxDrawdown' },
+  numTrades:      { label: 'TRADES',    title: 'closed trades - below ~15 the stats mean little', glossKey: 'numTrades' },
+  profitFactor:   { label: 'P-FACTOR',  title: 'gross wins / gross losses; >1 = net winner',     glossKey: 'profitFactor' },
+};
 
 // ---------------------------------------------------------------------------
 // Page
@@ -77,9 +34,7 @@ function ComparePageInner() {
   const [rows,    setRows]    = useState<CompareRow[]>([]);
   const [range,   setRange]   = useState<{ from: string; to: string } | null>(null);
   const [status,  setStatus]  = useState('');
-  const [busy,    setBusy]    = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>('totalReturnPct');
-  const [sortDir, setSortDir] = useState<1 | -1>(-1);
+  const [busy,       setBusy]       = useState(false);
   const [legendOpen, setLegendOpen] = useState(false);
 
   async function runCompare(sym?: string) {
@@ -119,17 +74,84 @@ function ComparePageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function clickHeader(key: SortKey) {
-    if (key === sortKey) {
-      setSortDir((d) => (d === 1 ? -1 : 1));
-    } else {
-      setSortKey(key);
-      // Numbers default to descending (best first); names ascending
-      setSortDir(key === 'name' ? 1 : -1);
-    }
-  }
-
-  const sorted = sortRows(rows, sortKey, sortDir);
+  const columns = useMemo<ColumnDef<CompareRow, unknown>[]>(() => [
+    {
+      accessorKey: 'name',
+      header: () => <span title={COL_META.name.title}>{COL_META.name.label}</span>,
+      cell: ({ row }) => (
+        <span>
+          {row.original.name}
+          {row.original.error && <span style={{ color: 'var(--color-down)', marginLeft: 8 }}>failed</span>}
+        </span>
+      ),
+      meta: { accent: true },
+    },
+    {
+      accessorKey: 'totalReturnPct',
+      sortingFn: 'basic',
+      header: () => <span title={COL_META.totalReturnPct.title}>{COL_META.totalReturnPct.label}{COL_META.totalReturnPct.glossKey && <InfoTip term={gloss(COL_META.totalReturnPct.glossKey).term} text={gloss(COL_META.totalReturnPct.glossKey).text} />}</span>,
+      cell: ({ getValue }) => {
+        const v = getValue() as number | null;
+        const color = v == null || !isFinite(v) ? 'var(--text-muted)' : v >= 0 ? 'var(--color-up)' : 'var(--color-down)';
+        return <span style={{ color, fontVariantNumeric: 'tabular-nums' }}>{v == null || !isFinite(v) ? '--' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`}</span>;
+      },
+      meta: { numeric: true },
+    },
+    {
+      accessorKey: 'winRate',
+      sortingFn: 'basic',
+      header: () => <span title={COL_META.winRate.title}>{COL_META.winRate.label}{COL_META.winRate.glossKey && <InfoTip term={gloss(COL_META.winRate.glossKey).term} text={gloss(COL_META.winRate.glossKey).text} />}</span>,
+      cell: ({ getValue }) => {
+        const v = getValue() as number | null;
+        return v != null && isFinite(v) ? `${(v * 100).toFixed(0)}%` : '--';
+      },
+      meta: { numeric: true },
+    },
+    {
+      accessorKey: 'sharpe',
+      sortingFn: 'basic',
+      header: () => <span title={COL_META.sharpe.title}>{COL_META.sharpe.label}{COL_META.sharpe.glossKey && <InfoTip term={gloss(COL_META.sharpe.glossKey).term} text={gloss(COL_META.sharpe.glossKey).text} />}</span>,
+      cell: ({ getValue }) => {
+        const v = getValue() as number | null;
+        const color = v == null || !isFinite(v) ? 'var(--text-muted)' : v >= 0 ? 'var(--color-up)' : 'var(--color-down)';
+        return <span style={{ color, fontVariantNumeric: 'tabular-nums' }}>{v == null || !isFinite(v) ? '--' : v.toFixed(2)}</span>;
+      },
+      meta: { numeric: true },
+    },
+    {
+      accessorKey: 'maxDrawdownPct',
+      sortingFn: 'basic',
+      header: () => <span title={COL_META.maxDrawdownPct.title}>{COL_META.maxDrawdownPct.label}{COL_META.maxDrawdownPct.glossKey && <InfoTip term={gloss(COL_META.maxDrawdownPct.glossKey).term} text={gloss(COL_META.maxDrawdownPct.glossKey).text} />}</span>,
+      cell: ({ getValue }) => {
+        const v = getValue() as number | null;
+        return <span style={{ color: 'var(--color-down)', fontVariantNumeric: 'tabular-nums' }}>{v != null && isFinite(v) ? `-${v.toFixed(1)}%` : '--'}</span>;
+      },
+      meta: { numeric: true },
+    },
+    {
+      accessorKey: 'numTrades',
+      sortingFn: 'basic',
+      header: () => <span title={COL_META.numTrades.title}>{COL_META.numTrades.label}{COL_META.numTrades.glossKey && <InfoTip term={gloss(COL_META.numTrades.glossKey).term} text={gloss(COL_META.numTrades.glossKey).text} />}</span>,
+      cell: ({ getValue }) => {
+        const v = getValue() as number;
+        const muted = v < 15;
+        return <span style={{ color: muted ? 'var(--text-muted)' : undefined, fontVariantNumeric: 'tabular-nums' }} title={muted ? 'fewer than 15 trades - treat stats as noise' : undefined}>{v}</span>;
+      },
+      meta: { numeric: true },
+    },
+    {
+      accessorKey: 'profitFactor',
+      sortingFn: 'basic',
+      header: () => <span title={COL_META.profitFactor.title}>{COL_META.profitFactor.label}{COL_META.profitFactor.glossKey && <InfoTip term={gloss(COL_META.profitFactor.glossKey).term} text={gloss(COL_META.profitFactor.glossKey).text} />}</span>,
+      cell: ({ getValue }) => {
+        const v = getValue() as number | null;
+        if (v == null || !isFinite(v)) return '--';
+        const color = v >= 1 ? 'var(--color-up)' : 'var(--color-down)';
+        return <span style={{ color, fontVariantNumeric: 'tabular-nums' }}>{v >= 9999 ? 'inf' : v.toFixed(2)}</span>;
+      },
+      meta: { numeric: true },
+    },
+  ], []);
 
   return (
     <div className="flex flex-col h-full" style={{ minHeight: '100vh' }}>
@@ -237,10 +259,10 @@ function ComparePageInner() {
             gap: '8px 24px',
           }}
         >
-          {COLUMNS.filter((c) => c.glossKey).map((c) => {
+          {Object.entries(COL_META).filter(([, c]) => c.glossKey).map(([key, c]) => {
             const g = gloss(c.glossKey!);
             return (
-              <div key={c.key}>
+              <div key={key}>
                 <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{c.label}</span>
                 <span style={{ color: 'var(--text-muted)' }}> - {g.term}</span>
                 <div style={{ color: 'var(--text-muted)', whiteSpace: 'pre-line', marginTop: 2 }}>{g.text}</div>
@@ -252,78 +274,19 @@ function ComparePageInner() {
 
       {/* Results table */}
       <div className="flex-1 overflow-auto" style={{ background: 'var(--bg-panel)' }}>
-        {sorted.length === 0 ? (
+        {rows.length === 0 ? (
           <div style={{ padding: 24, color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', fontFamily: 'var(--font-mono)' }}>
             {busy ? 'Running every strategy...' : 'Enter a symbol to compare all strategies on it.'}
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)', fontFamily: 'var(--font-mono)' }}>
-            <thead>
-              <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, background: 'var(--bg-panel-header)' }}>
-                {COLUMNS.map((col) => (
-                  <th
-                    key={col.key}
-                    onClick={() => clickHeader(col.key)}
-                    title={`${col.title} - click to sort`}
-                    style={{
-                      textAlign: col.key === 'name' ? 'left' : 'right',
-                      padding: '4px 10px',
-                      fontWeight: sortKey === col.key ? 700 : 400,
-                      color: sortKey === col.key ? 'var(--color-accent)' : 'var(--text-muted)',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      userSelect: 'none',
-                    }}
-                  >
-                    {col.label}{sortKey === col.key ? (sortDir === -1 ? ' v' : ' ^') : ''}
-                    {col.glossKey && (
-                      <InfoTip term={gloss(col.glossKey).term} text={gloss(col.glossKey).text} />
-                    )}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((row) => (
-                <tr
-                  key={row.strategyId}
-                  onClick={() => router.push(`/backtest?symbol=${symbol}&strategy=${row.strategyId}`)}
-                  title={row.error ? `failed: ${row.error}` : `open ${row.name} on ${symbol} in backtest`}
-                  style={{
-                    borderBottom: '1px solid var(--border)',
-                    cursor: 'pointer',
-                    opacity: row.error ? 0.45 : 1,
-                  }}
-                >
-                  <td style={{ padding: '4px 10px', color: 'var(--color-accent)', fontWeight: 600 }}>
-                    {row.name}
-                    {row.error && <span style={{ color: 'var(--color-down)', marginLeft: 8 }}>failed</span>}
-                  </td>
-                  <td style={{ padding: '4px 10px', textAlign: 'right', color: signColor(row.totalReturnPct), fontVariantNumeric: 'tabular-nums' }}>
-                    {pct(row.totalReturnPct)}
-                  </td>
-                  <td style={{ padding: '4px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                    {row.winRate != null && isFinite(row.winRate) ? `${(row.winRate * 100).toFixed(0)}%` : '--'}
-                  </td>
-                  <td style={{ padding: '4px 10px', textAlign: 'right', color: signColor(row.sharpe), fontVariantNumeric: 'tabular-nums' }}>
-                    {num(row.sharpe)}
-                  </td>
-                  <td style={{ padding: '4px 10px', textAlign: 'right', color: 'var(--color-down)', fontVariantNumeric: 'tabular-nums' }}>
-                    {row.maxDrawdownPct != null && isFinite(row.maxDrawdownPct) ? `-${row.maxDrawdownPct.toFixed(1)}%` : '--'}
-                  </td>
-                  <td style={{ padding: '4px 10px', textAlign: 'right', color: row.numTrades < 15 ? 'var(--text-muted)' : undefined, fontVariantNumeric: 'tabular-nums' }}
-                      title={row.numTrades < 15 ? 'fewer than 15 trades - treat stats as noise' : undefined}>
-                    {row.numTrades}
-                  </td>
-                  <td style={{ padding: '4px 10px', textAlign: 'right', color: signColor(row.profitFactor != null ? row.profitFactor - 1 : null), fontVariantNumeric: 'tabular-nums' }}>
-                    {row.profitFactor != null && isFinite(row.profitFactor)
-                      ? (row.profitFactor >= 9999 ? 'inf' : row.profitFactor.toFixed(2))
-                      : '--'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable
+            columns={columns}
+            data={rows}
+            enableSorting
+            defaultSort={[{ id: 'totalReturnPct', desc: true }]}
+            rowStyle={(row) => ({ opacity: row.error ? 0.45 : 1 })}
+            onRowClick={(row) => router.push(`/backtest?symbol=${symbol}&strategy=${row.strategyId}`)}
+          />
         )}
       </div>
 

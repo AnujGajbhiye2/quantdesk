@@ -722,7 +722,7 @@ export default function Dashboard({
       )}
 
       <div className="flex flex-col h-full" style={{ minHeight: "100vh" }}>
-        {/* Status bar */}
+        {/* Top bar: brand + controls + clock */}
         <div
           className="flex items-center justify-between px-4 py-2 shrink-0 gap-4"
           style={{
@@ -730,62 +730,17 @@ export default function Dashboard({
             borderBottom: "1px solid var(--border)",
           }}
         >
-          <div className="flex items-center gap-4 shrink-0">
-            <span
-              style={{
-                color: "var(--color-accent)",
-                fontWeight: 700,
-                letterSpacing: "0.1em",
-                fontSize: "var(--fs-sm)",
-              }}
-            >
-              QUANTDESK
-            </span>
-            <nav className="flex gap-3" style={{ fontSize: "var(--fs-xs)" }}>
-              <a
-                href="/"
-                style={{ color: "var(--color-accent)", textDecoration: "none" }}
-              >
-                DASH
-              </a>
-              <a
-                href="/backtest"
-                style={{ color: "var(--text-muted)", textDecoration: "none" }}
-              >
-                BACKTEST
-              </a>
-              <a
-                href="/compare"
-                style={{ color: "var(--text-muted)", textDecoration: "none" }}
-              >
-                COMPARE
-              </a>
-              <a
-                href="/paper"
-                style={{ color: "var(--text-muted)", textDecoration: "none" }}
-              >
-                PAPER
-              </a>
-              <a
-                href="/journal"
-                style={{ color: "var(--text-muted)", textDecoration: "none" }}
-              >
-                JOURNAL
-              </a>
-              <a
-                href="/dashboard/session"
-                style={{ color: "var(--text-muted)", textDecoration: "none" }}
-              >
-                SESSION
-              </a>
-              <a
-                href="/settings"
-                style={{ color: "var(--text-muted)", textDecoration: "none" }}
-              >
-                SETTINGS
-              </a>
-            </nav>
-          </div>
+          <span
+            style={{
+              color: "var(--color-accent)",
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              fontSize: "var(--fs-sm)",
+              flexShrink: 0,
+            }}
+          >
+            QUANTDESK
+          </span>
 
           <CommandBar
             ref={cmdRef}
@@ -811,17 +766,31 @@ export default function Dashboard({
             >
               {refreshing ? "REFRESHING..." : "REFRESH"}
             </button>
-            <span
-              style={{
-                color: "var(--text-muted)",
-                fontSize: "var(--fs-xs)",
-                whiteSpace: "nowrap",
-              }}
-            >
-              [/] cmd &nbsp; [g] symbol &nbsp; [s] scan &nbsp; [w] watchlist &nbsp; [p] pin &nbsp; [i] ideas &nbsp; [1/2/3] tabs &nbsp; [j/k] nav
-            </span>
             <DublinClock />
           </div>
+        </div>
+
+        {/* Nav bar */}
+        <div
+          className="flex items-center justify-between px-4 shrink-0"
+          style={{
+            background: "var(--bg-panel-header)",
+            borderBottom: "1px solid var(--border)",
+            minHeight: 32,
+          }}
+        >
+          <nav className="flex gap-6" style={{ fontSize: "var(--fs-sm)" }}>
+            <a href="/" style={{ color: "var(--color-accent)", textDecoration: "none" }}>DASH</a>
+            <a href="/backtest" style={{ color: "var(--text-muted)", textDecoration: "none" }}>BACKTEST</a>
+            <a href="/compare" style={{ color: "var(--text-muted)", textDecoration: "none" }}>COMPARE</a>
+            <a href="/paper" style={{ color: "var(--text-muted)", textDecoration: "none" }}>PAPER</a>
+            <a href="/journal" style={{ color: "var(--text-muted)", textDecoration: "none" }}>JOURNAL</a>
+            <a href="/dashboard/session" style={{ color: "var(--text-muted)", textDecoration: "none" }}>SESSION</a>
+            <a href="/settings" style={{ color: "var(--text-muted)", textDecoration: "none" }}>SETTINGS</a>
+          </nav>
+          <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-xs)" }}>
+            [/] cmd &nbsp; [g] symbol &nbsp; [s] scan &nbsp; [w] watchlist &nbsp; [p] pin &nbsp; [i] ideas &nbsp; [1/2/3] tabs &nbsp; [j/k] nav
+          </span>
         </div>
 
         {/* Strategy picker bar for signal dashboard */}

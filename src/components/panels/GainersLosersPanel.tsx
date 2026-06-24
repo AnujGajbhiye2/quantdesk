@@ -4,6 +4,8 @@ import { memo, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Panel from '@/components/primitives/Panel';
 import EmptyState from '@/components/primitives/EmptyState';
+import { DataTable } from '@/components/table/DataTable';
+import type { ColumnDef } from '@tanstack/react-table';
 import { fmtMoney } from '@/core/format/currency';
 import type { MarketRow } from '@/core/market/snapshot';
 
@@ -15,47 +17,56 @@ function fmt(n: number) {
   return isFinite(n) ? n.toFixed(2) : '--';
 }
 
-function MiniTable({ items, positive }: { items: MarketRow[]; positive: boolean }) {
+const TOP_N = 10;
+
+function MiniDataTable({ items, positive }: { items: MarketRow[]; positive: boolean }) {
   const router = useRouter();
+  const color  = positive ? 'var(--color-up)' : 'var(--color-down)';
+
+  const columns = useMemo<ColumnDef<MarketRow, unknown>[]>(() => [
+    {
+      accessorKey: 'symbol',
+      header: 'SYMBOL',
+      meta: { accent: true },
+    },
+    {
+      accessorKey: 'name',
+      header: 'NAME',
+      cell: ({ getValue }) => (
+        <span style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', maxWidth: 100 }}>
+          {getValue() as string}
+        </span>
+      ),
+    },
+    {
+      id: 'price',
+      header: 'PRICE',
+      cell: ({ row }) => fmtMoney(row.original.last, row.original.currency),
+      meta: { numeric: true },
+    },
+    {
+      accessorKey: 'changePct',
+      header: 'CHG%',
+      cell: ({ getValue }) => {
+        const v = getValue() as number;
+        return <span style={{ color }}>{v >= 0 ? '+' : ''}{fmt(v)}%</span>;
+      },
+      meta: { numeric: true },
+    },
+  ], [color]);
+
   if (items.length === 0) {
     return <EmptyState message="— no data —" />;
   }
-  const color = positive ? 'var(--color-up)' : 'var(--color-down)';
+
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
-      <tbody>
-        {items.map((row) => (
-          <tr
-            key={row.symbol}
-            onClick={() => router.push(`/backtest?symbol=${row.symbol}`)}
-            title={`backtest ${row.symbol}`}
-            style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
-          >
-            <td style={{ padding: '2px 6px', color: 'var(--color-accent)', fontWeight: 600 }}>{row.symbol}</td>
-            <td
-              style={{
-                padding: '2px 6px',
-                color: 'var(--text-muted)',
-                maxWidth: '100px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {row.name}
-            </td>
-            <td style={{ padding: '2px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(row.last, row.currency)}</td>
-            <td style={{ padding: '2px 6px', textAlign: 'right', color }}>
-              {row.changePct >= 0 ? '+' : ''}{fmt(row.changePct)}%
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <DataTable
+      columns={columns}
+      data={items}
+      onRowClick={(row) => router.push(`/backtest?symbol=${row.symbol}`)}
+    />
   );
 }
-
-const TOP_N = 10;
 
 function GainersLosersPanel({ rows }: Props) {
   const { gainers, losers } = useMemo(() => {
@@ -71,7 +82,7 @@ function GainersLosersPanel({ rows }: Props) {
         subtitle="Today's biggest risers - momentum candidates. Click to backtest."
         info="Biggest risers today in the current market filter - momentum candidates worth a backtest. Click a row to open it."
       >
-        <MiniTable items={gainers} positive />
+        <MiniDataTable items={gainers} positive />
       </Panel>
       <Panel
         title="TOP LOSERS"
@@ -79,7 +90,7 @@ function GainersLosersPanel({ rows }: Props) {
         subtitle="Today's biggest fallers - mean-reversion candidates. Click to backtest."
         info="Biggest fallers today - mean-reversion candidates or names to avoid. Click a row to backtest."
       >
-        <MiniTable items={losers} positive={false} />
+        <MiniDataTable items={losers} positive={false} />
       </Panel>
     </div>
   );

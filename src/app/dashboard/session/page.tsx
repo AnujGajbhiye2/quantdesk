@@ -11,6 +11,13 @@ import Panel from '@/components/primitives/Panel';
 import EmptyState from '@/components/primitives/EmptyState';
 import { HaltBanner, KillSwitch } from './KillSwitch';
 import { DecisionLogTable } from '@/components/dashboard/DecisionLogTable';
+import {
+  IngestErrorsTable,
+  IngestRunsTable,
+  OpenPositionsTable,
+  ClosedTradesTable,
+} from '@/components/dashboard/SessionTables';
+import type { IngestErrorRow, IngestRunRow, OpenPositionRow, ClosedTradeRow } from '@/components/dashboard/SessionTables';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,26 +70,6 @@ function exitReasonLabel(reason: string | undefined | null): string {
   };
   return reason ? (map[reason] ?? reason.toUpperCase()) : '--';
 }
-
-const th: React.CSSProperties = {
-  color:         'var(--text-muted)',
-  fontSize:      'var(--fs-xs)',
-  fontWeight:    400,
-  letterSpacing: '0.08em',
-  textAlign:     'left',
-  padding:       '3px 8px',
-  whiteSpace:    'nowrap',
-};
-const thR: React.CSSProperties = { ...th, textAlign: 'right' };
-const td: React.CSSProperties  = {
-  fontSize:          'var(--fs-xs)',
-  padding:           '4px 8px',
-  borderTop:         '1px solid var(--border)',
-  whiteSpace:        'nowrap',
-  color:             'var(--text-primary)',
-  fontVariantNumeric: 'tabular-nums',
-};
-const tdR: React.CSSProperties = { ...td, textAlign: 'right' };
 
 // ---------------------------------------------------------------------------
 // Stat grid cell
@@ -162,6 +149,71 @@ export default function SessionPage() {
   for (const [sym, stratMap] of decisionsBySymbol) {
     decisionsPlain[sym] = Object.fromEntries(stratMap);
   }
+
+  // Serialize open positions with computed values for SessionTables client components
+  const openRows: OpenPositionRow[] = openTrades.map((t) => {
+    const mark      = markMap.get(t.id);
+    const current   = mark?.markPrice ?? t.entryPrice;
+    const unrealPct = mark?.unrealizedPnlPct ?? 0;
+    const days      = Math.round((Date.now() - new Date(t.entryTime).getTime()) / 86_400_000);
+    const toStop    = t.stopPrice != null && current > 0
+      ? ((t.stopPrice - current) / current) * 100 : null;
+    const toTarget  = t.targetPrice != null && current > 0
+      ? ((t.targetPrice - current) / current) * 100 : null;
+    return {
+      id:         t.id,
+      symbol:     t.symbol,
+      strategy:   stratNameMap.get(t.strategyId) ?? t.strategyId,
+      side:       t.side,
+      entryDate:  t.entryTime,
+      entryPrice: t.entryPrice,
+      current,
+      unrealPct,
+      days,
+      stop:       t.stopPrice ?? null,
+      target:     t.targetPrice ?? null,
+      toStop,
+      toTarget,
+    };
+  });
+
+  const REASON_COLOR: Record<string, string> = {
+    stop:   'var(--color-down)',
+    target: 'var(--color-up)',
+  };
+  const closedRows: ClosedTradeRow[] = recentClosed.map((t) => {
+    const days       = Math.round((new Date(t.exitTime ?? Date.now()).getTime() - new Date(t.entryTime).getTime()) / 86_400_000);
+    const rawReason  = exitReasons.get(t.id);
+    const exitLabel  = rawReason === 'stop' ? 'STOP HIT' : rawReason === 'target' ? 'TARGET HIT' : rawReason === 'time' ? 'TIME EXIT' : rawReason === 'manual' ? 'MANUAL' : rawReason ?? '--';
+    return {
+      id:         t.id,
+      symbol:     t.symbol,
+      strategy:   stratNameMap.get(t.strategyId) ?? t.strategyId,
+      side:       t.side,
+      entryDate:  t.entryTime,
+      exitDate:   t.exitTime ?? '',
+      pnlPct:     t.pnlPct ?? null,
+      days,
+      exitReason: exitLabel,
+      exitColor:  REASON_COLOR[rawReason ?? ''] ?? 'var(--text-muted)',
+    };
+  });
+
+  // Serialize ingest run data for IngestRunsTable
+  const ingestRunRows: IngestRunRow[] = recentIngests.map((r) => ({
+    id:           r.id,
+    finishedAt:   r.finishedAt,
+    trigger:      r.trigger,
+    totalSymbols: r.totalSymbols,
+    totalBars:    r.totalBars,
+    errorCount:   r.errorCount,
+    durationMs:   r.durationMs,
+  }));
+
+  const ingestErrorRows: IngestErrorRow[] = (latestIngest?.errors ?? []).map((e) => ({
+    symbol: e.symbol,
+    error:  e.error,
+  }));
 
   return (
     <div className="flex flex-col" style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
@@ -277,22 +329,7 @@ export default function SessionPage() {
                   <div style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em', marginBottom: 4 }}>
                     SYMBOL ERRORS (LATEST RUN)
                   </div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr>
-                        <th style={th}>SYMBOL</th>
-                        <th style={th}>ERROR</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {latestIngest.errors.map((e) => (
-                        <tr key={e.symbol}>
-                          <td style={{ ...td, color: 'var(--color-accent)', fontWeight: 600, width: 100 }}>{e.symbol}</td>
-                          <td style={{ ...td, color: 'var(--color-down)' }}>{e.error}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <IngestErrorsTable errors={ingestErrorRows} />
                 </div>
               )}
 
@@ -302,30 +339,7 @@ export default function SessionPage() {
                   <div style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em', marginBottom: 4 }}>
                     RECENT RUNS (LAST 10)
                   </div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr>
-                        <th style={th}>DATE</th>
-                        <th style={th}>TRIGGER</th>
-                        <th style={thR}>SYMBOLS</th>
-                        <th style={thR}>NEW BARS</th>
-                        <th style={thR}>ERRORS</th>
-                        <th style={thR}>DURATION</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentIngests.map((r) => (
-                        <tr key={r.id}>
-                          <td style={td}>{fmtDate(r.finishedAt)}</td>
-                          <td style={{ ...td, color: 'var(--text-muted)' }}>{r.trigger}</td>
-                          <td style={tdR}>{r.totalSymbols}</td>
-                          <td style={{ ...tdR, color: r.totalBars > 0 ? 'var(--color-up)' : 'var(--text-muted)' }}>{r.totalBars}</td>
-                          <td style={{ ...tdR, color: r.errorCount > 0 ? 'var(--color-down)' : 'var(--color-up)' }}>{r.errorCount}</td>
-                          <td style={{ ...tdR, color: 'var(--text-muted)' }}>{r.durationMs}ms</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <IngestRunsTable runs={ingestRunRows} />
                 </div>
               )}
             </div>
@@ -375,60 +389,7 @@ export default function SessionPage() {
             {openTrades.length === 0 ? (
               <EmptyState message="No open positions." />
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={th}>SYMBOL</th>
-                      <th style={th}>STRATEGY</th>
-                      <th style={th}>SIDE</th>
-                      <th style={thR}>ENTRY DATE</th>
-                      <th style={thR}>ENTRY</th>
-                      <th style={thR}>CURRENT</th>
-                      <th style={thR}>UNREAL %</th>
-                      <th style={thR}>DAYS</th>
-                      <th style={thR}>STOP</th>
-                      <th style={thR}>TARGET</th>
-                      <th style={thR}>TO STOP</th>
-                      <th style={thR}>TO TARGET</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {openTrades.map((t) => {
-                      const mark       = markMap.get(t.id);
-                      const current    = mark?.markPrice ?? t.entryPrice;
-                      const unrealPct  = mark?.unrealizedPnlPct ?? 0;
-                      const days       = daysHeld(t.entryTime);
-                      const toStop     = t.stopPrice != null && current > 0
-                        ? ((t.stopPrice - current) / current) * 100 : null;
-                      const toTarget   = t.targetPrice != null && current > 0
-                        ? ((t.targetPrice - current) / current) * 100 : null;
-                      return (
-                        <tr key={t.id}>
-                          <td style={{ ...td, color: 'var(--color-accent)', fontWeight: 600 }}>{t.symbol}</td>
-                          <td style={{ ...td, color: 'var(--text-muted)' }}>{stratNameMap.get(t.strategyId) ?? t.strategyId}</td>
-                          <td style={{ ...td, color: t.side === 'long' ? 'var(--color-up)' : 'var(--color-down)', fontWeight: 700 }}>
-                            {t.side.toUpperCase()}
-                          </td>
-                          <td style={tdR}>{fmtDate(t.entryTime)}</td>
-                          <td style={tdR}>{fmtNum(t.entryPrice)}</td>
-                          <td style={tdR}>{fmtNum(current)}</td>
-                          <td style={{ ...tdR, color: pnlColor(unrealPct) }}>{pct(unrealPct)}</td>
-                          <td style={tdR}>{days}d</td>
-                          <td style={{ ...tdR, color: 'var(--color-down)' }}>{t.stopPrice != null ? fmtNum(t.stopPrice) : '--'}</td>
-                          <td style={{ ...tdR, color: 'var(--color-up)' }}>{t.targetPrice != null ? fmtNum(t.targetPrice) : '--'}</td>
-                          <td style={{ ...tdR, color: toStop != null ? (toStop < -3 ? 'var(--color-down)' : 'var(--color-accent)') : 'var(--text-muted)' }}>
-                            {toStop != null ? pct(toStop) : '--'}
-                          </td>
-                          <td style={{ ...tdR, color: toTarget != null ? 'var(--color-up)' : 'var(--text-muted)' }}>
-                            {toTarget != null ? pct(toTarget) : '--'}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <OpenPositionsTable positions={openRows} />
             )}
           </Panel>
 
@@ -441,45 +402,7 @@ export default function SessionPage() {
             {recentClosed.length === 0 ? (
               <EmptyState message="No closed trades yet." />
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={th}>SYMBOL</th>
-                      <th style={th}>STRATEGY</th>
-                      <th style={th}>SIDE</th>
-                      <th style={thR}>ENTRY</th>
-                      <th style={thR}>EXIT</th>
-                      <th style={thR}>P&L %</th>
-                      <th style={thR}>DAYS</th>
-                      <th style={thR}>EXIT REASON</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentClosed.map((t) => {
-                      const days = daysHeld(t.entryTime, t.exitTime);
-                      return (
-                        <tr key={t.id}>
-                          <td style={{ ...td, color: 'var(--color-accent)', fontWeight: 600 }}>{t.symbol}</td>
-                          <td style={{ ...td, color: 'var(--text-muted)' }}>{stratNameMap.get(t.strategyId) ?? t.strategyId}</td>
-                          <td style={{ ...td, color: t.side === 'long' ? 'var(--color-up)' : 'var(--color-down)', fontWeight: 700 }}>
-                            {t.side.toUpperCase()}
-                          </td>
-                          <td style={tdR}>{fmtDate(t.entryTime)}</td>
-                          <td style={tdR}>{fmtDate(t.exitTime)}</td>
-                          <td style={{ ...tdR, color: pnlColor(t.pnlPct ?? null) }}>
-                            {t.pnlPct != null ? pct(t.pnlPct) : '--'}
-                          </td>
-                          <td style={tdR}>{days}d</td>
-                          <td style={{ ...tdR, color: exitReasonColor(exitReasons.get(t.id)) }}>
-                            {exitReasonLabel(exitReasons.get(t.id))}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <ClosedTradesTable trades={closedRows} />
             )}
           </Panel>
         </div>
