@@ -7,6 +7,7 @@
 
 import { DataTable } from '@/components/table/DataTable';
 import type { ColumnDef } from '@tanstack/react-table';
+import { fmtDate, fmtDateTime } from '@/core/format/date';
 
 // ---------------------------------------------------------------------------
 // Ingest errors table
@@ -26,10 +27,9 @@ const INGEST_ERROR_COLS: ColumnDef<IngestErrorRow, unknown>[] = [
     header: 'RUN TIME',
     cell: ({ row: { original: r } }) => {
       if (!r.runAt) return <span style={{ color: 'var(--text-muted)' }}>--</span>;
-      const dt = new Date(r.runAt);
       return (
         <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-          {dt.toISOString().slice(0, 16).replace('T', ' ')} UTC
+          {fmtDateTime(r.runAt)}
         </span>
       );
     },
@@ -76,7 +76,7 @@ const INGEST_RUN_COLS: ColumnDef<IngestRunRow, unknown>[] = [
   {
     accessorKey: 'finishedAt',
     header: 'DATE',
-    cell: ({ getValue }) => (getValue() as string).slice(0, 10),
+    cell: ({ getValue }) => fmtDate(getValue() as string),
   },
   {
     accessorKey: 'trigger',
@@ -152,7 +152,7 @@ const OPEN_POS_COLS: ColumnDef<OpenPositionRow, unknown>[] = [
   {
     accessorKey: 'entryDate',
     header: 'ENTRY DATE',
-    cell: ({ getValue }) => (getValue() as string).slice(0, 10),
+    cell: ({ getValue }) => fmtDate(getValue() as string),
     meta: { numeric: true },
   },
   {
@@ -263,13 +263,13 @@ const CLOSED_COLS: ColumnDef<ClosedTradeRow, unknown>[] = [
   {
     accessorKey: 'entryDate',
     header: 'ENTRY',
-    cell: ({ getValue }) => (getValue() as string).slice(0, 10),
+    cell: ({ getValue }) => fmtDate(getValue() as string),
     meta: { numeric: true },
   },
   {
     accessorKey: 'exitDate',
     header: 'EXIT',
-    cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) ?? '--',
+    cell: ({ getValue }) => fmtDate(getValue() as string),
     meta: { numeric: true },
   },
   {

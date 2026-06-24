@@ -7,6 +7,7 @@ import Panel from '@/components/primitives/Panel';
 import EmptyState from '@/components/primitives/EmptyState';
 import { DataTable } from '@/components/table/DataTable';
 import { fmtMoney } from '@/core/format/currency';
+import { fmtDate } from '@/core/format/date';
 import type { PaperTradeWithHold } from '@/core/paper/hold';
 
 /** Map of tradeId -> mark data for open positions (from mark action). */
@@ -22,10 +23,6 @@ function pnlColor(v: number | undefined) {
   return v >= 0 ? 'var(--color-up)' : 'var(--color-down)';
 }
 
-function fmtDate(s: string | undefined) {
-  if (!s) return '--';
-  return s.slice(0, 10);
-}
 
 function fmt(n: number | undefined, dec = 2) {
   if (n == null || !isFinite(n)) return '--';

@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import DublinClock from '@/components/primitives/DublinClock';
 import AppNav from '@/components/primitives/AppNav';
+import { fmtDate } from '@/core/format/date';
 import InfoTip from '@/components/primitives/InfoTip';
 import { fmtMoney } from '@/core/format/currency';
 import type { JournalRow, ComboReport } from '@/app/api/journal/route';
@@ -188,7 +189,7 @@ export default function JournalPage() {
                         </span>
                       )}
                     </span>
-                    <span style={{ color: 'var(--text-muted)' }}>{entry.openedAt.slice(0, 10)}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>{fmtDate(entry.openedAt)}</span>
                   </div>
                   <div style={{ padding: '4px 8px', color: 'var(--text-muted)' }}>
                     WHY: {why.reason ?? why.notes ?? 'manual entry - no reason recorded'}

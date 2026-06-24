@@ -15,7 +15,7 @@ import { useSettings } from '@/components/providers/SettingsProvider';
 import type { PendingFillResult } from '@/core/paper/broker';
 import { DataTable } from '@/components/table/DataTable';
 import type { ColumnDef } from '@tanstack/react-table';
-
+import { fmtDate } from '@/core/format/date';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -46,7 +46,6 @@ function pnlStyle(v: number | null | undefined): React.CSSProperties {
   return { color: v >= 0 ? 'var(--color-up)' : 'var(--color-down)', fontVariantNumeric: 'tabular-nums' };
 }
 
-function fmtDate(s: string | undefined) { return s ? s.slice(0, 10) : '--'; }
 function fmtNum(n: number | undefined, dec = 2) {
   if (n == null || !isFinite(n)) return '--';
   return n.toFixed(dec);

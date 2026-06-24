@@ -6,6 +6,7 @@ import EmptyState from '@/components/primitives/EmptyState';
 import { DataTable } from '@/components/table/DataTable';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { TradeRecord } from '@/core/backtest/engine';
+import { fmtDate } from '@/core/format/date';
 
 type ExitReason = TradeRecord['exitReason'];
 
@@ -34,6 +35,7 @@ const COLUMNS: ColumnDef<TradeRecord, unknown>[] = [
   {
     accessorKey: 'entryTime',
     header: 'ENTRY DATE',
+    cell: ({ getValue }) => fmtDate(getValue() as string),
   },
   {
     accessorKey: 'entryPrice',
@@ -44,6 +46,7 @@ const COLUMNS: ColumnDef<TradeRecord, unknown>[] = [
   {
     accessorKey: 'exitTime',
     header: 'EXIT DATE',
+    cell: ({ getValue }) => fmtDate(getValue() as string),
   },
   {
     accessorKey: 'exitPrice',

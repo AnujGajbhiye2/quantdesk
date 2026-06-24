@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DublinClock from '@/components/primitives/DublinClock';
 import AppNav from '@/components/primitives/AppNav';
+import { fmtDate } from '@/core/format/date';
 import SymbolTypeahead from '@/components/primitives/SymbolTypeahead';
 import InfoTip from '@/components/primitives/InfoTip';
 import { gloss, type GlossaryKey } from '@/core/glossary';
@@ -220,7 +221,7 @@ function ComparePageInner() {
         Every registered strategy backtested on one symbol with identical costs, fills and the max-hold cap - sort any column, click a row to inspect that strategy in the backtest view.
         {range && (
           <span style={{ marginLeft: 8 }}>
-            Tested window: {range.from.slice(0, 10)} to {range.to.slice(0, 10)}.
+            Tested window: {fmtDate(range.from)} to {fmtDate(range.to)}.
           </span>
         )}
         <button

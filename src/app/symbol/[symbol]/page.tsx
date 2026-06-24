@@ -11,6 +11,7 @@ import { DataTable } from '@/components/table/DataTable';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { EdgeStats } from '@/core/edge/types';
 import AppNav from '@/components/primitives/AppNav';
+import { fmtDate } from '@/core/format/date';
 
 /**
  * Decision dossier: the four "analyst desks" (technical, edge and history,
@@ -205,7 +206,7 @@ export default function SymbolDossierPage({ params }: { params: Promise<{ symbol
             <div style={panelStyle}>
               <SectionTitle label="TECHNICAL" hint="Latest closed-bar state. The chart and full backtests live on the BACKTEST page." />
               {kv('last close', dossier.technical.lastClose != null ? fmtMoney(dossier.technical.lastClose, dossier.currency) : '--')}
-              {kv('as of', dossier.technical.lastBarTime?.slice(0, 10) ?? '--')}
+              {kv('as of', fmtDate(dossier.technical.lastBarTime))}
               {kv('RSI(14)', fmtNum(dossier.technical.rsi14, 1),
                 dossier.technical.rsi14 != null && dossier.technical.rsi14 >= 70 ? 'var(--color-down)'
                 : dossier.technical.rsi14 != null && dossier.technical.rsi14 <= 30 ? 'var(--color-up)' : undefined)}
@@ -304,7 +305,7 @@ export default function SymbolDossierPage({ params }: { params: Promise<{ symbol
                   >
                     {n.title}
                     <div style={{ color: 'var(--text-muted)', marginTop: 1 }}>
-                      {n.publisher} · {n.publishedAt.slice(0, 10)}
+                      {n.publisher} · {fmtDate(n.publishedAt)}
                     </div>
                   </a>
                 ))

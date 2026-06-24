@@ -2,6 +2,7 @@
 
 import InfoTip from '@/components/primitives/InfoTip';
 import type { WatchlistItem } from '@/app/api/watchlist/route';
+import { fmtDate } from '@/core/format/date';
 
 interface Props {
   items:      WatchlistItem[];
@@ -103,7 +104,7 @@ export default function WatchlistSidebar({ items, strategies, onUnpin, onClose, 
             0,
           );
           const newestDate = newestMs > 0
-            ? new Date(newestMs).toISOString().slice(0, 10)
+            ? fmtDate(new Date(newestMs).toISOString())
             : null;
 
           return (

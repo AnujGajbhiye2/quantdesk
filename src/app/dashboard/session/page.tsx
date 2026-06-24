@@ -19,6 +19,7 @@ import {
   ClosedTradesTable,
 } from '@/components/dashboard/SessionTables';
 import type { IngestErrorRow, IngestRunRow, OpenPositionRow, ClosedTradeRow } from '@/components/dashboard/SessionTables';
+import { fmtDate } from '@/core/format/date';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,10 +39,6 @@ function pct(v: number, sign = true) {
 function pnlColor(v: number | null | undefined): string {
   if (v == null) return 'var(--text-muted)';
   return v >= 0 ? 'var(--color-up)' : 'var(--color-down)';
-}
-
-function fmtDate(s: string | undefined | null) {
-  return s ? s.slice(0, 10) : '--';
 }
 
 function fmtNum(n: number | undefined | null, dec = 2) {
