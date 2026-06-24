@@ -31,6 +31,7 @@ import type { EdgeSummary } from "@/core/edge/context";
 import type { EnrichedTradeIdea } from "@/core/signals/gate";
 import type { PaperTrade, Signal, TradeIdea, SymbolMeta } from "@/core/types";
 import { marketOf, ALL_MARKETS, type Market } from "@/core/market/markets";
+import AppNav from "@/components/primitives/AppNav";
 
 interface QuoteRow {
   symbol: string;
@@ -779,15 +780,7 @@ export default function Dashboard({
             minHeight: 32,
           }}
         >
-          <nav className="flex gap-6" style={{ fontSize: "var(--fs-sm)" }}>
-            <a href="/" style={{ color: "var(--color-accent)", textDecoration: "none" }}>DASH</a>
-            <a href="/backtest" style={{ color: "var(--text-muted)", textDecoration: "none" }}>BACKTEST</a>
-            <a href="/compare" style={{ color: "var(--text-muted)", textDecoration: "none" }}>COMPARE</a>
-            <a href="/paper" style={{ color: "var(--text-muted)", textDecoration: "none" }}>PAPER</a>
-            <a href="/journal" style={{ color: "var(--text-muted)", textDecoration: "none" }}>JOURNAL</a>
-            <a href="/dashboard/session" style={{ color: "var(--text-muted)", textDecoration: "none" }}>SESSION</a>
-            <a href="/settings" style={{ color: "var(--text-muted)", textDecoration: "none" }}>SETTINGS</a>
-          </nav>
+          <AppNav />
           <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-xs)" }}>
             [/] cmd &nbsp; [g] symbol &nbsp; [s] scan &nbsp; [w] watchlist &nbsp; [p] pin &nbsp; [i] ideas &nbsp; [1/2/3] tabs &nbsp; [j/k] nav
           </span>

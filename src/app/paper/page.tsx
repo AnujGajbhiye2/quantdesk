@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import DublinClock from '@/components/primitives/DublinClock';
+import AppNav from '@/components/primitives/AppNav';
 import NewPaperTrade from '@/components/trade/NewPaperTrade';
 import AccountStrip from '@/components/panels/AccountStrip';
 import AutoTradePanel from '@/components/panels/AutoTradePanel';
@@ -749,12 +750,7 @@ export default function PaperPage() {
             QUANTDESK
           </span>
           <nav className="flex gap-3" style={{ fontSize: 'var(--fs-xs)' }}>
-            <a href="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>DASH</a>
-            <a href="/backtest" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>BACKTEST</a>
-            <a href="/compare" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>COMPARE</a>
-            <a href="/paper" style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>PAPER</a>
-            <a href="/journal" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>JOURNAL</a>
-            <a href="/settings" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>SETTINGS</a>
+            <AppNav />
           </nav>
         </div>
         <div className="flex items-center gap-3">

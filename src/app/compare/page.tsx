@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DublinClock from '@/components/primitives/DublinClock';
+import AppNav from '@/components/primitives/AppNav';
 import SymbolTypeahead from '@/components/primitives/SymbolTypeahead';
 import InfoTip from '@/components/primitives/InfoTip';
 import { gloss, type GlossaryKey } from '@/core/glossary';
@@ -165,12 +166,7 @@ function ComparePageInner() {
             QUANTDESK
           </span>
           <nav className="flex gap-3" style={{ fontSize: 'var(--fs-xs)' }}>
-            <a href="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>DASH</a>
-            <a href="/backtest" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>BACKTEST</a>
-            <a href="/compare" style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>COMPARE</a>
-            <a href="/paper" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>PAPER</a>
-            <a href="/journal" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>JOURNAL</a>
-            <a href="/settings" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>SETTINGS</a>
+            <AppNav />
           </nav>
         </div>
 

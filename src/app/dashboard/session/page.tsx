@@ -9,6 +9,7 @@ import { isTradingHalted } from '@/core/paper/halt';
 import { listLive as listLiveStrategies } from '@/core/strategy/registry';
 import Panel from '@/components/primitives/Panel';
 import EmptyState from '@/components/primitives/EmptyState';
+import AppNav from '@/components/primitives/AppNav';
 import { HaltBanner, KillSwitch } from './KillSwitch';
 import { DecisionLogTable } from '@/components/dashboard/DecisionLogTable';
 import {
@@ -229,15 +230,7 @@ export default function SessionPage() {
           <span style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.1em', fontSize: 'var(--fs-sm)' }}>
             QUANTDESK
           </span>
-          <nav className="flex gap-3" style={{ fontSize: 'var(--fs-xs)' }}>
-            <a href="/"                   style={{ color: 'var(--text-muted)',  textDecoration: 'none' }}>DASH</a>
-            <a href="/backtest"           style={{ color: 'var(--text-muted)',  textDecoration: 'none' }}>BACKTEST</a>
-            <a href="/compare"            style={{ color: 'var(--text-muted)',  textDecoration: 'none' }}>COMPARE</a>
-            <a href="/paper"              style={{ color: 'var(--text-muted)',  textDecoration: 'none' }}>PAPER</a>
-            <a href="/journal"            style={{ color: 'var(--text-muted)',  textDecoration: 'none' }}>JOURNAL</a>
-            <a href="/dashboard/session"  style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>SESSION</a>
-            <a href="/settings"           style={{ color: 'var(--text-muted)',  textDecoration: 'none' }}>SETTINGS</a>
-          </nav>
+          <AppNav />
         </div>
       </div>
 

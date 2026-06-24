@@ -10,6 +10,7 @@ import type { CaseFactor } from '@/core/dossier/case';
 import { DataTable } from '@/components/table/DataTable';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { EdgeStats } from '@/core/edge/types';
+import AppNav from '@/components/primitives/AppNav';
 
 /**
  * Decision dossier: the four "analyst desks" (technical, edge and history,
@@ -130,13 +131,7 @@ export default function SymbolDossierPage({ params }: { params: Promise<{ symbol
           <span style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.1em', fontSize: 'var(--fs-sm)' }}>
             QUANTDESK
           </span>
-          <nav className="flex gap-3" style={{ fontSize: 'var(--fs-xs)' }}>
-            <a href="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>DASH</a>
-            <a href="/backtest" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>BACKTEST</a>
-            <a href="/compare" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>COMPARE</a>
-            <a href="/paper" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>PAPER</a>
-            <a href="/journal" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>JOURNAL</a>
-          </nav>
+          <AppNav />
           <span style={{ color: 'var(--color-accent)', fontWeight: 700, fontSize: 'var(--fs-sm)' }}>
             {symbol}
           </span>

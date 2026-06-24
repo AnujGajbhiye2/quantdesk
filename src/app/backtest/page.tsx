@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import DublinClock from '@/components/primitives/DublinClock';
+import AppNav from '@/components/primitives/AppNav';
 import MetricsPanel from '@/components/panels/MetricsPanel';
 import TradesTable from '@/components/panels/TradesTable';
 import MonthlyReturnsHeatmap from '@/components/charts/MonthlyReturnsHeatmap';
@@ -156,12 +157,7 @@ function BacktestInner() {
             QUANTDESK
           </span>
           <nav className="flex gap-3" style={{ fontSize: 'var(--fs-xs)' }}>
-            <a href="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>DASH</a>
-            <a href="/backtest" style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>BACKTEST</a>
-            <a href="/compare" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>COMPARE</a>
-            <a href="/paper" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>PAPER</a>
-            <a href="/journal" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>JOURNAL</a>
-            <a href="/settings" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>SETTINGS</a>
+            <AppNav />
           </nav>
         </div>
 

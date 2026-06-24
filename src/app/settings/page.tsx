@@ -1,6 +1,7 @@
 'use client';
 
 import SettingsPanel from '@/components/panels/SettingsPanel';
+import AppNav from '@/components/primitives/AppNav';
 
 export default function SettingsPage() {
   return (
@@ -34,14 +35,7 @@ export default function SettingsPage() {
           >
             QUANTDESK
           </span>
-          <nav className="flex gap-3" style={{ fontSize: 'var(--fs-xs)' }}>
-            <a href="/"         style={{ color: 'var(--text-muted)',    textDecoration: 'none' }}>DASH</a>
-            <a href="/backtest" style={{ color: 'var(--text-muted)',    textDecoration: 'none' }}>BACKTEST</a>
-            <a href="/compare"  style={{ color: 'var(--text-muted)',    textDecoration: 'none' }}>COMPARE</a>
-            <a href="/paper"    style={{ color: 'var(--text-muted)',    textDecoration: 'none' }}>PAPER</a>
-            <a href="/journal"  style={{ color: 'var(--text-muted)',    textDecoration: 'none' }}>JOURNAL</a>
-            <a href="/settings" style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>SETTINGS</a>
-          </nav>
+          <AppNav />
         </div>
       </div>
 

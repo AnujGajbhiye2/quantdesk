@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import DublinClock from '@/components/primitives/DublinClock';
+import AppNav from '@/components/primitives/AppNav';
 import InfoTip from '@/components/primitives/InfoTip';
 import { fmtMoney } from '@/core/format/currency';
 import type { JournalRow, ComboReport } from '@/app/api/journal/route';
@@ -116,14 +117,7 @@ export default function JournalPage() {
           <span style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.1em', fontSize: 'var(--fs-sm)' }}>
             QUANTDESK
           </span>
-          <nav className="flex gap-3" style={{ fontSize: 'var(--fs-xs)' }}>
-            <a href="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>DASH</a>
-            <a href="/backtest" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>BACKTEST</a>
-            <a href="/compare" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>COMPARE</a>
-            <a href="/paper" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>PAPER</a>
-            <a href="/journal" style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>JOURNAL</a>
-            <a href="/settings" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>SETTINGS</a>
-          </nav>
+          <AppNav />
         </div>
         <DublinClock />
       </div>
