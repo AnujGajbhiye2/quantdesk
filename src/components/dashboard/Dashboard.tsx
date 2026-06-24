@@ -773,6 +773,12 @@ export default function Dashboard({
                 JOURNAL
               </a>
               <a
+                href="/dashboard/session"
+                style={{ color: "var(--text-muted)", textDecoration: "none" }}
+              >
+                SESSION
+              </a>
+              <a
                 href="/settings"
                 style={{ color: "var(--text-muted)", textDecoration: "none" }}
               >

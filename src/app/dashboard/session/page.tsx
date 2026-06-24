@@ -10,6 +10,7 @@ import { listLive as listLiveStrategies } from '@/core/strategy/registry';
 import Panel from '@/components/primitives/Panel';
 import EmptyState from '@/components/primitives/EmptyState';
 import { HaltBanner, KillSwitch } from './KillSwitch';
+import { DecisionLogTable } from '@/components/dashboard/DecisionLogTable';
 
 export const dynamic = 'force-dynamic';
 
@@ -155,6 +156,12 @@ export default function SessionPage() {
     });
   }
   const decSymbols = Array.from(decisionsBySymbol.keys()).sort();
+
+  // Serialize nested Maps to plain objects for the client component
+  const decisionsPlain: Record<string, Record<string, { action: string; fired: boolean; reason: string | null }>> = {};
+  for (const [sym, stratMap] of decisionsBySymbol) {
+    decisionsPlain[sym] = Object.fromEntries(stratMap);
+  }
 
   return (
     <div className="flex flex-col" style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
@@ -346,61 +353,11 @@ export default function SessionPage() {
               hint="Trigger an EOD refresh with logRun enabled (eod-cron or manual) to populate this table."
             />
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th style={th}>SYMBOL</th>
-                    {liveStrategies.map((s) => (
-                      <th key={s.id} style={th} colSpan={2}>{s.name.toUpperCase()}</th>
-                    ))}
-                  </tr>
-                  <tr>
-                    <th style={{ ...th, borderBottom: '1px solid var(--border)' }}></th>
-                    {liveStrategies.flatMap((s) => [
-                      <th key={`${s.id}-action`} style={{ ...th, borderBottom: '1px solid var(--border)' }}>DECISION</th>,
-                      <th key={`${s.id}-reason`} style={{ ...th, borderBottom: '1px solid var(--border)', minWidth: 240 }}>REASON</th>,
-                    ])}
-                  </tr>
-                </thead>
-                <tbody>
-                  {decSymbols.map((symbol) => {
-                    const stratMap = decisionsBySymbol.get(symbol)!;
-                    return (
-                      <tr key={symbol}>
-                        <td style={{ ...td, color: 'var(--color-accent)', fontWeight: 600 }}>{symbol}</td>
-                        {liveStrategies.flatMap((s) => {
-                          const d = stratMap.get(s.id);
-                          if (!d) {
-                            return [
-                              <td key={`${s.id}-action`} style={{ ...td, color: 'var(--text-muted)' }}>-</td>,
-                              <td key={`${s.id}-reason`} style={{ ...td, color: 'var(--text-muted)' }}>not evaluated</td>,
-                            ];
-                          }
-                          const actionColor = d.fired
-                            ? 'var(--color-up)'
-                            : d.action === 'hold'
-                              ? 'var(--text-muted)'
-                              : 'var(--text-primary)';
-                          const actionLabel = d.fired
-                            ? d.action.replace('_', ' ').toUpperCase()
-                            : 'HOLD';
-                          return [
-                            <td key={`${s.id}-action`} style={{ ...td, color: actionColor, fontWeight: d.fired ? 700 : 400 }}>
-                              {actionLabel}
-                            </td>,
-                            <td key={`${s.id}-reason`} style={{ ...td, color: d.fired ? 'var(--text-primary)' : 'var(--text-muted)', maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis' }}
-                                title={d.reason ?? ''}>
-                              {d.reason ?? '--'}
-                            </td>,
-                          ];
-                        })}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <DecisionLogTable
+              symbols={decSymbols}
+              decisions={decisionsPlain}
+              strategies={liveStrategies.map((s) => ({ id: s.id, name: s.name }))}
+            />
           )}
         </Panel>
 
