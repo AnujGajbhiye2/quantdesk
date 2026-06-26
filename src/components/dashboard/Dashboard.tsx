@@ -31,7 +31,7 @@ import type { EdgeSummary } from "@/core/edge/context";
 import type { EnrichedTradeIdea } from "@/core/signals/gate";
 import type { PaperTrade, Signal, TradeIdea, SymbolMeta } from "@/core/types";
 import { marketOf, ALL_MARKETS, type Market } from "@/core/market/markets";
-import AppNav from "@/components/primitives/AppNav";
+import AppHeader from "@/components/primitives/AppHeader";
 
 interface QuoteRow {
   symbol: string;
@@ -52,6 +52,82 @@ interface Props {
     providerId: string;
     inDb: boolean;
   }[];
+}
+
+const HINTS = [
+  { key: '[/]',     desc: 'open command bar' },
+  { key: '[g]',     desc: 'go to symbol' },
+  { key: '[s]',     desc: 'run scan' },
+  { key: '[w]',     desc: 'watchlist' },
+  { key: '[p]',     desc: 'pin symbol' },
+  { key: '[i]',     desc: 'trade ideas' },
+  { key: '[1/2/3]', desc: 'switch tab' },
+  { key: '[j/k]',   desc: 'navigate rows' },
+];
+
+function KeyboardHintsButton() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        title="Keyboard shortcuts"
+        style={{
+          background:  open ? 'var(--color-accent)' : 'var(--bg-panel)',
+          border:      '1px solid var(--border)',
+          color:       open ? '#0a0e14' : 'var(--text-muted)',
+          fontFamily:  'var(--font-mono)',
+          fontSize:    'var(--fs-xs)',
+          padding:     '2px 7px',
+          cursor:      'pointer',
+          fontWeight:  700,
+        }}
+      >
+        [i]
+      </button>
+      {open && (
+        <div
+          style={{
+            position:   'absolute',
+            top:        'calc(100% + 4px)',
+            right:      0,
+            zIndex:     200,
+            background: 'var(--bg-panel-header)',
+            border:     '1px solid var(--border)',
+            minWidth:   220,
+            padding:    '4px 0',
+          }}
+        >
+          {HINTS.map(({ key, desc }) => (
+            <div
+              key={key}
+              style={{
+                display:       'flex',
+                gap:           12,
+                padding:       '5px 14px',
+                fontSize:      'var(--fs-xs)',
+                borderBottom:  '1px solid var(--border)',
+              }}
+            >
+              <span style={{ color: 'var(--color-accent)', minWidth: 60, flexShrink: 0 }}>{key}</span>
+              <span style={{ color: 'var(--text-muted)' }}>{desc}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Dashboard({
@@ -723,67 +799,47 @@ export default function Dashboard({
       )}
 
       <div className="flex flex-col h-full" style={{ minHeight: "100vh" }}>
-        {/* Top bar: brand + controls + clock */}
+        {/* Unified nav bar */}
+        <AppHeader
+          right={
+            <>
+              <KeyboardHintsButton />
+              <button
+                onClick={() => void refreshAll()}
+                disabled={refreshing}
+                title="Refresh market data"
+                style={{
+                  background: "var(--bg-panel)",
+                  border: "1px solid var(--border)",
+                  color: refreshing ? "var(--color-accent)" : "var(--text-muted)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--fs-xs)",
+                  padding: "2px 8px",
+                  cursor: "pointer",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {refreshing ? "REFRESHING..." : "REFRESH"}
+              </button>
+              <DublinClock />
+            </>
+          }
+        />
+
+        {/* Command bar subheader */}
         <div
-          className="flex items-center justify-between px-4 py-2 shrink-0 gap-4"
+          className="flex items-center px-4 shrink-0"
           style={{
             background: "var(--bg-panel-header)",
             borderBottom: "1px solid var(--border)",
+            minHeight: 36,
           }}
         >
-          <span
-            style={{
-              color: "var(--color-accent)",
-              fontWeight: 700,
-              letterSpacing: "0.1em",
-              fontSize: "var(--fs-sm)",
-              flexShrink: 0,
-            }}
-          >
-            QUANTDESK
-          </span>
-
           <CommandBar
             ref={cmdRef}
             onMarketRefresh={handleMarketRefresh}
             onSignals={handleSignals}
           />
-
-          <div className="flex items-center gap-3 shrink-0">
-            <button
-              onClick={() => void refreshAll()}
-              disabled={refreshing}
-              title="Refresh market data"
-              style={{
-                background: "var(--bg-panel)",
-                border: "1px solid var(--border)",
-                color: refreshing ? "var(--color-accent)" : "var(--text-muted)",
-                fontFamily: "var(--font-mono)",
-                fontSize: "var(--fs-xs)",
-                padding: "2px 8px",
-                cursor: "pointer",
-                letterSpacing: "0.04em",
-              }}
-            >
-              {refreshing ? "REFRESHING..." : "REFRESH"}
-            </button>
-            <DublinClock />
-          </div>
-        </div>
-
-        {/* Nav bar */}
-        <div
-          className="flex items-center justify-between px-4 shrink-0"
-          style={{
-            background: "var(--bg-panel-header)",
-            borderBottom: "1px solid var(--border)",
-            minHeight: 32,
-          }}
-        >
-          <AppNav />
-          <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-xs)" }}>
-            [/] cmd &nbsp; [g] symbol &nbsp; [s] scan &nbsp; [w] watchlist &nbsp; [p] pin &nbsp; [i] ideas &nbsp; [1/2/3] tabs &nbsp; [j/k] nav
-          </span>
         </div>
 
         {/* Strategy picker bar for signal dashboard */}

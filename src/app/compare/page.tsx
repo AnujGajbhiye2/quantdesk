@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DublinClock from '@/components/primitives/DublinClock';
-import AppNav from '@/components/primitives/AppNav';
+import AppHeader from '@/components/primitives/AppHeader';
 import { fmtDate } from '@/core/format/date';
 import SymbolTypeahead from '@/components/primitives/SymbolTypeahead';
 import InfoTip from '@/components/primitives/InfoTip';
@@ -157,56 +157,44 @@ function ComparePageInner() {
 
   return (
     <div className="flex flex-col h-full" style={{ minHeight: '100vh' }}>
-      {/* Status bar */}
-      <div
-        className="flex items-center justify-between px-4 py-2 shrink-0 gap-4"
-        style={{ background: 'var(--bg-panel-header)', borderBottom: '1px solid var(--border)' }}
-      >
-        <div className="flex items-center gap-4 shrink-0">
-          <span style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.1em', fontSize: 'var(--fs-sm)' }}>
-            QUANTDESK
-          </span>
-          <nav className="flex gap-3" style={{ fontSize: 'var(--fs-xs)' }}>
-            <AppNav />
-          </nav>
-        </div>
-
-        <form
-          onSubmit={(e) => { e.preventDefault(); void runCompare(); }}
-          className="flex items-center gap-3 flex-1"
-          style={{ minWidth: 0 }}
-        >
-          <SymbolTypeahead
-            value={symbol}
-            onChange={setSymbol}
-            onPick={(sym) => void runCompare(sym)}
-            autoFocus
-          />
-          <button
-            type="submit"
-            disabled={busy}
-            style={{
-              background: 'var(--bg-panel)',
-              border: '1px solid var(--color-accent)',
-              color: 'var(--color-accent)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 'var(--fs-xs)',
-              padding: '3px 12px',
-              cursor: busy ? 'wait' : 'pointer',
-              fontWeight: 700,
-            }}
+      <AppHeader
+        center={
+          <form
+            onSubmit={(e) => { e.preventDefault(); void runCompare(); }}
+            className="flex items-center gap-3 flex-1"
+            style={{ minWidth: 0 }}
           >
-            {busy ? 'RUNNING...' : 'COMPARE'}
-          </button>
-          {status && (
-            <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {status}
-            </span>
-          )}
-        </form>
-
-        <DublinClock />
-      </div>
+            <SymbolTypeahead
+              value={symbol}
+              onChange={setSymbol}
+              onPick={(sym) => void runCompare(sym)}
+              autoFocus
+            />
+            <button
+              type="submit"
+              disabled={busy}
+              style={{
+                background: 'var(--bg-panel)',
+                border: '1px solid var(--color-accent)',
+                color: 'var(--color-accent)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 'var(--fs-xs)',
+                padding: '3px 12px',
+                cursor: busy ? 'wait' : 'pointer',
+                fontWeight: 700,
+              }}
+            >
+              {busy ? 'RUNNING...' : 'COMPARE'}
+            </button>
+            {status && (
+              <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {status}
+              </span>
+            )}
+          </form>
+        }
+        right={<DublinClock />}
+      />
 
       {/* Explainer */}
       <div

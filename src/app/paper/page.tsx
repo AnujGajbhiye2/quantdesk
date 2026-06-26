@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import DublinClock from '@/components/primitives/DublinClock';
-import AppNav from '@/components/primitives/AppNav';
+import AppHeader from '@/components/primitives/AppHeader';
 import NewPaperTrade from '@/components/trade/NewPaperTrade';
 import AccountStrip from '@/components/panels/AccountStrip';
 import AutoTradePanel from '@/components/panels/AutoTradePanel';
@@ -24,6 +24,14 @@ interface MarkEntry {
   unrealizedPnl:    number;
   unrealizedPnlPct: number;
   markPrice:        number;
+}
+
+function strategiesFromNotes(notes: string | undefined | null, strategyId: string): string[] {
+  if (!notes) return [strategyId];
+  const m = notes.match(/daily:[^:]+:([^\s]+)/);
+  if (!m) return [strategyId];
+  const ids = m[1].split(',').filter(Boolean);
+  return ids.length > 0 ? ids : [strategyId];
 }
 
 function pct(v: number, sign = true) {
@@ -260,9 +268,24 @@ function TradesTable({
     },
     { accessorKey: 'symbol', header: 'SYMBOL', meta: { accent: true } },
     {
-      accessorKey: 'strategyId',
+      id: 'strategy',
+      accessorFn: (r) => r.strategyId,
       header: 'STRATEGY',
-      cell: ({ getValue }) => <span style={{ color: 'var(--text-muted)' }}>{getValue() as string}</span>,
+      cell: ({ row }) => {
+        const t = row.original;
+        const strats = strategiesFromNotes(t.notes, t.strategyId);
+        if (strats.length <= 1) {
+          return <span style={{ color: 'var(--text-muted)' }}>{strats[0]}</span>;
+        }
+        return (
+          <span title={strats.join(' · ')} style={{ color: 'var(--text-muted)' }}>
+            {strats[0]}
+            <span style={{ color: 'var(--color-accent)', fontSize: 'var(--fs-xs)', marginLeft: 4 }}>
+              +{strats.length - 1}
+            </span>
+          </span>
+        );
+      },
     },
     {
       accessorKey: 'side',
@@ -739,55 +762,45 @@ export default function PaperPage() {
 
   return (
     <div className="flex flex-col h-full" style={{ minHeight: '100vh' }}>
-      {/* Status bar */}
-      <div
-        className="flex items-center justify-between px-4 py-2 shrink-0"
-        style={{ background: 'var(--bg-panel-header)', borderBottom: '1px solid var(--border)' }}
-      >
-        <div className="flex items-center gap-4">
-          <span style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.1em', fontSize: 'var(--fs-sm)' }}>
-            QUANTDESK
-          </span>
-          <nav className="flex gap-3" style={{ fontSize: 'var(--fs-xs)' }}>
-            <AppNav />
-          </nav>
-        </div>
-        <div className="flex items-center gap-3">
-          {sweepMsg && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>{sweepMsg}</span>}
-          {lastRefresh && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>prices @ {lastRefresh}</span>}
-          <button
-            onClick={() => void handleRefreshPrices()}
-            disabled={refreshing}
-            style={{
-              background:   'var(--bg-panel)',
-              border:       '1px solid var(--border)',
-              color:        refreshing ? 'var(--color-accent)' : 'var(--text-muted)',
-              fontFamily:   'var(--font-mono)',
-              fontSize:     'var(--fs-xs)',
-              padding:      '2px 8px',
-              cursor:       'pointer',
-            }}
-          >
-            {refreshing ? 'REFRESHING...' : 'REFRESH PRICES'}
-          </button>
-          <button
-            onClick={() => void handleSweep()}
-            disabled={sweeping}
-            style={{
-              background:   'var(--bg-panel)',
-              border:       '1px solid var(--border)',
-              color:        sweeping ? 'var(--color-accent)' : 'var(--text-muted)',
-              fontFamily:   'var(--font-mono)',
-              fontSize:     'var(--fs-xs)',
-              padding:      '2px 8px',
-              cursor:       'pointer',
-            }}
-          >
-            {sweeping ? 'SWEEPING...' : 'EOD SWEEP'}
-          </button>
-          <DublinClock />
-        </div>
-      </div>
+      <AppHeader
+        right={
+          <>
+            {sweepMsg && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>{sweepMsg}</span>}
+            {lastRefresh && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>prices @ {lastRefresh}</span>}
+            <button
+              onClick={() => void handleRefreshPrices()}
+              disabled={refreshing}
+              style={{
+                background:   'var(--bg-panel)',
+                border:       '1px solid var(--border)',
+                color:        refreshing ? 'var(--color-accent)' : 'var(--text-muted)',
+                fontFamily:   'var(--font-mono)',
+                fontSize:     'var(--fs-xs)',
+                padding:      '2px 8px',
+                cursor:       'pointer',
+              }}
+            >
+              {refreshing ? 'REFRESHING...' : 'REFRESH PRICES'}
+            </button>
+            <button
+              onClick={() => void handleSweep()}
+              disabled={sweeping}
+              style={{
+                background:   'var(--bg-panel)',
+                border:       '1px solid var(--border)',
+                color:        sweeping ? 'var(--color-accent)' : 'var(--text-muted)',
+                fontFamily:   'var(--font-mono)',
+                fontSize:     'var(--fs-xs)',
+                padding:      '2px 8px',
+                cursor:       'pointer',
+              }}
+            >
+              {sweeping ? 'SWEEPING...' : 'EOD SWEEP'}
+            </button>
+            <DublinClock />
+          </>
+        }
+      />
 
       {/* Paper trading budget strip */}
       <AccountStrip

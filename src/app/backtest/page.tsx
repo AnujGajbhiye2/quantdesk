@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import DublinClock from '@/components/primitives/DublinClock';
-import AppNav from '@/components/primitives/AppNav';
+import AppHeader from '@/components/primitives/AppHeader';
 import MetricsPanel from '@/components/panels/MetricsPanel';
 import TradesTable from '@/components/panels/TradesTable';
 import MonthlyReturnsHeatmap from '@/components/charts/MonthlyReturnsHeatmap';
@@ -147,107 +147,92 @@ function BacktestInner() {
 
   return (
     <div className="flex flex-col h-full" style={{ minHeight: '100vh' }}>
-      {/* Status bar */}
-      <div
-        className="flex items-center justify-between px-4 py-2 shrink-0 gap-4"
-        style={{ background: 'var(--bg-panel-header)', borderBottom: '1px solid var(--border)' }}
-      >
-        <div className="flex items-center gap-4 shrink-0">
-          <span style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.1em', fontSize: 'var(--fs-sm)' }}>
-            QUANTDESK
-          </span>
-          <nav className="flex gap-3" style={{ fontSize: 'var(--fs-xs)' }}>
-            <AppNav />
-          </nav>
-        </div>
-
-        {/* Controls */}
-        <form
-          onSubmit={(e) => { e.preventDefault(); void runBacktest(); }}
-          className="flex items-center gap-3 flex-1"
-          style={{ minWidth: 0 }}
-        >
-          <SymbolTypeahead
-            value={symbol}
-            onChange={setSymbol}
-            width={120}
-            autoFocus
-          />
-          <select
-            value={strategyId}
-            onChange={(e) => setStrategyId(e.target.value)}
-            style={{
-              background: 'var(--bg-panel)',
-              border: '1px solid var(--border)',
-              color: 'var(--text-primary)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 'var(--fs-xs)',
-              padding: '3px 8px',
-            }}
+      <AppHeader
+        center={
+          <form
+            onSubmit={(e) => { e.preventDefault(); void runBacktest(); }}
+            className="flex items-center gap-3 flex-1"
+            style={{ minWidth: 0 }}
           >
-            {strategies.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            disabled={busy}
-            style={{
-              background: 'var(--bg-panel-header)',
-              border: '1px solid var(--border)',
-              color: 'var(--color-accent)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 'var(--fs-xs)',
-              padding: '3px 12px',
-              cursor: 'pointer',
-            }}
-          >
-            {busy ? '...' : 'RUN'}
-          </button>
-          {symbol && (
-            <a
-              href={`/symbol/${encodeURIComponent(symbol)}`}
-              title="full decision dossier: bull/bear case, edge history, fundamentals, news"
+            <SymbolTypeahead
+              value={symbol}
+              onChange={setSymbol}
+              width={120}
+              autoFocus
+            />
+            <select
+              value={strategyId}
+              onChange={(e) => setStrategyId(e.target.value)}
               style={{
-                color: 'var(--color-accent)',
-                fontSize: 'var(--fs-xs)',
-                textDecoration: 'none',
+                background: 'var(--bg-panel)',
                 border: '1px solid var(--border)',
-                padding: '3px 10px',
-                whiteSpace: 'nowrap',
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 'var(--fs-xs)',
+                padding: '3px 8px',
               }}
             >
-              DOSSIER
-            </a>
-          )}
-          {/* Timeframe toggle */}
-          <div className="flex items-center gap-1 shrink-0">
-            {(['1d', '1w'] as const).map((tf) => (
-              <button
-                key={tf}
-                type="button"
-                onClick={() => setChartTf(tf)}
+              {strategies.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              disabled={busy}
+              style={{
+                background: 'var(--bg-panel-header)',
+                border: '1px solid var(--border)',
+                color: 'var(--color-accent)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 'var(--fs-xs)',
+                padding: '3px 12px',
+                cursor: 'pointer',
+              }}
+            >
+              {busy ? '...' : 'RUN'}
+            </button>
+            {symbol && (
+              <a
+                href={`/symbol/${encodeURIComponent(symbol)}`}
+                title="full decision dossier: bull/bear case, edge history, fundamentals, news"
                 style={{
-                  background:   chartTf === tf ? 'var(--color-accent)' : 'var(--bg-panel)',
-                  border:       '1px solid var(--border)',
-                  color:        chartTf === tf ? '#0a0e14' : 'var(--text-muted)',
-                  fontFamily:   'var(--font-mono)',
-                  fontSize:     'var(--fs-xs)',
-                  padding:      '2px 8px',
-                  cursor:       'pointer',
-                  fontWeight:   chartTf === tf ? 700 : 400,
+                  color: 'var(--color-accent)',
+                  fontSize: 'var(--fs-xs)',
+                  textDecoration: 'none',
+                  border: '1px solid var(--border)',
+                  padding: '3px 10px',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                {tf.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
-          <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', flexShrink: 0 }}>{status}</span>
-        </form>
-
-        <DublinClock />
-      </div>
+                DOSSIER
+              </a>
+            )}
+            <div className="flex items-center gap-1 shrink-0">
+              {(['1d', '1w'] as const).map((tf) => (
+                <button
+                  key={tf}
+                  type="button"
+                  onClick={() => setChartTf(tf)}
+                  style={{
+                    background:   chartTf === tf ? 'var(--color-accent)' : 'var(--bg-panel)',
+                    border:       '1px solid var(--border)',
+                    color:        chartTf === tf ? '#0a0e14' : 'var(--text-muted)',
+                    fontFamily:   'var(--font-mono)',
+                    fontSize:     'var(--fs-xs)',
+                    padding:      '2px 8px',
+                    cursor:       'pointer',
+                    fontWeight:   chartTf === tf ? 700 : 400,
+                  }}
+                >
+                  {tf.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', flexShrink: 0 }}>{status}</span>
+          </form>
+        }
+        right={<DublinClock />}
+      />
 
       {/* Body - page scrolls; chart row on top, result detail below */}
       <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import DublinClock from '@/components/primitives/DublinClock';
-import AppNav from '@/components/primitives/AppNav';
+import AppHeader from '@/components/primitives/AppHeader';
 import { fmtDate } from '@/core/format/date';
 import InfoTip from '@/components/primitives/InfoTip';
 import { fmtMoney } from '@/core/format/currency';
@@ -109,19 +109,7 @@ export default function JournalPage() {
 
   return (
     <div className="flex flex-col h-full" style={{ minHeight: '100vh', fontFamily: 'var(--font-mono)' }}>
-      {/* Status bar */}
-      <div
-        className="flex items-center justify-between px-4 py-2 shrink-0"
-        style={{ background: 'var(--bg-panel-header)', borderBottom: '1px solid var(--border)' }}
-      >
-        <div className="flex items-center gap-4">
-          <span style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.1em', fontSize: 'var(--fs-sm)' }}>
-            QUANTDESK
-          </span>
-          <AppNav />
-        </div>
-        <DublinClock />
-      </div>
+      <AppHeader right={<DublinClock />} />
 
       {error && <div style={{ padding: 24, color: 'var(--color-down)' }}>{error}</div>}
 

@@ -9,7 +9,7 @@ import { isTradingHalted } from '@/core/paper/halt';
 import { listLive as listLiveStrategies } from '@/core/strategy/registry';
 import Panel from '@/components/primitives/Panel';
 import EmptyState from '@/components/primitives/EmptyState';
-import AppNav from '@/components/primitives/AppNav';
+import AppHeader from '@/components/primitives/AppHeader';
 import { HaltBanner, KillSwitch } from './KillSwitch';
 import { DecisionLogTable } from '@/components/dashboard/DecisionLogTable';
 import {
@@ -220,18 +220,7 @@ export default function SessionPage() {
       {/* Halt banner - spans full width when active */}
       <HaltBanner halted={haltState.halted} />
 
-      {/* Nav bar */}
-      <div
-        className="flex items-center justify-between px-4 py-2 shrink-0"
-        style={{ background: 'var(--bg-panel-header)', borderBottom: '1px solid var(--border)' }}
-      >
-        <div className="flex items-center gap-4">
-          <span style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.1em', fontSize: 'var(--fs-sm)' }}>
-            QUANTDESK
-          </span>
-          <AppNav />
-        </div>
-      </div>
+      <AppHeader />
 
       {/* Body */}
       <div className="flex flex-col gap-3 p-3" style={{ flex: 1 }}>

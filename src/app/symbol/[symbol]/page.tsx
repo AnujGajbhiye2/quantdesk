@@ -10,7 +10,7 @@ import type { CaseFactor } from '@/core/dossier/case';
 import { DataTable } from '@/components/table/DataTable';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { EdgeStats } from '@/core/edge/types';
-import AppNav from '@/components/primitives/AppNav';
+import AppHeader from '@/components/primitives/AppHeader';
 import { fmtDate } from '@/core/format/date';
 
 /**
@@ -123,33 +123,25 @@ export default function SymbolDossierPage({ params }: { params: Promise<{ symbol
 
   return (
     <div className="flex flex-col h-full" style={{ minHeight: '100vh', fontFamily: 'var(--font-mono)' }}>
-      {/* Status bar */}
-      <div
-        className="flex items-center justify-between px-4 py-2 shrink-0 gap-4"
-        style={{ background: 'var(--bg-panel-header)', borderBottom: '1px solid var(--border)' }}
-      >
-        <div className="flex items-center gap-4 shrink-0">
-          <span style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.1em', fontSize: 'var(--fs-sm)' }}>
-            QUANTDESK
-          </span>
-          <AppNav />
-          <span style={{ color: 'var(--color-accent)', fontWeight: 700, fontSize: 'var(--fs-sm)' }}>
-            {symbol}
-          </span>
-          {dossier && (
-            <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>{dossier.name}</span>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <a href={`/backtest?symbol=${symbol}`} style={{ color: 'var(--color-accent)', fontSize: 'var(--fs-xs)', textDecoration: 'none', border: '1px solid var(--border)', padding: '1px 8px' }}>
-            BACKTEST
-          </a>
-          <a href={`/compare?symbol=${symbol}`} style={{ color: 'var(--color-accent)', fontSize: 'var(--fs-xs)', textDecoration: 'none', border: '1px solid var(--border)', padding: '1px 8px' }}>
-            COMPARE
-          </a>
-          <DublinClock />
-        </div>
-      </div>
+      <AppHeader
+        hint={
+          <>
+            <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{symbol}</span>
+            {dossier && <span style={{ marginLeft: 8 }}>{dossier.name}</span>}
+          </>
+        }
+        right={
+          <>
+            <a href={`/backtest?symbol=${symbol}`} style={{ color: 'var(--color-accent)', fontSize: 'var(--fs-xs)', textDecoration: 'none', border: '1px solid var(--border)', padding: '1px 8px' }}>
+              BACKTEST
+            </a>
+            <a href={`/compare?symbol=${symbol}`} style={{ color: 'var(--color-accent)', fontSize: 'var(--fs-xs)', textDecoration: 'none', border: '1px solid var(--border)', padding: '1px 8px' }}>
+              COMPARE
+            </a>
+            <DublinClock />
+          </>
+        }
+      />
 
       {error && (
         <div style={{ padding: 24, color: 'var(--color-down)', fontSize: 'var(--fs-sm)' }}>{error}</div>
