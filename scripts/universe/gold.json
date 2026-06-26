@@ -1,14 +1,14 @@
 [
-  { "symbol": "GLD",  "name": "SPDR Gold Shares",                "assetClass": "commodity", "currency": "USD", "exchange": "NYSE",   "providerId": "alpaca" },
-  { "symbol": "IAU",  "name": "iShares Gold Trust",              "assetClass": "commodity", "currency": "USD", "exchange": "NYSE",   "providerId": "alpaca" },
-  { "symbol": "GDX",  "name": "VanEck Gold Miners ETF",          "assetClass": "equity",    "currency": "USD", "exchange": "NYSE",   "providerId": "alpaca" },
-  { "symbol": "GDXJ", "name": "VanEck Junior Gold Miners ETF",   "assetClass": "equity",    "currency": "USD", "exchange": "NYSE",   "providerId": "alpaca" },
-  { "symbol": "NEM",  "name": "Newmont Corporation",             "assetClass": "equity",    "currency": "USD", "exchange": "NYSE",   "providerId": "alpaca" },
-  { "symbol": "GOLD", "name": "Barrick Gold Corporation",        "assetClass": "equity",    "currency": "USD", "exchange": "NYSE",   "providerId": "alpaca" },
-  { "symbol": "AEM",  "name": "Agnico Eagle Mines",              "assetClass": "equity",    "currency": "USD", "exchange": "NYSE",   "providerId": "alpaca" },
-  { "symbol": "FNV",  "name": "Franco-Nevada Corporation",       "assetClass": "equity",    "currency": "USD", "exchange": "NYSE",   "providerId": "alpaca" },
-  { "symbol": "WPM",  "name": "Wheaton Precious Metals",         "assetClass": "equity",    "currency": "USD", "exchange": "NYSE",   "providerId": "alpaca" },
-  { "symbol": "RGLD", "name": "Royal Gold",                      "assetClass": "equity",    "currency": "USD", "exchange": "NASDAQ", "providerId": "alpaca" },
-  { "symbol": "SLV",  "name": "iShares Silver Trust",            "assetClass": "commodity", "currency": "USD", "exchange": "NYSE",   "providerId": "alpaca" },
-  { "symbol": "USO",  "name": "United States Oil Fund",          "assetClass": "commodity", "currency": "USD", "exchange": "NYSE",   "providerId": "alpaca" }
+  { "symbol": "GLD",  "name": "SPDR Gold Shares",                "assetClass": "commodity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
+  { "symbol": "IAU",  "name": "iShares Gold Trust",              "assetClass": "commodity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
+  { "symbol": "GDX",  "name": "VanEck Gold Miners ETF",          "assetClass": "equity",    "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
+  { "symbol": "GDXJ", "name": "VanEck Junior Gold Miners ETF",   "assetClass": "equity",    "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
+  { "symbol": "NEM",  "name": "Newmont Corporation",             "assetClass": "equity",    "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
+  { "symbol": "GOLD", "name": "Barrick Gold Corporation",        "assetClass": "equity",    "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
+  { "symbol": "AEM",  "name": "Agnico Eagle Mines",              "assetClass": "equity",    "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
+  { "symbol": "FNV",  "name": "Franco-Nevada Corporation",       "assetClass": "equity",    "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
+  { "symbol": "WPM",  "name": "Wheaton Precious Metals",         "assetClass": "equity",    "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
+  { "symbol": "RGLD", "name": "Royal Gold",                      "assetClass": "equity",    "currency": "USD", "exchange": "NASDAQ", "providerId": "yahoo" },
+  { "symbol": "SLV",  "name": "iShares Silver Trust",            "assetClass": "commodity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" },
+  { "symbol": "USO",  "name": "United States Oil Fund",          "assetClass": "commodity", "currency": "USD", "exchange": "NYSE",   "providerId": "yahoo" }
 ]
