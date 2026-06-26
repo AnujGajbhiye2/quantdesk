@@ -33,6 +33,7 @@ function migrate(db: Database.Database): void {
   }
   migrateSignals(db);
   migratePaperTrades(db);
+  migratePaperTradesMarket(db);
 }
 
 /**
@@ -87,6 +88,12 @@ function migrateSignals(db: Database.Database): void {
     db.exec('ALTER TABLE signals ADD COLUMN created_at TEXT');
     db.exec('UPDATE signals SET created_at = time WHERE created_at IS NULL');
   }
+  // market column: source market bucket for per-market analytics.
+  // Backfill existing rows as 'sp500' (all signals to date came from the S&P500 path).
+  if (!cols.some((c) => c.name === 'market')) {
+    db.exec('ALTER TABLE signals ADD COLUMN market TEXT');
+    db.exec("UPDATE signals SET market = 'sp500' WHERE market IS NULL");
+  }
   db.exec(`
     DELETE FROM signals WHERE id NOT IN (
       SELECT MIN(id) FROM signals GROUP BY symbol, time, strategy_id, side
@@ -98,4 +105,17 @@ function migrateSignals(db: Database.Database): void {
   db.exec(
     'CREATE INDEX IF NOT EXISTS idx_signals_symbol_time ON signals (symbol, time)',
   );
+}
+
+/**
+ * Add the market column to paper_trades for per-market analytics.
+ * Additive migration: existing trades are backfilled as 'sp500' (all trades
+ * to date came from the S&P500 + gold intraday path).
+ */
+function migratePaperTradesMarket(db: Database.Database): void {
+  const cols = db.pragma('table_info(paper_trades)') as Array<{ name: string }>;
+  if (!cols.some((c) => c.name === 'market')) {
+    db.exec('ALTER TABLE paper_trades ADD COLUMN market TEXT');
+    db.exec("UPDATE paper_trades SET market = 'sp500' WHERE market IS NULL");
+  }
 }

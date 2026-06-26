@@ -62,10 +62,27 @@ describe('checkRisk', () => {
   });
 
   it('rejects past the max open trade count', () => {
-    const open = Array.from({ length: 8 }, () => pos(10, 1));
+    // Global default is 16; build 16 open positions so the 17th is rejected.
+    const open = Array.from({ length: 16 }, () => pos(10, 1));
     const result = checkRisk(account, open, { symbol: 'A', costUSD: 10, stopRiskUSD: 1 });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.rule).toBe('max-open-trades');
+  });
+
+  it('rejects past the per-market trade count when market is tagged', () => {
+    // 4 same-market positions -> 5th in same market should be rejected
+    const openSameMarket = Array.from({ length: 4 }, () => ({ ...pos(10, 1), market: 'nse' }));
+    const result = checkRisk(account, openSameMarket, { symbol: 'B', costUSD: 10, stopRiskUSD: 1, market: 'nse' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.rule).toBe('max-open-trades');
+  });
+
+  it('allows a different market even when one market is at cap', () => {
+    // 4 NSE positions - EU candidate should still pass the per-market check
+    const openNSE = Array.from({ length: 4 }, () => ({ ...pos(10, 1), market: 'nse' }));
+    const result  = checkRisk(account, openNSE, { symbol: 'C', costUSD: 10, stopRiskUSD: 1, market: 'eu' });
+    // May fail for other reasons (open risk) but NOT for max-open-trades
+    if (!result.ok) expect(result.rule).not.toBe('max-open-trades');
   });
 
   it('rule precedence: drawdown halt wins over everything else', () => {

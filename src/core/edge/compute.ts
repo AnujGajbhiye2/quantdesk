@@ -6,7 +6,15 @@ import { maxHoldBars } from '@/core/config';
 import { getAllSymbols, getLatestBarTime, getRecentBars } from '@/core/db/bars';
 import { upsertEdgeStats } from '@/core/db/edge';
 import { aggregateEdge, type SlimTrade } from './aggregate';
-import { classScope, symScope, GLOBAL_SCOPE, type EdgeStats } from './types';
+import { classScope, symScope, GLOBAL_SCOPE, marketScope, type EdgeStats } from './types';
+import { universeForMarket, ALL_SCAN_MARKETS } from '@/core/data/universe';
+
+// Pre-build market -> symbol set map for pool bucketing.
+// Computed once at module level (JSON imports are static).
+const _marketSymbols = new Map<string, Set<string>>();
+for (const market of ALL_SCAN_MARKETS) {
+  _marketSymbols.set(market, new Set(universeForMarket(market).map((e) => e.symbol)));
+}
 
 /**
  * Compute backtested edge for every (strategy x symbol) pair over a trailing
@@ -54,8 +62,9 @@ export function computeEdgeForUniverse(opts: { symbols?: string[] } = {}): Compu
   for (const strategy of strategies) {
     const parsedParams = strategy.params.parse({});
 
-    // Pools for class/global rows - real trade lists, not average-of-averages
-    const classPools = new Map<AssetClass, SlimTrade[]>();
+    // Pools for class/global/market rows - real trade lists, not average-of-averages
+    const classPools  = new Map<AssetClass, SlimTrade[]>();
+    const marketPools = new Map<string, SlimTrade[]>();
     const globalPool: SlimTrade[] = [];
     let testedFrom = '';
     let testedTo   = '';
@@ -118,6 +127,17 @@ export function computeEdgeForUniverse(opts: { symbols?: string[] } = {}): Compu
       const pool = classPools.get(meta.assetClass) ?? [];
       pool.push(...entry.trades);
       classPools.set(meta.assetClass, pool);
+
+      // Per-market pool: a symbol may appear in multiple market files (rare) -
+      // add to every market that contains it.
+      for (const [market, symSet] of _marketSymbols) {
+        if (symSet.has(meta.symbol)) {
+          const mpool = marketPools.get(market) ?? [];
+          mpool.push(...entry.trades);
+          marketPools.set(market, mpool);
+        }
+      }
+
       globalPool.push(...entry.trades);
     }
 
@@ -133,6 +153,21 @@ export function computeEdgeForUniverse(opts: { symbols?: string[] } = {}): Compu
         computedAt,
       });
     }
+
+    for (const [market, pool] of marketPools) {
+      if (pool.length === 0) continue;
+      rows.push({
+        strategyId: strategy.id,
+        scope:      marketScope(market),
+        symbol:     null,
+        assetClass: null,
+        ...aggregateEdge(pool),
+        testedFrom,
+        testedTo,
+        computedAt,
+      });
+    }
+
     rows.push({
       strategyId: strategy.id,
       scope:      GLOBAL_SCOPE,

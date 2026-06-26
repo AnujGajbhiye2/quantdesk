@@ -60,6 +60,12 @@ export interface OpenTradeInput {
    * edge stats...). Display-only - never read back into trading logic.
    */
   journalWhy?:  Record<string, unknown>;
+  /**
+   * Source market bucket for per-market risk checks and analytics
+   * (e.g. 'nse', 'eu', 'sp500', 'commodity'). Optional - omit for
+   * intraday trades or manually entered trades where market is implicit.
+   */
+  market?:      string;
 }
 
 export class DuplicateOpenTradeError extends Error {
@@ -181,6 +187,7 @@ export function openPaperTrade(input: OpenTradeInput): PaperTrade {
           candidateStop != null
             ? toUSD(Math.abs(fillPrice - candidateStop) * qty, currency)
             : null,
+        market: input.market ?? null,
       },
       riskLimitsFromEnv(),
     );
@@ -202,6 +209,7 @@ export function openPaperTrade(input: OpenTradeInput): PaperTrade {
     status:      'open',
     costs:       0,
     notes,
+    market:      input.market,
   };
 
   insertPaperTrade(trade);
@@ -423,6 +431,7 @@ export function createPendingTrade(input: OpenTradeInput): PaperTrade {
     status:            'pending',
     costs:             0,
     notes,
+    market:            input.market,
   };
 
   insertPaperTrade(trade);

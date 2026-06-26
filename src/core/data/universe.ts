@@ -4,18 +4,48 @@ import type { UniverseEntry } from './ingest';
 import sp500 from '../../../scripts/universe/sp500.json';
 import nifty200 from '../../../scripts/universe/nifty200.json';
 import stoxx600 from '../../../scripts/universe/stoxx600.json';
+import euStocks from '../../../scripts/universe/eu-stocks.json';
 import gold from '../../../scripts/universe/gold.json';
 import reference from '../../../scripts/universe/reference.json';
 
-// stoxx600.json is a placeholder until populated via:
-//   npm run build-universe -- --only stoxx600
-//   npm run ingest -- --universe scripts/universe/stoxx600.json
+// stoxx600.json (466 names) is retained in CURATED_UNIVERSE for broad signal coverage
+// but is not used by per-market trading scans (too noisy, GBp pence bug on .L names).
+// eu-stocks.json (~62 curated continental names) is used for EU daily scan + trade execution.
 //
 // reference.json holds non-tradeable regime benchmarks (^GSPC, ^IXIC, ^DJI).
-// These are included in CURATED_UNIVERSE so EOD ingest pulls their bars for
-// regime-gate evaluation. autoTradeUniverse() excludes them automatically
-// (they are not in SP500_SYMBOLS or GOLD_SYMBOLS after the sp500 clean).
-const CURATED_UNIVERSE = [...sp500, ...nifty200, ...stoxx600, ...gold, ...reference] as UniverseEntry[];
+// Included so EOD ingest pulls their bars for regime-gate evaluation.
+// autoTradeUniverse() excludes them (not in SP500_SYMBOLS or GOLD_SYMBOLS).
+const CURATED_UNIVERSE = [
+  ...sp500, ...nifty200, ...stoxx600, ...euStocks, ...gold, ...reference,
+] as UniverseEntry[];
+
+// ---------------------------------------------------------------------------
+// Per-market universe selection (keyed by source file, not marketOf())
+// ---------------------------------------------------------------------------
+
+/** Market buckets used for per-close daily scanning and paper-trade execution. */
+export type ScanMarket = 'nse' | 'eu' | 'sp500' | 'commodity';
+
+/** All scan markets in close-time order (earliest close first). */
+export const ALL_SCAN_MARKETS: ScanMarket[] = ['nse', 'eu', 'sp500', 'commodity'];
+
+/**
+ * Return the universe for a specific market bucket.
+ * Keyed by source JSON file to avoid relying on marketOf() exchange codes,
+ * which do not match all exchange codes used in the JSON files.
+ */
+export function universeForMarket(market: ScanMarket): UniverseEntry[] {
+  switch (market) {
+    case 'nse':       return dedupeUniverse([...nifty200]  as UniverseEntry[]);
+    case 'eu':        return dedupeUniverse([...euStocks]  as UniverseEntry[]);
+    case 'sp500':     return dedupeUniverse([...sp500]     as UniverseEntry[]);
+    case 'commodity': return dedupeUniverse([...gold]      as UniverseEntry[]);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Intraday auto-trade universe (US + gold via Alpaca)
+// ---------------------------------------------------------------------------
 
 // Symbols eligible for automated intraday trading: S&P 500 + gold instruments.
 // All routed through Alpaca (free IEX feed, US equities/ETFs).

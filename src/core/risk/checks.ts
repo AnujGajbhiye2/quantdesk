@@ -18,8 +18,19 @@ export interface RiskLimits {
   maxPositionPct: number;
   /** Max sum of stop-loss risk across all open trades + candidate, as % of equity. */
   maxOpenRiskPct: number;
-  /** Max number of simultaneously open trades. */
+  /**
+   * Global ceiling: max number of simultaneously open trades across ALL markets.
+   * Raised from 4 to 16 to accommodate multi-market scanning (4 markets x 4 each).
+   * Override via RISK_MAX_OPEN_TRADES env var. Set to 4 to revert to single-market behavior.
+   */
   maxOpenTrades: number;
+  /**
+   * Per-market cap: max open trades from the same market bucket (e.g. 'nse', 'eu', 'sp500').
+   * Only applied when the candidate trade carries a market tag; otherwise falls through to
+   * the global ceiling. Default 4 - each market gets its own independent 4-slot budget.
+   * Override via RISK_MAX_OPEN_TRADES_PER_MARKET env var.
+   */
+  maxOpenTradesPerMarket: number;
   /** Halt all new entries when equity has fallen this % below the starting budget. */
   haltDrawdownPct: number;
   /**
@@ -40,8 +51,12 @@ export interface RiskLimits {
 export const DEFAULT_RISK_LIMITS: RiskLimits = {
   maxPositionPct:  25,
   maxOpenRiskPct:  6,
-  // 4 concurrent positions: SP500 MR strategies correlate in drawdown; more than 4 is one big bet.
-  maxOpenTrades:   4,
+  // Global ceiling raised to 16 for multi-market use (4 markets x 4 per market).
+  // Per-market MR strategies correlate in drawdown within a market; the per-market
+  // cap (maxOpenTradesPerMarket) enforces the same 4-slot discipline per region.
+  // Single-market users: set RISK_MAX_OPEN_TRADES=4 to restore original behavior.
+  maxOpenTrades:          16,
+  maxOpenTradesPerMarket: 4,
   // Halt permanently at 12% portfolio drawdown from starting budget.
   // OOS walk-forward max DD for these MR strategies is ~8-10%; 12% = 1.5x OOS max DD.
   // Requires manual reset (new starting budget) to lift - not auto-resuming.
@@ -57,12 +72,13 @@ export function riskLimitsFromEnv(env: NodeJS.ProcessEnv = process.env): RiskLim
     return Number.isFinite(v) && v > 0 ? v : fallback;
   };
   return {
-    maxPositionPct:  num('RISK_MAX_POSITION_PCT',  DEFAULT_RISK_LIMITS.maxPositionPct),
-    maxOpenRiskPct:  num('RISK_MAX_OPEN_RISK_PCT', DEFAULT_RISK_LIMITS.maxOpenRiskPct),
-    maxOpenTrades:   num('RISK_MAX_OPEN_TRADES',   DEFAULT_RISK_LIMITS.maxOpenTrades),
-    haltDrawdownPct: num('RISK_HALT_DRAWDOWN_PCT', DEFAULT_RISK_LIMITS.haltDrawdownPct),
-    corrThreshold:   num('RISK_CORR_THRESHOLD',    DEFAULT_RISK_LIMITS.corrThreshold),
-    clusterRiskPct:  num('RISK_CLUSTER_RISK_PCT',  DEFAULT_RISK_LIMITS.clusterRiskPct),
+    maxPositionPct:         num('RISK_MAX_POSITION_PCT',          DEFAULT_RISK_LIMITS.maxPositionPct),
+    maxOpenRiskPct:         num('RISK_MAX_OPEN_RISK_PCT',         DEFAULT_RISK_LIMITS.maxOpenRiskPct),
+    maxOpenTrades:          num('RISK_MAX_OPEN_TRADES',           DEFAULT_RISK_LIMITS.maxOpenTrades),
+    maxOpenTradesPerMarket: num('RISK_MAX_OPEN_TRADES_PER_MARKET',DEFAULT_RISK_LIMITS.maxOpenTradesPerMarket),
+    haltDrawdownPct:        num('RISK_HALT_DRAWDOWN_PCT',         DEFAULT_RISK_LIMITS.haltDrawdownPct),
+    corrThreshold:          num('RISK_CORR_THRESHOLD',            DEFAULT_RISK_LIMITS.corrThreshold),
+    clusterRiskPct:         num('RISK_CLUSTER_RISK_PCT',          DEFAULT_RISK_LIMITS.clusterRiskPct),
   };
 }
 
@@ -79,12 +95,16 @@ export interface OpenPositionUSD {
    * checkRisk pure (no bar loading here). null = not computed / not available.
    */
   corrToCandidate?: number | null;
+  /** Source market bucket for this position (e.g. 'nse', 'eu', 'sp500'). */
+  market?: string | null;
 }
 
 export interface CandidateTradeUSD {
   symbol:      string;
   costUSD:     number;
   stopRiskUSD: number | null;
+  /** Source market bucket for the candidate (e.g. 'nse', 'eu', 'sp500'). */
+  market?: string | null;
 }
 
 export interface AccountStateUSD {
@@ -130,15 +150,31 @@ export function checkRisk(
     };
   }
 
-  // 2. Max open trades
+  // 2. Max open trades - global ceiling across all markets
   if (openTrades.length + 1 > limits.maxOpenTrades) {
     return {
       ok: false,
       rule: 'max-open-trades',
       message:
-        `Max open trades: already holding ${openTrades.length} of ${limits.maxOpenTrades}. ` +
+        `Max open trades (global): already holding ${openTrades.length} of ${limits.maxOpenTrades}. ` +
         `More positions than this is unmanageable and usually correlated - close something first.`,
     };
+  }
+
+  // 2b. Per-market cap: when the candidate has a market tag, count only
+  // same-market open positions against the per-market limit.
+  if (candidate.market) {
+    const sameMarket = openTrades.filter((t) => t.market === candidate.market);
+    if (sameMarket.length + 1 > limits.maxOpenTradesPerMarket) {
+      return {
+        ok: false,
+        rule: 'max-open-trades',
+        message:
+          `Max open trades (${candidate.market}): already holding ${sameMarket.length} of ` +
+          `${limits.maxOpenTradesPerMarket} for this market. ` +
+          `Each market gets its own ${limits.maxOpenTradesPerMarket}-slot budget - close a ${candidate.market} position first.`,
+      };
+    }
   }
 
   // 3. Position concentration

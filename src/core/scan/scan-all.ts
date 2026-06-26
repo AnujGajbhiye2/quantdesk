@@ -58,6 +58,12 @@ export interface ScanAllOpts {
    * Omit for ad-hoc scans that should not appear on the session dashboard.
    */
   logRun?: { trigger: 'eod-cron' | 'manual' | 'api' };
+  /**
+   * Source market bucket for signal tagging and per-market analytics
+   * (e.g. 'nse', 'eu', 'sp500', 'commodity'). Stamped on every signal
+   * inserted by this scan run.
+   */
+  market?: string;
 }
 
 export interface ScanAllResult {
@@ -191,6 +197,10 @@ export function scanAll(opts: ScanAllOpts = {}): ScanAllResult {
   }
 
   if (opts.persist !== false && signals.length > 0) {
+    // Stamp source market on every signal when the scan is market-scoped.
+    if (opts.market) {
+      for (const s of signals) s.market = opts.market;
+    }
     insertSignals(signals);
   }
 

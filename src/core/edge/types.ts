@@ -37,3 +37,11 @@ export function classScope(assetClass: AssetClass): string {
 }
 
 export const GLOBAL_SCOPE = 'global';
+
+/**
+ * Scope for a per-market aggregate (e.g. 'market:nse', 'market:eu', 'market:sp500').
+ * Pools all trades from that market's universe for the strategy.
+ */
+export function marketScope(market: string): string {
+  return `market:${market}`;
+}

@@ -16,8 +16,8 @@ export function insertSignals(signals: Signal[]): void {
   if (signals.length === 0) return;
   const db = getDb();
   const stmt = db.prepare(`
-    INSERT OR IGNORE INTO signals (symbol, time, side, strength, reason, strategy_id, created_at)
-    VALUES (@symbol, @time, @side, @strength, @reason, @strategyId, @createdAt)
+    INSERT OR IGNORE INTO signals (symbol, time, side, strength, reason, strategy_id, created_at, market)
+    VALUES (@symbol, @time, @side, @strength, @reason, @strategyId, @createdAt, @market)
   `);
   const createdAt = new Date().toISOString();
   const insertMany = db.transaction((rows: Signal[]) => {
@@ -30,6 +30,7 @@ export function insertSignals(signals: Signal[]): void {
         reason:     s.reason,
         strategyId: s.strategyId,
         createdAt,
+        market:     s.market ?? null,
       });
     }
   });
@@ -44,6 +45,7 @@ interface SignalRow {
   reason:      string;
   strategy_id: string;
   created_at:  string | null;
+  market:      string | null;
 }
 
 function rowToSignal(r: SignalRow): StoredSignal {
@@ -55,6 +57,7 @@ function rowToSignal(r: SignalRow): StoredSignal {
     reason:     r.reason,
     strategyId: r.strategy_id,
     createdAt:  r.created_at ?? r.time,
+    market:     r.market ?? undefined,
   };
 }
 
@@ -88,8 +91,9 @@ export function getSignals(opts: GetSignalsOpts = {}): StoredSignal[] {
   const where  = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const limit  = opts.limit ? `LIMIT ${opts.limit}` : '';
   const rows   = db
-    .prepare(`SELECT symbol, time, side, strength, reason, strategy_id, created_at FROM signals ${where} ORDER BY time DESC ${limit}`)
+    .prepare(`SELECT symbol, time, side, strength, reason, strategy_id, created_at, market FROM signals ${where} ORDER BY time DESC ${limit}`)
     .all(params) as SignalRow[];
+
 
   return rows.map(rowToSignal);
 }
@@ -104,7 +108,7 @@ export function getLatestSignals(symbols: string[]): StoredSignal[] {
   const placeholders = symbols.map(() => '?').join(', ');
   const rows = db
     .prepare(`
-      SELECT symbol, time, side, strength, reason, strategy_id, created_at FROM (
+      SELECT symbol, time, side, strength, reason, strategy_id, created_at, market FROM (
         SELECT *, ROW_NUMBER() OVER (
           PARTITION BY symbol, strategy_id ORDER BY time DESC, id DESC
         ) AS rn

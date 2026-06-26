@@ -3,14 +3,18 @@
  * Runs once on server startup (nodejs runtime only - not edge).
  *
  * Responsibilities:
- * - Start the EOD data refresh cron job.
+ * - Per-market EOD refresh + daily auto-trade crons (NSE, EU, US+commodities).
  * - Start the open-trade stop/target proximity monitor (Telegram alerts).
+ * - Intraday auto-trade cron (US equities via Alpaca, gated by AUTO_TRADE_ENABLED).
  *
- * Cron schedule env vars:
- *   REFRESH_CRON  - cron expression, default "5 21 * * 1-5" (21:05 Mon-Fri)
- *   REFRESH_TZ    - timezone, default "Europe/Dublin" (~16:05 ET)
- *   MONITOR_CRON  - proximity monitor, default every 15 min Mon-Fri
- *                   no-op unless TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID are set
+ * Cron schedule env vars (all Europe/Dublin unless noted):
+ *   NSE_SCAN_CRON       - default "30 11 * * 1-5" (11:30 - safely after NSE 15:30 IST close)
+ *   EU_SCAN_CRON        - default "45 16 * * 1-5" (16:45 - after EU continental close)
+ *   REFRESH_CRON        - default "5 21 * * 1-5"  (21:05 - US close; also runs daily auto-trade)
+ *   REFRESH_TZ          - default "Europe/Dublin"
+ *   MONITOR_CRON        - proximity monitor, default every 15 min Mon-Fri
+ *                         no-op unless TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID are set
+ *   DAILY_AUTO_TRADE_ENABLED=1 - activate daily paper-trade execution (NSE/EU/US)
  *
  * The crons only run while the Next.js server process is alive.
  * For production use a system cron / scheduled task calling `npm run refresh` instead.
@@ -21,80 +25,146 @@ export async function register() {
 
   // Lazy import to avoid loading server-only code during edge/build evaluation
   const { default: cron } = await import('node-cron');
-  const { refreshUniverse } = await import('@/core/data/ingest');
-  const { postRefreshTasks } = await import('@/core/data/post-refresh');
-
-  const schedule = process.env.REFRESH_CRON ?? '5 21 * * 1-5';
   const timezone = process.env.REFRESH_TZ ?? 'Europe/Dublin';
 
-  if (!cron.validate(schedule)) {
-    console.error(`[instrumentation] Invalid REFRESH_CRON expression: "${schedule}". Cron not started.`);
-    return;
+  // ---------------------------------------------------------------------------
+  // Helper: run a per-market daily scan + trade execution tick
+  // ---------------------------------------------------------------------------
+  async function runMarketTick(
+    market: 'nse' | 'eu' | 'sp500' | 'commodity',
+    label: string,
+  ): Promise<void> {
+    console.log(`[cron:${label}] daily tick started...`);
+    const ingestStartedAt = new Date().toISOString();
+    try {
+      const { universeForMarket } = await import('@/core/data/universe');
+      const { refreshUniverse }   = await import('@/core/data/ingest');
+      const universe = universeForMarket(market);
+      const results  = await refreshUniverse(universe, '1d');
+      const totalBars = results.reduce((sum, r) => sum + r.barsAdded, 0);
+      const errors    = results.filter((r) => r.error).length;
+      console.log(`[cron:${label}] refresh done. ${results.length} symbols, ${totalBars} bars, ${errors} error(s).`);
+
+      // Log ingest run
+      try {
+        const { buildIngestRunInput, insertIngestRun, pruneOldIngestRuns } = await import('@/core/db/ingest-log');
+        insertIngestRun(buildIngestRunInput(results, ingestStartedAt, 'eod-cron'));
+        pruneOldIngestRuns(30);
+      } catch (err) {
+        console.error(`[cron:${label}] ingest log write failed (non-fatal):`, err);
+      }
+
+      // Daily auto-trade (scan + execute) for this market
+      const { runDailyAutoTrade } = await import('@/core/paper/daily-auto-trade');
+      const dailyResult = await runDailyAutoTrade({ market });
+      if (dailyResult.enabled) {
+        console.log(
+          `[cron:${label}] daily auto-trade done.` +
+          ` entries:${dailyResult.entries.length}` +
+          ` exits:${dailyResult.exits.length}` +
+          ` skips:${dailyResult.skips.length}` +
+          ` signals:${dailyResult.signals}` +
+          ` halted:${dailyResult.halted}` +
+          (dailyResult.dryRun ? ' [DRY RUN]' : ''),
+        );
+      }
+
+      // Invalidate snapshot cache
+      try {
+        const { invalidateSnapshotCache } = await import('@/core/market/snapshot');
+        invalidateSnapshotCache();
+      } catch { /* non-fatal */ }
+
+    } catch (err) {
+      console.error(`[cron:${label}] tick failed:`, err);
+    }
   }
 
-  console.log(`[instrumentation] EOD refresh cron: "${schedule}" (${timezone})`);
+  // ---------------------------------------------------------------------------
+  // NSE scan cron - after NSE close (15:30 IST = ~11:00 Dublin summer / 10:30 winter)
+  // 11:30 is safe for both DST seasons
+  // ---------------------------------------------------------------------------
+  const nseCronExpr = process.env.NSE_SCAN_CRON ?? '30 11 * * 1-5';
+  if (cron.validate(nseCronExpr)) {
+    console.log(`[instrumentation] NSE scan cron: "${nseCronExpr}" (${timezone})`);
+    cron.schedule(nseCronExpr, () => runMarketTick('nse', 'nse'), { timezone });
+  } else {
+    console.error(`[instrumentation] Invalid NSE_SCAN_CRON: "${nseCronExpr}". NSE scan not started.`);
+  }
 
-  cron.schedule(
-    schedule,
-    async () => {
-      console.log('[cron] EOD refresh started...');
-      const ingestStartedAt = new Date().toISOString();
-      try {
-        const results = await refreshUniverse();
-        const totalBars = results.reduce((sum, r) => sum + r.barsAdded, 0);
-        const errors = results.filter((r) => r.error).length;
-        console.log(
-          `[cron] EOD refresh done. ${results.length} symbols, ${totalBars} new bars, ${errors} error(s).`,
-        );
+  // ---------------------------------------------------------------------------
+  // EU scan cron - after European continental close (~16:30 UTC, same as Dublin year-round)
+  // 16:45 gives 15 min buffer
+  // ---------------------------------------------------------------------------
+  const euCronExpr = process.env.EU_SCAN_CRON ?? '45 16 * * 1-5';
+  if (cron.validate(euCronExpr)) {
+    console.log(`[instrumentation] EU scan cron: "${euCronExpr}" (${timezone})`);
+    cron.schedule(euCronExpr, () => runMarketTick('eu', 'eu'), { timezone });
+  } else {
+    console.error(`[instrumentation] Invalid EU_SCAN_CRON: "${euCronExpr}". EU scan not started.`);
+  }
 
-        // Persist ingest run for session dashboard
+  // ---------------------------------------------------------------------------
+  // US + Commodities scan cron (21:05 Dublin = ~16:05 ET)
+  // Also runs edge compute + heartbeat for the full universe.
+  // ---------------------------------------------------------------------------
+  const usCronExpr = process.env.REFRESH_CRON ?? '5 21 * * 1-5';
+  if (!cron.validate(usCronExpr)) {
+    console.error(`[instrumentation] Invalid REFRESH_CRON: "${usCronExpr}". US scan not started.`);
+  } else {
+    console.log(`[instrumentation] US scan cron: "${usCronExpr}" (${timezone})`);
+    cron.schedule(
+      usCronExpr,
+      async () => {
+        // SP500 + commodity refreshes + daily auto-trade
+        await runMarketTick('sp500', 'sp500');
+        await runMarketTick('commodity', 'commodity');
+
+        // Post-refresh: sweep pending limit orders + edge stats (full universe)
+        const ingestStartedAt = new Date().toISOString();
         try {
-          const { buildIngestRunInput, insertIngestRun, pruneOldIngestRuns } = await import('@/core/db/ingest-log');
-          const input = buildIngestRunInput(results, ingestStartedAt, 'eod-cron');
-          insertIngestRun(input);
-          pruneOldIngestRuns(30);
+          const { postRefreshTasks } = await import('@/core/data/post-refresh');
+          const post = postRefreshTasks();
+          if (post.sweep.error)        console.error('[cron:us] sweep failed:', post.sweep.error);
+          if (post.scan.error)         console.error('[cron:us] scan-all failed:', post.scan.error);
+          if (post.edge.error)         console.error('[cron:us] edge compute failed:', post.edge.error);
+          if (post.scan.result) {
+            const s = post.scan.result;
+            console.log(`[cron:us] scan-all done. ${s.scanned} symbols, ${s.signals.length} signals, ${s.durationMs}ms.`);
+          }
+          if (post.edge.result) {
+            const e = post.edge.result;
+            console.log(`[cron:us] edge stats done. ${e.rows} rows (${e.recomputed} recomputed), ${e.durationMs}ms.`);
+          }
+
+          // Daily heartbeat
+          try {
+            const { refreshUniverse }    = await import('@/core/data/ingest');
+            const { sendDailyHeartbeat } = await import('@/core/notify/heartbeat');
+            // Re-use aggregate from postRefreshTasks scan result for heartbeat
+            await sendDailyHeartbeat({
+              totalBars:     post.scan.result?.scanned ?? 0,
+              symbolCount:   post.scan.result?.scanned ?? 0,
+              refreshErrors: 0,
+              post,
+            });
+            void refreshUniverse; // imported above for potential future use
+          } catch (err) {
+            console.error('[cron:us] heartbeat failed:', err);
+          }
+          void ingestStartedAt;
         } catch (err) {
-          console.error('[cron] ingest log write failed (non-fatal):', err);
+          console.error('[cron:us] post-refresh failed:', err);
         }
+      },
+      { timezone },
+    );
+  }
 
-        const post = postRefreshTasks();
-        if (post.sweep.error) console.error('[cron] sweep failed:', post.sweep.error);
-        if (post.scan.error)  console.error('[cron] scan-all failed:', post.scan.error);
-        if (post.edge.error)  console.error('[cron] edge compute failed:', post.edge.error);
-        if (post.scan.result) {
-          const s = post.scan.result;
-          console.log(
-            `[cron] scan-all done. ${s.scanned} symbols, ${s.signals.length} signals, ${s.durationMs}ms.`,
-          );
-        }
-        if (post.edge.result) {
-          const e = post.edge.result;
-          console.log(
-            `[cron] edge stats done. ${e.rows} rows (${e.recomputed} recomputed), ${e.durationMs}ms.`,
-          );
-        }
-
-        // Daily heartbeat - fires every trading day; its absence signals failure
-        try {
-          const { sendDailyHeartbeat } = await import('@/core/notify/heartbeat');
-          await sendDailyHeartbeat({
-            totalBars,
-            symbolCount: results.length,
-            refreshErrors: errors,
-            post,
-          });
-        } catch (err) {
-          console.error('[cron] heartbeat failed:', err);
-        }
-      } catch (err) {
-        console.error('[cron] EOD refresh failed:', err);
-      }
-    },
-    { timezone },
-  );
-
+  // ---------------------------------------------------------------------------
   // Stop/target proximity monitor - Telegram alerts for open paper trades
-  const { checkOpenTrades } = await import('@/core/notify/monitor');
+  // ---------------------------------------------------------------------------
+  const { checkOpenTrades }    = await import('@/core/notify/monitor');
   const { telegramConfigured } = await import('@/core/notify/telegram');
 
   const monitorSchedule = process.env.MONITOR_CRON ?? '*/15 * * * 1-5';
@@ -109,9 +179,9 @@ export async function register() {
     console.log(`[instrumentation] Stop/target monitor cron: "${monitorSchedule}" (${timezone})`);
   }
 
-  // ------------------------------------------------------------------
-  // Auto-trading cron - intraday signal scan + paper-trade execution
-  // ------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Auto-trading cron - intraday signal scan + paper-trade execution (US only)
+  // ---------------------------------------------------------------------------
   const autoTradeEnabled  = process.env.AUTO_TRADE_ENABLED === '1';
   const autoTradeCron     = process.env.AUTO_TRADE_CRON ?? '*/15 9-16 * * 1-5';
   const autoTradeTimezone = 'America/New_York';

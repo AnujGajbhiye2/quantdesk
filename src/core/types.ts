@@ -30,6 +30,8 @@ export interface Signal {
   strength?: number; // optional 0..1 conviction
   reason: string; // human-readable, e.g. 'RSI(14)=28 < 30 oversold'
   strategyId: string;
+  /** Source market bucket (e.g. 'nse', 'eu', 'sp500', 'commodity'). Populated by per-market scans. */
+  market?: string;
 }
 
 export type TradeStatus = 'open' | 'closed' | 'pending';
@@ -76,4 +78,6 @@ export interface PaperTrade {
   pnlPct?: number;
   costs: number; // commission + slippage applied
   notes?: string;
+  /** Source market bucket (e.g. 'nse', 'eu', 'sp500', 'commodity'). Populated by per-market scans. */
+  market?: string;
 }

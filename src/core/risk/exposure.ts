@@ -53,7 +53,7 @@ export function openPositionsUSD(candidateBars?: readonly Bar[]): OpenPositionUS
       }
     }
 
-    return { symbol: t.symbol, costUSD, stopRiskUSD, corrToCandidate };
+    return { symbol: t.symbol, costUSD, stopRiskUSD, corrToCandidate, market: t.market ?? null };
   });
 }
 

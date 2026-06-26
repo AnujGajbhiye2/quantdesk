@@ -23,6 +23,7 @@ interface PaperTradeRow {
   pnl_pct:      number | null;
   costs:        number;
   notes:        string | null;
+  market:       string | null;
   currency:     string | null; // joined from symbols table
 }
 
@@ -45,6 +46,7 @@ function rowToTrade(r: PaperTradeRow): PaperTrade {
     pnlPct:      r.pnl_pct ?? undefined,
     costs:       r.costs,
     notes:       r.notes ?? undefined,
+    market:      r.market ?? undefined,
   };
 }
 
@@ -57,10 +59,10 @@ export function insertPaperTrade(trade: PaperTrade): void {
   db.prepare(`
     INSERT INTO paper_trades
       (id, strategy_id, symbol, side, qty, entry_time, entry_price,
-       stop_price, target_price, status, costs, notes)
+       stop_price, target_price, status, costs, notes, market)
     VALUES
       (@id, @strategyId, @symbol, @side, @qty, @entryTime, @entryPrice,
-       @stopPrice, @targetPrice, @status, @costs, @notes)
+       @stopPrice, @targetPrice, @status, @costs, @notes, @market)
   `).run({
     id:          trade.id,
     strategyId:  trade.strategyId,
@@ -74,6 +76,7 @@ export function insertPaperTrade(trade: PaperTrade): void {
     status:      trade.status,
     costs:       trade.costs,
     notes:       trade.notes ?? null,
+    market:      trade.market ?? null,
   });
 }
 
