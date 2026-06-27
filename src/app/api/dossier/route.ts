@@ -3,7 +3,7 @@ import { getAllSymbols, getRecentBars } from '@/core/db/bars';
 import { getSignals, getLatestSignals } from '@/core/db/signals';
 import { getEdgeStats } from '@/core/db/edge';
 import { getCachedFundamentals, saveFundamentals, getCachedNews, saveNews } from '@/core/db/research';
-import { get as getProvider } from '@/core/data/registry';
+import { getOrDefault as getProvider } from '@/core/data/registry';
 import { compute } from '@/core/indicators/registry';
 import { dropPartialToday } from '@/core/scan/scanner';
 import { buildCase, type SymbolCase } from '@/core/dossier/case';

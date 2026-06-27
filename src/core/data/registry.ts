@@ -32,6 +32,15 @@ export function get(id: string): DataProvider {
   return p;
 }
 
+/**
+ * Retrieve a provider by id, falling back to the default (yahoo) when the
+ * requested provider is not registered. Safe to call even when optional
+ * providers (Alpaca, TwelveData) are disabled.
+ */
+export function getOrDefault(id: string): DataProvider {
+  return _registry.get(id) ?? _registry.get('yahoo')!;
+}
+
 /** List all registered provider ids. */
 export function list(): string[] {
   return Array.from(_registry.keys());

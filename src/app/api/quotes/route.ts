@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAllSymbols } from '@/core/db/bars';
-import { get as getProvider } from '@/core/data/registry';
+import { getOrDefault as getProvider } from '@/core/data/registry';
 
 interface QuoteRow {
   symbol: string;
