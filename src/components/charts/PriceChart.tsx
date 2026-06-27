@@ -133,13 +133,15 @@ export default function PriceChart({
     const chart   = chartRef.current;
     if (!candles || !chart) return;
 
-    const candleData: CandleData[] = bars.map((b) => ({
-      time:  b.time,
-      open:  b.open,
-      high:  b.high,
-      low:   b.low,
-      close: b.close,
-    }));
+    // Deduplicate by date: multiple bars with same date (e.g. daily + intraday
+    // both stored in DB) would cause lightweight-charts to throw on duplicate time.
+    // Keep the last bar per date so the closing price wins.
+    const dateMap = new Map<string, CandleData>();
+    for (const b of bars) {
+      const date = b.time.slice(0, 10);
+      dateMap.set(date, { time: date as CandleData['time'], open: b.open, high: b.high, low: b.low, close: b.close });
+    }
+    const candleData = Array.from(dateMap.values()).sort((a, b) => (a.time < b.time ? -1 : 1));
     candles.setData(candleData);
 
     // Entry/exit markers - update in place, never re-create the primitive
@@ -153,14 +155,14 @@ export default function PriceChart({
       };
       const markers: Marker[] = trades.flatMap((t): Marker[] => [
         {
-          time:     t.entryTime,
+          time:     t.entryTime.slice(0, 10),
           position: t.side === 'long' ? 'belowBar' : 'aboveBar',
           color:    t.side === 'long' ? '#26a641' : '#f85149',
           shape:    t.side === 'long' ? 'arrowUp' : 'arrowDown',
           text:     `${t.side === 'long' ? 'L' : 'S'} ${t.entryReason ?? ''}`.trim(),
         },
         {
-          time:     t.exitTime,
+          time:     t.exitTime.slice(0, 10),
           position: t.side === 'long' ? 'aboveBar' : 'belowBar',
           color:    '#e3b341',
           shape:    'circle',

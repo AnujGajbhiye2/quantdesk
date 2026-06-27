@@ -182,11 +182,14 @@ export async function register() {
   // ---------------------------------------------------------------------------
   // Auto-trading cron - intraday signal scan + paper-trade execution (US only)
   // ---------------------------------------------------------------------------
-  const autoTradeEnabled  = process.env.AUTO_TRADE_ENABLED === '1';
+  const alpacaEnabled     = process.env.ALPACA_ENABLED === '1';
+  const autoTradeEnabled  = alpacaEnabled && process.env.AUTO_TRADE_ENABLED === '1';
   const autoTradeCron     = process.env.AUTO_TRADE_CRON ?? '*/15 9-16 * * 1-5';
   const autoTradeTimezone = 'America/New_York';
 
-  if (!autoTradeEnabled) {
+  if (!alpacaEnabled) {
+    console.log('[instrumentation] Alpaca disabled (ALPACA_ENABLED != 1). Intraday auto-trade cron not started.');
+  } else if (!autoTradeEnabled) {
     console.log('[instrumentation] Auto-trading disabled (AUTO_TRADE_ENABLED != 1). Set to 1 to enable.');
   } else if (!cron.validate(autoTradeCron)) {
     console.error(`[instrumentation] Invalid AUTO_TRADE_CRON: "${autoTradeCron}". Auto-trade cron not started.`);

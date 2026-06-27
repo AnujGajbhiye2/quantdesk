@@ -48,10 +48,9 @@ if (process.env.TWELVE_DATA_API_KEY) {
   register(new TwelveDataProvider({ apiKey: process.env.TWELVE_DATA_API_KEY }));
 }
 
-// Alpaca Markets - free at alpaca.markets (no key = not registered)
-// Required for intraday bar ingest and auto-trading.
-// Get a free key at https://app.alpaca.markets/signup
-if (process.env.ALPACA_KEY_ID && process.env.ALPACA_SECRET_KEY) {
+// Alpaca Markets - disabled; set ALPACA_ENABLED=1 to re-enable when needed.
+// Requires ALPACA_KEY_ID + ALPACA_SECRET_KEY + ALPACA_ENABLED=1.
+if (process.env.ALPACA_ENABLED === '1' && process.env.ALPACA_KEY_ID && process.env.ALPACA_SECRET_KEY) {
   register(new AlpacaProvider({
     keyId:     process.env.ALPACA_KEY_ID,
     secretKey: process.env.ALPACA_SECRET_KEY,

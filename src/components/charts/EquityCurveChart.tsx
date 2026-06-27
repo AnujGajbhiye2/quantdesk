@@ -64,7 +64,11 @@ export default function EquityCurveChart({ equityCurve }: Props) {
     const series = seriesRef.current;
     const chart  = chartRef.current;
     if (!series || !chart) return;
-    const data: LineData<string>[] = equityCurve.map((p) => ({ time: p.time, value: p.equity }));
+    const seen = new Map<string, number>();
+    for (const p of equityCurve) seen.set(p.time.slice(0, 10), p.equity);
+    const data: LineData<string>[] = [...seen.entries()]
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([time, value]) => ({ time, value }));
     series.setData(data);
     chart.timeScale().fitContent();
   }, [equityCurve]);

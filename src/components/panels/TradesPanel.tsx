@@ -13,6 +13,19 @@ import type { PaperTradeWithHold } from '@/core/paper/hold';
 /** Map of tradeId -> mark data for open positions (from mark action). */
 export type MarksMap = Map<string, { unrealizedPnl: number; unrealizedPnlPct: number; markPrice: number }>;
 
+/**
+ * Extract all strategy IDs from the notes field written by the daily auto-trade engine.
+ * Format: "daily:<market>:<s1>,<s2>,<s3> consensus=N/M"
+ * Falls back to the stored strategyId when notes don't match.
+ */
+function strategiesFromNotes(notes: string | undefined | null, strategyId: string): string[] {
+  if (!notes) return [strategyId];
+  const m = notes.match(/daily:[^:]+:([^\s]+)/);
+  if (!m) return [strategyId];
+  const ids = m[1].split(',').filter(Boolean);
+  return ids.length > 0 ? ids : [strategyId];
+}
+
 interface Props {
   trades: PaperTradeWithHold[];
   marks?: MarksMap;
@@ -119,9 +132,21 @@ function TradesPanel({ trades, marks }: Props) {
       header:     'STRATEGY',
       meta:       { align: 'left' },
       enableSorting: false,
-      cell:       ({ row }) => (
-        <span style={{ color: 'var(--text-muted)' }}>{row.original.strategyId}</span>
-      ),
+      cell:       ({ row }) => {
+        const t = row.original;
+        const strats = strategiesFromNotes(t.notes, t.strategyId);
+        if (strats.length <= 1) {
+          return <span style={{ color: 'var(--text-muted)' }}>{strats[0]}</span>;
+        }
+        return (
+          <span title={strats.join(' · ')} style={{ color: 'var(--text-muted)' }}>
+            {strats[0]}
+            <span style={{ color: 'var(--color-accent)', fontSize: 'var(--fs-xs)', marginLeft: 4 }}>
+              +{strats.length - 1}
+            </span>
+          </span>
+        );
+      },
     },
     {
       id:         'side',
