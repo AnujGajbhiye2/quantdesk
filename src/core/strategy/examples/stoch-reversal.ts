@@ -37,6 +37,26 @@ export class StochReversalStrategy implements Strategy {
   readonly tier        = 'baseline' as const;
   readonly params      = paramsSchema;
 
+  /**
+   * Imp 3: signal strength for dynamic sizing.
+   * Lower stochastic K in oversold zone = stronger signal.
+   * strength = (oversoldLevel - K) / oversoldLevel, clamped 0..1.
+   * K at oversoldLevel -> 0, K at 0 -> 1.
+   * Causal: reads only bars[0..i].
+   */
+  signalStrength(ctx: StrategyContext, rawParams: unknown): number {
+    const p     = paramsSchema.parse(rawParams);
+    const stoch = ctx.indicator('stoch', {
+      kperiod: p.kperiod,
+      kslow:   p.kslow,
+      dperiod: p.dperiod,
+    }) as { k: number[]; d: number[] };
+    const kNow = stoch.k[ctx.i];
+    if (!Number.isFinite(kNow)) return 0.5;
+    const strength = Math.min(1, Math.max(0, (p.oversoldLevel - kNow) / p.oversoldLevel));
+    return strength;
+  }
+
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision {
     const p     = paramsSchema.parse(rawParams);
     const stoch = ctx.indicator('stoch', {
