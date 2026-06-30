@@ -50,6 +50,14 @@ export interface WalkForwardConfig {
   barsPerYear?:   number;
   maxHoldBars?:   number;
   regimeBars?:    Record<string, readonly Bar[]>;
+  // Improvement engine overrides (passed through to every runBacktest call)
+  trailingStopActivationPct?: number;
+  trailingStopDistancePct?:   number;
+  maxEntrySlippagePct?:       number;
+  gapDownWidenPct?:           number;
+  dynamicSizing?:             boolean;
+  partialExitFraction?:       number;
+  partialExitAtTargetPct?:    number;
 }
 
 export interface WalkForwardWindow {
@@ -100,6 +108,13 @@ export function runWalkForward(config: WalkForwardConfig): WalkForwardResult {
     barsPerYear   = 252,
     maxHoldBars,
     regimeBars,
+    trailingStopActivationPct,
+    trailingStopDistancePct,
+    maxEntrySlippagePct,
+    gapDownWidenPct,
+    dynamicSizing,
+    partialExitFraction,
+    partialExitAtTargetPct,
   } = config;
 
   const n = bars.length;
@@ -115,6 +130,13 @@ export function runWalkForward(config: WalkForwardConfig): WalkForwardResult {
     barsPerYear,
     maxHoldBars,
     regimeBars,
+    trailingStopActivationPct,
+    trailingStopDistancePct,
+    maxEntrySlippagePct,
+    gapDownWidenPct,
+    dynamicSizing,
+    partialExitFraction,
+    partialExitAtTargetPct,
   };
 
   // --- Full in-sample run (all bars) ---
