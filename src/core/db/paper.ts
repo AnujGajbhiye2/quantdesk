@@ -54,30 +54,33 @@ function rowToTrade(r: PaperTradeRow): PaperTrade {
 // Writers
 // ---------------------------------------------------------------------------
 
+// NOTE: all writes below use positional (?) params, never named (@param)
+// objects - libsql's embedded-replica connection silently drops writes bound
+// via named object args (no error, no persisted row). See client.ts header
+// comment for the full explanation.
+
 export function insertPaperTrade(trade: PaperTrade): void {
   const db = getDb();
   db.prepare(`
     INSERT INTO paper_trades
       (id, strategy_id, symbol, side, qty, entry_time, entry_price,
        stop_price, target_price, status, costs, notes, market)
-    VALUES
-      (@id, @strategyId, @symbol, @side, @qty, @entryTime, @entryPrice,
-       @stopPrice, @targetPrice, @status, @costs, @notes, @market)
-  `).run({
-    id:          trade.id,
-    strategyId:  trade.strategyId,
-    symbol:      trade.symbol,
-    side:        trade.side,
-    qty:         trade.qty,
-    entryTime:   trade.entryTime,
-    entryPrice:  trade.entryPrice,
-    stopPrice:   trade.stopPrice   ?? null,
-    targetPrice: trade.targetPrice ?? null,
-    status:      trade.status,
-    costs:       trade.costs,
-    notes:       trade.notes ?? null,
-    market:      trade.market ?? null,
-  });
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run([
+    trade.id,
+    trade.strategyId,
+    trade.symbol,
+    trade.side,
+    trade.qty,
+    trade.entryTime,
+    trade.entryPrice,
+    trade.stopPrice   ?? null,
+    trade.targetPrice ?? null,
+    trade.status,
+    trade.costs,
+    trade.notes ?? null,
+    trade.market ?? null,
+  ]);
 }
 
 /**
@@ -91,18 +94,18 @@ export function fillPendingPaperTrade(
   const db = getDb();
   db.prepare(`
     UPDATE paper_trades SET
-      entry_price = @entryPrice,
-      entry_time  = @entryTime,
+      entry_price = ?,
+      entry_time  = ?,
       status      = 'open'
-    WHERE id = @id AND status = 'pending'
-  `).run({ id, entryPrice: fill.entryPrice, entryTime: fill.entryTime });
+    WHERE id = ? AND status = 'pending'
+  `).run([fill.entryPrice, fill.entryTime, id]);
 }
 
 /** Delete a pending trade (cancel a resting limit order - no history kept). */
 export function cancelPendingPaperTrade(id: string): void {
   getDb()
-    .prepare("DELETE FROM paper_trades WHERE id = @id AND status = 'pending'")
-    .run({ id });
+    .prepare("DELETE FROM paper_trades WHERE id = ? AND status = 'pending'")
+    .run([id]);
 }
 
 /** Update exit fields and status when a trade is closed. */
@@ -110,24 +113,24 @@ export function updatePaperTrade(trade: PaperTrade): void {
   const db = getDb();
   db.prepare(`
     UPDATE paper_trades SET
-      exit_time    = @exitTime,
-      exit_price   = @exitPrice,
-      status       = @status,
-      pnl          = @pnl,
-      pnl_pct      = @pnlPct,
-      costs        = @costs,
-      notes        = @notes
-    WHERE id = @id
-  `).run({
-    id:        trade.id,
-    exitTime:  trade.exitTime  ?? null,
-    exitPrice: trade.exitPrice ?? null,
-    status:    trade.status,
-    pnl:       trade.pnl    ?? null,
-    pnlPct:    trade.pnlPct ?? null,
-    costs:     trade.costs,
-    notes:     trade.notes  ?? null,
-  });
+      exit_time    = ?,
+      exit_price   = ?,
+      status       = ?,
+      pnl          = ?,
+      pnl_pct      = ?,
+      costs        = ?,
+      notes        = ?
+    WHERE id = ?
+  `).run([
+    trade.exitTime  ?? null,
+    trade.exitPrice ?? null,
+    trade.status,
+    trade.pnl    ?? null,
+    trade.pnlPct ?? null,
+    trade.costs,
+    trade.notes  ?? null,
+    trade.id,
+  ]);
 }
 
 // ---------------------------------------------------------------------------

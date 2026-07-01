@@ -8,12 +8,20 @@ import type { Bar, SymbolMeta, Timeframe } from '@/core/types';
  * Adapters never call these directly - ingestion goes through core/data/ingest.ts.
  */
 
+// NOTE: all writes below use positional (?) params, never named (@param)
+// objects, and never db.transaction() - libsql's embedded-replica connection
+// silently drops writes bound via named object args, and its transaction()
+// helper throws InvalidParserState("Init") (a bare SAVEPOINT outside an
+// active transaction is rejected by remote-replica connections - upstream
+// bug: https://github.com/tursodatabase/libsql/issues/1382). See
+// client.ts header comment for the full explanation.
+
 /** Upsert a single SymbolMeta row into the symbols table. */
 export function upsertSymbol(meta: SymbolMeta): void {
   const db = getDb();
   const stmt = db.prepare(`
     INSERT INTO symbols (symbol, provider_symbol, name, asset_class, currency, exchange, provider_id)
-    VALUES (@symbol, @providerSymbol, @name, @assetClass, @currency, @exchange, @providerId)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(symbol) DO UPDATE SET
       provider_symbol = excluded.provider_symbol,
       name            = excluded.name,
@@ -22,18 +30,18 @@ export function upsertSymbol(meta: SymbolMeta): void {
       exchange        = excluded.exchange,
       provider_id     = excluded.provider_id
   `);
-  stmt.run({
-    symbol: meta.symbol,
-    providerSymbol: meta.providerSymbol,
-    name: meta.name,
-    assetClass: meta.assetClass,
-    currency: meta.currency,
-    exchange: meta.exchange ?? null,
-    providerId: meta.providerId,
-  });
+  stmt.run([
+    meta.symbol,
+    meta.providerSymbol,
+    meta.name,
+    meta.assetClass,
+    meta.currency,
+    meta.exchange ?? null,
+    meta.providerId,
+  ]);
 }
 
-/** Upsert an array of bars for a given symbol + timeframe in a single transaction. */
+/** Upsert an array of bars for a given symbol + timeframe. */
 export function upsertBars(
   symbol: string,
   timeframe: Timeframe,
@@ -43,7 +51,7 @@ export function upsertBars(
   const db = getDb();
   const stmt = db.prepare(`
     INSERT INTO bars (symbol, timeframe, time, open, high, low, close, volume)
-    VALUES (@symbol, @timeframe, @time, @open, @high, @low, @close, @volume)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(symbol, timeframe, time) DO UPDATE SET
       open   = excluded.open,
       high   = excluded.high,
@@ -51,12 +59,9 @@ export function upsertBars(
       close  = excluded.close,
       volume = excluded.volume
   `);
-  const insertMany = db.transaction((rows: Bar[]) => {
-    for (const bar of rows) {
-      stmt.run({ symbol, timeframe, ...bar });
-    }
-  });
-  insertMany(bars);
+  for (const bar of bars) {
+    stmt.run([symbol, timeframe, bar.time, bar.open, bar.high, bar.low, bar.close, bar.volume]);
+  }
 }
 
 /**

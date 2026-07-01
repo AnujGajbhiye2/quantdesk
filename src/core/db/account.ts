@@ -38,11 +38,14 @@ export function setStartingBalance(amount: number): AccountRow {
   const db = getDb();
   const now = new Date().toISOString();
   // Preserve existing currency when updating; default to 'USD' on first insert only.
+  // NOTE: libsql's embedded-replica connection silently drops writes bound via
+  // named (@param) object args - positional (?) array args are required. See
+  // client.ts header comment for the full explanation (upstream libsql bug).
   db.prepare(`
     INSERT INTO account (id, starting_balance, currency, created_at, updated_at)
-    VALUES (1, @amount, 'USD', @now, @now)
-    ON CONFLICT (id) DO UPDATE SET starting_balance = @amount, updated_at = @now
-  `).run({ amount, now });
+    VALUES (1, ?, 'USD', ?, ?)
+    ON CONFLICT (id) DO UPDATE SET starting_balance = ?, updated_at = ?
+  `).run([amount, now, now, amount, now]);
   return getAccountRow()!;
 }
 
@@ -54,19 +57,20 @@ export function setAccountCurrency(currency: string): AccountRow {
   const db = getDb();
   const now = new Date().toISOString();
   const existing = getAccountRow();
+  const upperCurrency = currency.toUpperCase();
   if (existing) {
     db.prepare(
-      'UPDATE account SET currency = @currency, updated_at = @now WHERE id = 1',
-    ).run({ currency: currency.toUpperCase(), now });
+      'UPDATE account SET currency = ?, updated_at = ? WHERE id = 1',
+    ).run([upperCurrency, now]);
   } else {
     // No budget row yet - create one with zero balance so currency is persisted.
     // The zero balance means the broker falls back to legacy notional sizing until
     // the user sets a real budget.
     db.prepare(`
       INSERT INTO account (id, starting_balance, currency, created_at, updated_at)
-      VALUES (1, 0, @currency, @now, @now)
-      ON CONFLICT (id) DO UPDATE SET currency = @currency, updated_at = @now
-    `).run({ currency: currency.toUpperCase(), now });
+      VALUES (1, 0, ?, ?, ?)
+      ON CONFLICT (id) DO UPDATE SET currency = ?, updated_at = ?
+    `).run([upperCurrency, now, now, upperCurrency, now]);
   }
   return getAccountRow()!;
 }

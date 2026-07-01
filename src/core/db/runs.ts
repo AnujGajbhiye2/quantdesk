@@ -73,7 +73,14 @@ export function insertScanRun(input: ScanRunInput): number {
   return result.lastInsertRowid as number;
 }
 
-/** Bulk-insert decision log rows for a run. Uses a transaction for performance. */
+/**
+ * Bulk-insert decision log rows for a run.
+ *
+ * No db.transaction() - libsql's embedded-replica connection throws
+ * InvalidParserState("Init") for a bare SAVEPOINT outside an active
+ * transaction (upstream bug: https://github.com/tursodatabase/libsql/issues/1382).
+ * See client.ts header comment for the full explanation.
+ */
 export function insertDecisions(rows: DecisionRow[]): void {
   if (rows.length === 0) return;
   const db   = getDb();
@@ -81,12 +88,9 @@ export function insertDecisions(rows: DecisionRow[]): void {
     INSERT INTO decision_log (run_id, symbol, strategy_id, bar_time, fired, action, reason)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
-  const tx = db.transaction((rs: DecisionRow[]) => {
-    for (const r of rs) {
-      stmt.run(r.runId, r.symbol, r.strategyId, r.barTime, r.fired, r.action, r.reason ?? null);
-    }
-  });
-  tx(rows);
+  for (const r of rows) {
+    stmt.run(r.runId, r.symbol, r.strategyId, r.barTime, r.fired, r.action, r.reason ?? null);
+  }
 }
 
 /**

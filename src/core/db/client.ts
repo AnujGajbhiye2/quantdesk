@@ -13,6 +13,27 @@ type LibsqlOptions = Database.Options & { authToken?: string; syncPeriod?: numbe
 
 let _db: Database.Database | null = null;
 
+/**
+ * Two libsql quirks specific to embedded-replica mode (TURSO_DATABASE_URL set)
+ * that every write in core/db/*.ts must work around - both silent/near-silent,
+ * neither present in plain local-file mode:
+ *
+ * 1. Named-parameter binding on prepared statements (`stmt.run({ key: val })`
+ *    against `@key`/`:key`/`$key` placeholders) is silently dropped - the
+ *    call returns successfully but nothing is written, no error thrown.
+ *    Positional binding (`stmt.run([val1, val2, ...])` against `?`
+ *    placeholders, values in placeholder-occurrence order) works correctly.
+ *    Always use positional params for writes.
+ *
+ * 2. `db.transaction(fn)` throws `InvalidParserState("Init")` - it issues a
+ *    bare SAVEPOINT, which remote-replica connections reject outside an
+ *    already-active transaction (upstream bug:
+ *    https://github.com/tursodatabase/libsql/issues/1382). Plain sequential
+ *    statements (no transaction wrapper) are used instead throughout - an
+ *    accepted loss of cross-statement atomicity, safe here because every
+ *    affected write is an idempotent upsert (ON CONFLICT / OR IGNORE) or has
+ *    no cross-row invariant to protect mid-batch.
+ */
 export function getDb(): Database.Database {
   if (_db) return _db;
 
@@ -73,32 +94,33 @@ function migratePaperTrades(db: Database.Database): void {
   // Table doesn't exist yet (fresh DB) or already has 'pending' - nothing to do
   if (!row || row.sql.includes("'pending'")) return;
 
-  const rebuild = db.transaction(() => {
-    db.exec(`
-      CREATE TABLE paper_trades_new (
-        id           TEXT PRIMARY KEY,
-        strategy_id  TEXT NOT NULL,
-        symbol       TEXT NOT NULL,
-        side         TEXT NOT NULL CHECK (side IN ('long', 'short')),
-        qty          REAL NOT NULL,
-        entry_time   TEXT NOT NULL,
-        entry_price  REAL NOT NULL,
-        exit_time    TEXT,
-        exit_price   REAL,
-        stop_price   REAL,
-        target_price REAL,
-        status       TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed', 'pending')),
-        pnl          REAL,
-        pnl_pct      REAL,
-        costs        REAL NOT NULL DEFAULT 0,
-        notes        TEXT
-      )
-    `);
-    db.exec('INSERT INTO paper_trades_new SELECT * FROM paper_trades');
-    db.exec('DROP TABLE paper_trades');
-    db.exec('ALTER TABLE paper_trades_new RENAME TO paper_trades');
-  });
-  rebuild();
+  // No db.transaction() - libsql's embedded-replica connection throws
+  // InvalidParserState("Init") for a bare SAVEPOINT outside an active
+  // transaction (upstream bug: https://github.com/tursodatabase/libsql/issues/1382).
+  // Sequential db.exec() calls instead - see the header comment above getDb().
+  db.exec(`
+    CREATE TABLE paper_trades_new (
+      id           TEXT PRIMARY KEY,
+      strategy_id  TEXT NOT NULL,
+      symbol       TEXT NOT NULL,
+      side         TEXT NOT NULL CHECK (side IN ('long', 'short')),
+      qty          REAL NOT NULL,
+      entry_time   TEXT NOT NULL,
+      entry_price  REAL NOT NULL,
+      exit_time    TEXT,
+      exit_price   REAL,
+      stop_price   REAL,
+      target_price REAL,
+      status       TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed', 'pending')),
+      pnl          REAL,
+      pnl_pct      REAL,
+      costs        REAL NOT NULL DEFAULT 0,
+      notes        TEXT
+    )
+  `);
+  db.exec('INSERT INTO paper_trades_new SELECT * FROM paper_trades');
+  db.exec('DROP TABLE paper_trades');
+  db.exec('ALTER TABLE paper_trades_new RENAME TO paper_trades');
 }
 
 /**

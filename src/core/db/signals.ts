@@ -8,33 +8,27 @@ export interface StoredSignal extends Signal {
 }
 
 /**
- * Insert an array of signals in a single transaction.
+ * Insert an array of signals.
  * OR IGNORE: re-scanning the same bar keeps the original row and created_at,
  * so signal history reflects when a signal was first seen.
+ *
+ * Positional (?) params, no db.transaction() - libsql's embedded-replica
+ * connection silently drops writes bound via named object args, and its
+ * transaction() helper throws InvalidParserState("Init") (upstream bug:
+ * https://github.com/tursodatabase/libsql/issues/1382). See client.ts
+ * header comment for the full explanation.
  */
 export function insertSignals(signals: Signal[]): void {
   if (signals.length === 0) return;
   const db = getDb();
   const stmt = db.prepare(`
     INSERT OR IGNORE INTO signals (symbol, time, side, strength, reason, strategy_id, created_at, market)
-    VALUES (@symbol, @time, @side, @strength, @reason, @strategyId, @createdAt, @market)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const createdAt = new Date().toISOString();
-  const insertMany = db.transaction((rows: Signal[]) => {
-    for (const s of rows) {
-      stmt.run({
-        symbol:     s.symbol,
-        time:       s.time,
-        side:       s.side,
-        strength:   s.strength ?? null,
-        reason:     s.reason,
-        strategyId: s.strategyId,
-        createdAt,
-        market:     s.market ?? null,
-      });
-    }
-  });
-  insertMany(signals);
+  for (const s of signals) {
+    stmt.run([s.symbol, s.time, s.side, s.strength ?? null, s.reason, s.strategyId, createdAt, s.market ?? null]);
+  }
 }
 
 interface SignalRow {

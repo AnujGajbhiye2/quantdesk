@@ -37,7 +37,15 @@ function rowToStats(r: EdgeRow): EdgeStats {
   };
 }
 
-/** Upsert edge rows in one transaction, keyed (strategy_id, scope). */
+/**
+ * Upsert edge rows, keyed (strategy_id, scope).
+ *
+ * Positional (?) params, no db.transaction() - libsql's embedded-replica
+ * connection silently drops writes bound via named object args, and its
+ * transaction() helper throws InvalidParserState("Init") (upstream bug:
+ * https://github.com/tursodatabase/libsql/issues/1382). See client.ts
+ * header comment for the full explanation.
+ */
 export function upsertEdgeStats(rows: EdgeStats[]): void {
   if (rows.length === 0) return;
   const db = getDb();
@@ -46,11 +54,7 @@ export function upsertEdgeStats(rows: EdgeStats[]): void {
       strategy_id, scope, symbol, asset_class, win_rate, avg_win_pct,
       avg_loss_pct, profit_factor, num_trades, median_win_hold_bars,
       tested_from, tested_to, computed_at
-    ) VALUES (
-      @strategyId, @scope, @symbol, @assetClass, @winRate, @avgWinPct,
-      @avgLossPct, @profitFactor, @numTrades, @medianWinHoldBars,
-      @testedFrom, @testedTo, @computedAt
-    )
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(strategy_id, scope) DO UPDATE SET
       symbol               = excluded.symbol,
       asset_class          = excluded.asset_class,
@@ -64,26 +68,13 @@ export function upsertEdgeStats(rows: EdgeStats[]): void {
       tested_to            = excluded.tested_to,
       computed_at          = excluded.computed_at
   `);
-  const insertMany = db.transaction((items: EdgeStats[]) => {
-    for (const r of items) {
-      stmt.run({
-        strategyId:        r.strategyId,
-        scope:             r.scope,
-        symbol:            r.symbol,
-        assetClass:        r.assetClass,
-        winRate:           r.winRate,
-        avgWinPct:         r.avgWinPct,
-        avgLossPct:        r.avgLossPct,
-        profitFactor:      r.profitFactor,
-        numTrades:         r.numTrades,
-        medianWinHoldBars: r.medianWinHoldBars,
-        testedFrom:        r.testedFrom,
-        testedTo:          r.testedTo,
-        computedAt:        r.computedAt,
-      });
-    }
-  });
-  insertMany(rows);
+  for (const r of rows) {
+    stmt.run([
+      r.strategyId, r.scope, r.symbol, r.assetClass, r.winRate, r.avgWinPct,
+      r.avgLossPct, r.profitFactor, r.numTrades, r.medianWinHoldBars,
+      r.testedFrom, r.testedTo, r.computedAt,
+    ]);
+  }
 }
 
 export interface GetEdgeStatsOpts {
