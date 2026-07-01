@@ -59,8 +59,15 @@ To verify a phase is **done**:
   (init inside `useEffect`). Markers use `createSeriesMarkers`.
 - Indicators: `@ixjb94/indicators` (pure TS, zero-dep). Do not pull anything requiring the
   native `canvas` dependency.
-- SQLite via `better-sqlite3`. Never commit `data/quantdesk.db`. Never hardcode API keys —
-  document each in `.env.local.example`.
+- Database: Turso (libSQL) via the `libsql` npm package's synchronous, better-sqlite3-
+  compatible API (`import Database from 'libsql'` - never `@libsql/client` or
+  `libsql/promise`, both async). One shared remote DB for local dev + prod EC2, connected
+  in embedded-replica mode (`TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN`). `DB_PATH` now
+  names the local replica cache file, not the source of truth — still gitignored, safe to
+  delete. Unset `TURSO_DATABASE_URL` falls back to a plain standalone local file. Local dev
+  should set `LOCAL_DEV_MODE=1` (see `.env.local.example`) to disable all crons against the
+  shared DB — this does not block manual UI/API actions. Never hardcode API keys — document
+  each in `.env.local.example`.
 
 ## Definition of done for any phase
 `npm run build` passes, the phase's specified Vitest tests pass, and the spec's Definition

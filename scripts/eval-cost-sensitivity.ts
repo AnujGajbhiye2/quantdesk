@@ -7,7 +7,7 @@
  * Usage: tsx --conditions=react-server scripts/eval-cost-sensitivity.ts
  */
 
-import Database from 'better-sqlite3';
+import Database from 'libsql';
 import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
 

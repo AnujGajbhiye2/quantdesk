@@ -15,6 +15,9 @@ import 'server-only';
 let warnedUnconfigured = false;
 
 export function telegramConfigured(): boolean {
+  // Second independent guard: local dev pointed at the shared Turso DB must not
+  // send/receive Telegram traffic even if the tokens happen to be set locally.
+  if (process.env.LOCAL_DEV_MODE === '1') return false;
   return Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID);
 }
 

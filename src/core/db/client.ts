@@ -1,10 +1,15 @@
 import 'server-only';
-import Database from 'better-sqlite3';
+import Database from 'libsql';
 import fs from 'node:fs';
 import path from 'node:path';
 
 const DB_PATH = process.env.DB_PATH ?? path.join(process.cwd(), 'data', 'quantdesk.db');
 const SCHEMA_PATH = path.join(process.cwd(), 'src', 'core', 'db', 'schema.sql');
+
+// libsql's shipped Options type declares `syncUrl` but not `authToken` / `syncPeriod` -
+// both are accepted at runtime for embedded-replica mode, so widen the type locally
+// instead of reaching for `any`.
+type LibsqlOptions = Database.Options & { authToken?: string; syncPeriod?: number };
 
 let _db: Database.Database | null = null;
 
@@ -13,9 +18,28 @@ export function getDb(): Database.Database {
 
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
-  _db = new Database(DB_PATH);
-  _db.pragma('journal_mode = WAL');
-  _db.pragma('foreign_keys = ON');
+  const syncUrl = process.env.TURSO_DATABASE_URL;
+
+  if (syncUrl) {
+    // Embedded-replica mode: writes go straight to the remote Turso primary,
+    // reads come from the local replica file at DB_PATH. `DB_PATH` here is a
+    // cache, not the source of truth - safe to delete, it gets rebuilt on next sync.
+    const syncPeriodEnv = process.env.TURSO_SYNC_PERIOD;
+    const opts: LibsqlOptions = {
+      syncUrl,
+      authToken: process.env.TURSO_AUTH_TOKEN,
+      ...(syncPeriodEnv ? { syncPeriod: Number(syncPeriodEnv) } : {}),
+    };
+    _db = new Database(DB_PATH, opts);
+    _db.sync();
+    _db.pragma('foreign_keys = ON');
+  } else {
+    // Local-file fallback (no Turso creds set) - today's standalone behavior.
+    // Keeps CI / offline dev working without a Turso account.
+    _db = new Database(DB_PATH);
+    _db.pragma('journal_mode = WAL');
+    _db.pragma('foreign_keys = ON');
+  }
 
   migrate(_db);
   return _db;

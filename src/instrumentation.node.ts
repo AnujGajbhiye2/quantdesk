@@ -23,6 +23,15 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
 
+  // Local-dev safety switch: once local points at the shared Turso DB, this
+  // suppresses ALL crons below (including the monitor cron's write path,
+  // fillPendingTradesWithQuotes()) before anything registers or logs.
+  // Does NOT block manual actions (UI buttons / direct API calls) - see .env.local.example.
+  if (process.env.LOCAL_DEV_MODE === '1') {
+    console.log('[instrumentation] LOCAL_DEV_MODE=1 - all crons disabled (shared-DB safety).');
+    return;
+  }
+
   // Lazy import to avoid loading server-only code during edge/build evaluation
   const { default: cron } = await import('node-cron');
   const timezone = process.env.REFRESH_TZ ?? 'Europe/Dublin';
