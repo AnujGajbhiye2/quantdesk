@@ -9,7 +9,7 @@ import { getDb } from './client';
  *   - 'telegram_update_offset' : last processed Telegram update_id + 1 (getUpdates cursor)
  *   - 'heartbeat_seq'          : incrementing counter, one per EOD heartbeat
  *
- * All operations are synchronous (better-sqlite3). Values are TEXT; callers
+ * All operations are synchronous (libsql). Values are TEXT; callers
  * that need numbers parse them. Silently no-ops if the DB is unavailable.
  */
 
