@@ -21,7 +21,7 @@ import { isUsMarketOpen, isNearMarketClose, etTimeString } from '@/core/market/h
 import { autoTradeUniverse } from '@/core/data/universe';
 import { getRecentBars } from '@/core/db/bars';
 import { getActivePaperTradeBySymbol, getPaperTrades } from '@/core/db/paper';
-import { openPaperTrade, sweepOpenTrades, DuplicateOpenTradeError } from '@/core/paper/broker';
+import { openPaperTrade, sweepOpenTrades, DuplicateOpenTradeError, RiskCheckError } from '@/core/paper/broker';
 import { markOpenTrades } from '@/core/paper/broker';
 import { computeCashAccount, buildAccountSummary } from '@/core/paper/account';
 import { listLive as listStrategies, get as getStrategy } from '@/core/strategy/registry';
@@ -35,6 +35,10 @@ import { isTradingHalted } from '@/core/paper/halt';
 import { classifyFreshness } from '@/core/notify/freshness';
 import { getLatestBarTime } from '@/core/db/bars';
 import { getFlag, setFlag } from '@/core/db/flags';
+import { buildEntryAlert, buildExitAlert, buildRotationAlert, buildScanDigest } from '@/core/notify/format';
+import { maybeRotateForCandidate, openTradesForScope } from '@/core/paper/rotation';
+
+const ROTATION_SCOPE = 'intraday';
 
 // ---------------------------------------------------------------------------
 // Config (all from env with safe defaults)
@@ -57,6 +61,8 @@ interface AutoTradeConfig {
    * entries are placed for the rest of the session.
    */
   dailyLossHaltPct: number;
+  /** Fraction of equity risked per trade for sizing. Default 0.01 (1%). */
+  riskPct: number;
 }
 
 function loadConfig(): AutoTradeConfig {
@@ -70,6 +76,7 @@ function loadConfig(): AutoTradeConfig {
     // 2% intraday loss halt: stops a bad day from compounding into a bad week.
     // OOS daily P&L for these MR strategies rarely exceeds +/-1.5% on normal days.
     dailyLossHaltPct: parseFloat(process.env.AUTO_TRADE_DAILY_LOSS_HALT_PCT ?? '0.02'),
+    riskPct:          parseFloat(process.env.RISK_PER_TRADE_PCT ?? '0.01'),
   };
 }
 
@@ -97,6 +104,11 @@ export interface AutoTradeExit {
   pnlPct?:       number;
 }
 
+export interface AutoTradeRotation {
+  closedSymbol: string;
+  openedSymbol: string;
+}
+
 export type SkipReason =
   | 'position-exists'
   | 'below-min-consensus'
@@ -106,6 +118,7 @@ export type SkipReason =
   | 'near-close'
   | 'no-budget'
   | 'recommend-failed'
+  | 'risk-check'
   | 'broker-error';
 
 export interface AutoTradeSkip {
@@ -122,6 +135,7 @@ export interface AutoTradeSummary {
   haltReason?:     string;
   entries:         AutoTradeEntry[];
   exits:           AutoTradeExit[];
+  rotations:       AutoTradeRotation[];
   skips:           AutoTradeSkip[];
   durationMs:      number;
   etTime:          string;
@@ -143,7 +157,7 @@ function todayET(): string {
 
 async function tg(text: string): Promise<void> {
   if (!telegramConfigured()) return;
-  try { await sendTelegram(text); } catch { /* non-fatal */ }
+  try { await sendTelegram(text, { parseMode: 'HTML' }); } catch { /* non-fatal */ }
 }
 
 // ---------------------------------------------------------------------------
@@ -166,6 +180,7 @@ export async function runAutoTrade(
     halted:     false,
     entries:    [],
     exits:      [],
+    rotations:  [],
     skips:      [],
     durationMs: 0,
     etTime,
@@ -209,13 +224,16 @@ export async function runAutoTrade(
     };
     summary.exits.push(exit);
 
-    const pnlStr  = trade.pnl != null ? `P&L: $${trade.pnl.toFixed(2)} (${((trade.pnlPct ?? 0) * 100).toFixed(2)}%)` : '';
-    const exitMsg = [
-      `[AUTO-EXIT] ${trade.symbol} ${trade.side.toUpperCase()} - ${r.action.toUpperCase()}`,
-      `Exit: $${r.exitPrice?.toFixed(2) ?? '?'}  ${pnlStr}`,
-      cfg.dryRun ? '(DRY RUN - sweep is always live)' : '',
-    ].filter(Boolean).join('\n');
-    await tg(exitMsg);
+    await tg(buildExitAlert({
+      market:     ROTATION_SCOPE,
+      symbol:     trade.symbol,
+      side:       trade.side,
+      currency:   trade.currency,
+      action:     r.action,
+      exitPrice:  r.exitPrice,
+      pnl:        trade.pnl ?? undefined,
+      pnlPct:     trade.pnlPct ?? undefined,
+    }));
   }
 
   // ------------------------------------------------------------------
@@ -416,7 +434,7 @@ export async function runAutoTrade(
       proxySignal,
       bars,
       { stopPct, targetPct },
-      { equity },
+      { equity, riskPct: cfg.riskPct },
     );
 
     if (!idea) {
@@ -424,44 +442,77 @@ export async function runAutoTrade(
       continue;
     }
 
-    const cappedIdea = capIdeaToCash(idea, cashAcc.cash, equity);
+    let cappedIdea = capIdeaToCash(idea, cashAcc.cash, equity);
+
+    // Rotation attempt #1: book is cash-capped - see if a weaker holding
+    // should be closed to make room for this higher-conviction signal.
+    if (cappedIdea.qty <= 0) {
+      const rotated = maybeRotateForCandidate(
+        { symbol: sym, agreeCount: c.agreeCount },
+        ROTATION_SCOPE,
+        openTradesForScope(ROTATION_SCOPE),
+      );
+      if (rotated) {
+        summary.rotations.push({ closedSymbol: rotated.closed.symbol, openedSymbol: sym });
+        await tg(buildRotationAlert({
+          market: ROTATION_SCOPE, closedSymbol: rotated.closed.symbol,
+          closedPnlPct: rotated.closedPnlPct ?? undefined, closedAgree: rotated.closedAgree,
+          openedSymbol: sym, openedAgree: c.agreeCount, totalStrats,
+        }));
+        const freshCash = computeCashAccount();
+        if (freshCash) cappedIdea = capIdeaToCash(idea, freshCash.cash, equity);
+      }
+    }
+
     if (cappedIdea.qty <= 0) {
       summary.skips.push({ symbol: sym, reason: 'no-budget', details: `Capped qty=0, cash=$${cashAcc.cash.toFixed(0)}` });
       continue;
     }
 
-    const entryObj: AutoTradeEntry = {
+    const buildEntryObj = (idea2: typeof cappedIdea): AutoTradeEntry => ({
       symbol:      sym,
       side:        c.side,
-      qty:         cappedIdea.qty,
-      entryPrice:  cappedIdea.entryPrice,
-      stopPrice:   cappedIdea.stopPrice,
-      targetPrice: cappedIdea.targetPrice,
-      rr:          cappedIdea.rr,
+      qty:         idea2.qty,
+      entryPrice:  idea2.entryPrice,
+      stopPrice:   idea2.stopPrice,
+      targetPrice: idea2.targetPrice,
+      rr:          idea2.rr,
       strategyIds: c.strategyIds,
       dryRun:      cfg.dryRun,
-    };
+    });
 
-    const entryMsg = [
-      `[AUTO-${cfg.dryRun ? 'INTENDED' : 'ENTRY'}] ${sym} ${c.side.toUpperCase()}`,
-      `Entry: $${cappedIdea.entryPrice.toFixed(2)}  Stop: $${cappedIdea.stopPrice.toFixed(2)}  Target: $${cappedIdea.targetPrice.toFixed(2)}`,
-      `Qty: ${cappedIdea.qty.toFixed(4)}  Risk: $${cappedIdea.riskAmount.toFixed(2)}  R:R ${cappedIdea.rr.toFixed(2)}`,
-      `Strategies (${c.agreeCount}/${totalStrats}): ${c.strategyIds.join(', ')}`,
-    ].join('\n');
+    const entryAlert = (idea2: typeof cappedIdea): string => buildEntryAlert({
+      market:      ROTATION_SCOPE,
+      symbol:      sym,
+      side:        c.side,
+      currency:    'USD',
+      entryPrice:  idea2.entryPrice,
+      stopPrice:   idea2.stopPrice,
+      targetPrice: idea2.targetPrice,
+      qty:         idea2.qty,
+      riskAmount:  idea2.riskAmount,
+      riskPct:     cfg.riskPct,
+      rr:          idea2.rr,
+      agreeCount:  c.agreeCount,
+      totalStrats,
+      strategyIds: c.strategyIds,
+      live:        !cfg.dryRun,
+    });
 
     if (cfg.dryRun) {
-      summary.entries.push(entryObj);
-      await tg(entryMsg);
+      summary.entries.push(buildEntryObj(cappedIdea));
+      await tg(entryAlert(cappedIdea));
       continue;
     }
 
-    // Live paper entry
-    try {
-      const stopPctComputed  = cappedIdea.stopPrice  > 0
-        ? Math.abs(cappedIdea.entryPrice - cappedIdea.stopPrice)  / cappedIdea.entryPrice
+    // Live paper entry - tries once, and if blocked by a risk-check rule
+    // (book full), attempts one capital rotation and retries once.
+    const tryOpen = (idea2: typeof cappedIdea): void => {
+      const stopPctComputed  = idea2.stopPrice  > 0
+        ? Math.abs(idea2.entryPrice - idea2.stopPrice)  / idea2.entryPrice
         : undefined;
-      const targetPctComputed = cappedIdea.targetPrice > 0
-        ? Math.abs(cappedIdea.targetPrice - cappedIdea.entryPrice) / cappedIdea.entryPrice
+      const targetPctComputed = idea2.targetPrice > 0
+        ? Math.abs(idea2.targetPrice - idea2.entryPrice) / idea2.entryPrice
         : undefined;
 
       // Trade provenance: capture indicator values (embedded in signal reasons),
@@ -485,27 +536,54 @@ export async function runAutoTrade(
           label:         fresh.label,
         },
         equity,
-        rr:            cappedIdea.rr,
+        rr:            idea2.rr,
       };
 
       openPaperTrade({
         strategyId:     leadStrategyId,
         symbol:         sym,
         side:           c.side,
-        entryPrice:     cappedIdea.entryPrice,
+        entryPrice:     idea2.entryPrice,
         entryTime:      proxySignal.time,
         stopPct:        stopPctComputed,
         targetPct:      targetPctComputed,
-        _overrideQty:   cappedIdea.qty,
+        _overrideQty:   idea2.qty,
         notes:          `auto:${c.strategyIds.join(',')} consensus=${c.agreeCount}/${totalStrats}`,
         journalWhy,
       });
+    };
 
-      summary.entries.push(entryObj);
-      await tg(entryMsg);
+    try {
+      tryOpen(cappedIdea);
+      summary.entries.push(buildEntryObj(cappedIdea));
+      await tg(entryAlert(cappedIdea));
     } catch (err) {
       if (err instanceof DuplicateOpenTradeError) {
         summary.skips.push({ symbol: sym, reason: 'position-exists', details: 'duplicate caught at broker' });
+      } else if (err instanceof RiskCheckError) {
+        const rotated = maybeRotateForCandidate(
+          { symbol: sym, agreeCount: c.agreeCount },
+          ROTATION_SCOPE,
+          openTradesForScope(ROTATION_SCOPE),
+        );
+        if (!rotated) {
+          summary.skips.push({ symbol: sym, reason: 'risk-check', details: err.message });
+        } else {
+          summary.rotations.push({ closedSymbol: rotated.closed.symbol, openedSymbol: sym });
+          await tg(buildRotationAlert({
+            market: ROTATION_SCOPE, closedSymbol: rotated.closed.symbol,
+            closedPnlPct: rotated.closedPnlPct ?? undefined, closedAgree: rotated.closedAgree,
+            openedSymbol: sym, openedAgree: c.agreeCount, totalStrats,
+          }));
+          try {
+            tryOpen(cappedIdea);
+            summary.entries.push(buildEntryObj(cappedIdea));
+            await tg(entryAlert(cappedIdea));
+          } catch (retryErr) {
+            const msg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+            summary.skips.push({ symbol: sym, reason: 'risk-check', details: `post-rotation retry failed: ${msg}` });
+          }
+        }
       } else {
         const msg = err instanceof Error ? err.message : String(err);
         summary.skips.push({ symbol: sym, reason: 'broker-error', details: msg });
@@ -519,13 +597,21 @@ export async function runAutoTrade(
   // ------------------------------------------------------------------
   const totalActivity = summary.entries.length + summary.exits.length;
   if (totalActivity > 0 && telegramConfigured()) {
-    const digestLines = [
-      `[AUTO-TRADE] Tick ${etTime} ET | ${tf}`,
-      `Entries: ${summary.entries.length}  Exits: ${summary.exits.length}  Skips: ${summary.skips.length}`,
-      summary.halted ? `HALTED: ${summary.haltReason}` : null,
-      cfg.dryRun ? 'DRY RUN - no real trades opened' : null,
-    ].filter(Boolean).join('\n');
-    await tg(digestLines);
+    await tg(buildScanDigest({
+      market:            ROTATION_SCOPE,
+      runLabel:          `${etTime} ET · ${tf}`,
+      signals:           consensus.length,
+      entries:           summary.entries.length,
+      exits:             summary.exits.length,
+      rotations:         summary.rotations.length,
+      skips:             summary.skips.length,
+      openedSymbols:     summary.entries.map((e) => e.symbol),
+      closedSymbols:     summary.exits.map((e) => e.symbol),
+      rotatedOutSymbols: summary.rotations.map((r) => r.closedSymbol),
+      halted:            summary.halted,
+      haltReason:        summary.haltReason,
+      dryRun:            cfg.dryRun,
+    }));
   }
 
   summary.durationMs = Date.now() - t0;

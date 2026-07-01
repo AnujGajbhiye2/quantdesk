@@ -18,8 +18,22 @@ export function telegramConfigured(): boolean {
   return Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID);
 }
 
-/** Send a plain-text message. Returns true when Telegram accepted it. */
-export async function sendTelegram(text: string): Promise<boolean> {
+export interface SendTelegramOpts {
+  /** Pass 'HTML' to enable <b>/<i>/<code> formatting. Default: plain text. */
+  parseMode?: 'HTML';
+}
+
+/**
+ * Escape the handful of characters Telegram's HTML parse_mode treats as
+ * markup. Only escape what HTML actually reserves - do not over-escape
+ * quotes/apostrophes, which are safe in text nodes.
+ */
+export function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/** Send a message. Returns true when Telegram accepted it. */
+export async function sendTelegram(text: string, opts: SendTelegramOpts = {}): Promise<boolean> {
   const token  = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -35,7 +49,11 @@ export async function sendTelegram(text: string): Promise<boolean> {
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ chat_id: chatId, text }),
+      body:    JSON.stringify({
+        chat_id: chatId,
+        text,
+        ...(opts.parseMode ? { parse_mode: opts.parseMode } : {}),
+      }),
     });
     if (!res.ok) {
       console.error('[telegram] send failed:', res.status, await res.text());

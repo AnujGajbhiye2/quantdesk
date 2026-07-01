@@ -47,6 +47,10 @@ vi.mock('@/core/paper/broker', () => ({
     symbol = 'AAPL'; existingTradeId = 'x';
     constructor() { super('duplicate'); this.name = 'DuplicateOpenTradeError'; }
   },
+  RiskCheckError: class RiskCheckError extends Error {
+    rule = 'total-open-risk';
+    constructor(rule?: string, message?: string) { super(message ?? 'risk check failed'); this.name = 'RiskCheckError'; if (rule) this.rule = rule; }
+  },
 }));
 
 vi.mock('@/core/db/paper', () => ({
@@ -122,6 +126,7 @@ vi.mock('@/core/signals/recommend', () => ({
 vi.mock('@/core/notify/telegram', () => ({
   telegramConfigured: () => false,
   sendTelegram:       async () => true,
+  escapeHtml:         (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
 }));
 
 // Halt switch - not halted by default in auto-trade tests

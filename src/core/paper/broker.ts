@@ -241,7 +241,7 @@ export interface CloseTradeInput {
   commission?:  number;
   slippagePct?: number;
   /** How the exit happened - journaled with the outcome. Default 'manual'. */
-  exitReason?:  'manual' | 'stop' | 'target' | 'time';
+  exitReason?:  'manual' | 'stop' | 'target' | 'time' | 'rotation';
 }
 
 /** Close an open paper trade. Applies exit slippage and books commission. */
