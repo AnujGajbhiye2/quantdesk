@@ -132,6 +132,37 @@ export interface BacktestConfig {
    * Omitting this map disables regime filtering in the backtest.
    */
   regimeBars?: Record<string, readonly Bar[]>;
+
+  /**
+   * Engine-level improvement overrides. When set, these take precedence over
+   * the same fields in StrategyDecision, so they can be applied globally
+   * without touching individual strategy implementations.
+   */
+
+  // Imp 1: trailing stop
+  /** Arm trailing stop once trade is up this fraction (e.g. 0.03 = 3%). */
+  trailingStopActivationPct?: number;
+  /** Trail stop this fraction below running peak (e.g. 0.015 = 1.5%). */
+  trailingStopDistancePct?: number;
+
+  // Imp 2: gap filter
+  /** Skip long entry if next-bar open gaps up more than this vs signal close. */
+  maxEntrySlippagePct?: number;
+  /** Widen stop if next-bar open gaps down more than this vs signal close. */
+  gapDownWidenPct?: number;
+
+  // Imp 3: dynamic sizing
+  /**
+   * Enable signal-strength-based dynamic sizing. Requires strategy.signalStrength().
+   * When true, position size scales 0.5x..2x around base sizePct.
+   */
+  dynamicSizing?: boolean;
+
+  // Imp 5: partial exit
+  /** Fraction of qty to close at partial target (e.g. 0.5 = half). */
+  partialExitFraction?: number;
+  /** Fraction of target distance to trigger partial exit (e.g. 0.5 = halfway). */
+  partialExitAtTargetPct?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -148,6 +179,16 @@ interface OpenTrade {
   targetPrice?: number;
   maxHoldBars?: number;
   entryReason: string;
+  // Imp 1: trailing stop state
+  trailActivationPct?: number;  // arm when unrealized gain >= this fraction
+  trailDistancePct?: number;    // trail stop this fraction below running peak
+  trailActive: boolean;         // whether trailing stop has been armed
+  peakPrice: number;            // running peak (high for long, low for short)
+  // Imp 5: partial exit state
+  partialExitFraction?: number;    // fraction of qty to close at partial target
+  partialExitAtTargetPct?: number; // fraction of target distance to trigger partial
+  partialTaken: boolean;           // whether partial exit has fired
+  originalQty: number;             // qty at entry (before any partial exit)
 }
 
 interface PendingEntry {
@@ -157,6 +198,16 @@ interface PendingEntry {
   targetPct?: number;
   maxHoldBars?: number;
   reason: string;
+  signalClose: number;           // Imp 2: close price at signal bar for gap detection
+  // Imp 1
+  trailingStopActivationPct?: number;
+  trailingStopDistancePct?: number;
+  // Imp 2
+  maxEntrySlippagePct?: number;
+  gapDownWidenPct?: number;
+  // Imp 5
+  partialExitFraction?: number;
+  partialExitAtTargetPct?: number;
 }
 
 interface PendingExit {
@@ -182,6 +233,14 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     maxHoldBars,
     regimeBars,
     slippageFn,
+    // Improvement config-level overrides
+    trailingStopActivationPct: cfgTrailAct,
+    trailingStopDistancePct:   cfgTrailDist,
+    maxEntrySlippagePct:       cfgMaxSlip,
+    gapDownWidenPct:           cfgGapDn,
+    dynamicSizing:             cfgDynSize = false,
+    partialExitFraction:       cfgPartialFrac,
+    partialExitAtTargetPct:    cfgPartialAt,
   } = config;
 
   // Pre-compute ATR% for each bar when a slippageFn is provided (O(n) once).
@@ -242,14 +301,39 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
 
   function applyLongEntry(bar: Bar, pending: PendingEntry, barIndex: number): void {
     const rawOpen = fillOn === 'next_open' ? bar.open : bar.close;
+
+    // Imp 2a: gap-up filter - skip long entry when overnight gap exceeds threshold
+    if (pending.signalClose > 0 && pending.maxEntrySlippagePct != null) {
+      const gapUp = (rawOpen - pending.signalClose) / pending.signalClose;
+      if (gapUp > pending.maxEntrySlippagePct) {
+        // Trade skipped; pendingEntry was cleared by the caller before this call
+        return;
+      }
+    }
+
     const fillPrice = entryFillPrice('long', rawOpen, slippageAt(barIndex));
     const qty = qtyForCash(cash, pending.sizePct, fillPrice);
 
     cash -= fillPrice * qty + commission;
 
-    const { stopPrice, targetPrice } = stopTargetPrices(
+    let { stopPrice, targetPrice } = stopTargetPrices(
       'long', fillPrice, pending.stopPct, pending.targetPct,
     );
+
+    // Imp 2b: gap-down stop widening - if price gapped below signal close, re-base
+    // the stop from the fill price so the gap itself does not trigger an immediate stop-out.
+    if (
+      pending.signalClose > 0 &&
+      pending.gapDownWidenPct != null &&
+      stopPrice != null &&
+      pending.stopPct != null
+    ) {
+      const gapDown = (pending.signalClose - rawOpen) / pending.signalClose;
+      if (gapDown > pending.gapDownWidenPct) {
+        // Recompute stop from fill price (already gapped down) - same stopPct distance
+        stopPrice = fillPrice * (1 - pending.stopPct);
+      }
+    }
 
     openTrade = {
       side: 'long',
@@ -261,12 +345,31 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       targetPrice,
       maxHoldBars: pending.maxHoldBars,
       entryReason: pending.reason,
+      // Imp 1
+      trailActivationPct: pending.trailingStopActivationPct,
+      trailDistancePct:   pending.trailingStopDistancePct,
+      trailActive: false,
+      peakPrice: bar.open,   // initialise to fill bar open; updated each bar
+      // Imp 5
+      partialExitFraction:    pending.partialExitFraction,
+      partialExitAtTargetPct: pending.partialExitAtTargetPct,
+      partialTaken: false,
+      originalQty: qty,
     };
     position = 'long';
   }
 
   function applyShortEntry(bar: Bar, pending: PendingEntry, barIndex: number): void {
     const rawOpen = fillOn === 'next_open' ? bar.open : bar.close;
+
+    // Imp 2a: gap-down filter for short - skip if price gapped down hard (already sold off)
+    if (pending.signalClose > 0 && pending.maxEntrySlippagePct != null) {
+      const gapDown = (pending.signalClose - rawOpen) / pending.signalClose;
+      if (gapDown > pending.maxEntrySlippagePct) {
+        return;
+      }
+    }
+
     const fillPrice = entryFillPrice('short', rawOpen, slippageAt(barIndex));
     const qty = qtyForCash(cash, pending.sizePct, fillPrice);
 
@@ -287,6 +390,16 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       targetPrice,
       maxHoldBars: pending.maxHoldBars,
       entryReason: pending.reason,
+      // Imp 1
+      trailActivationPct: pending.trailingStopActivationPct,
+      trailDistancePct:   pending.trailingStopDistancePct,
+      trailActive: false,
+      peakPrice: bar.open,
+      // Imp 5
+      partialExitFraction:    pending.partialExitFraction,
+      partialExitAtTargetPct: pending.partialExitAtTargetPct,
+      partialTaken: false,
+      originalQty: qty,
     };
     position = 'short';
   }
@@ -363,6 +476,81 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     position  = 'flat';
   }
 
+  /**
+   * Imp 5: Partial exit - close a fraction of the position without going flat.
+   * Pushes a trade record for the closed leg; reduces openTrade.qty; marks
+   * partialTaken. openTrade and position remain live.
+   */
+  function closePartialLong(fillPrice: number, exitBar: number, exitTime: string): void {
+    if (!openTrade || openTrade.side !== 'long' || openTrade.partialTaken) return;
+    const { entryFillPrice: entryFill, qty, entryTime, entryBar, entryReason,
+            partialExitFraction } = openTrade;
+    const frac   = partialExitFraction ?? 0.5;
+    const partQty = qty * frac;
+
+    cash += fillPrice * partQty - commission;
+    const { pnl, costs } = realizedPnl('long', entryFill, fillPrice, partQty, commission);
+
+    trades.push({
+      id:          `trade-${++tradeIdCounter}`,
+      symbol,
+      side:        'long',
+      entryTime,
+      entryBar,
+      entryPrice:  entryFill,
+      exitTime,
+      exitBar,
+      exitPrice:   fillPrice,
+      qty:         partQty,
+      pnl,
+      pnlPct:      (pnl / (entryFill * partQty)) * 100,
+      costs,
+      holdingBars: exitBar - entryBar,
+      exitReason:  'target',
+      entryReason: `${entryReason} [partial-${Math.round(frac * 100)}%]`,
+    });
+
+    // Reduce qty; keep position open
+    openTrade.qty -= partQty;
+    openTrade.partialTaken = true;
+    // The runner no longer has a fixed target - let trailing stop handle it
+    openTrade.targetPrice = undefined;
+  }
+
+  function closePartialShort(fillPrice: number, exitBar: number, exitTime: string): void {
+    if (!openTrade || openTrade.side !== 'short' || openTrade.partialTaken) return;
+    const { entryFillPrice: entryFill, qty, entryTime, entryBar, entryReason,
+            partialExitFraction } = openTrade;
+    const frac    = partialExitFraction ?? 0.5;
+    const partQty = qty * frac;
+
+    cash -= fillPrice * partQty + commission;
+    const { pnl, costs } = realizedPnl('short', entryFill, fillPrice, partQty, commission);
+
+    trades.push({
+      id:          `trade-${++tradeIdCounter}`,
+      symbol,
+      side:        'short',
+      entryTime,
+      entryBar,
+      entryPrice:  entryFill,
+      exitTime,
+      exitBar,
+      exitPrice:   fillPrice,
+      qty:         partQty,
+      pnl,
+      pnlPct:      (pnl / (entryFill * partQty)) * 100,
+      costs,
+      holdingBars: exitBar - entryBar,
+      exitReason:  'target',
+      entryReason: `${entryReason} [partial-${Math.round(frac * 100)}%]`,
+    });
+
+    openTrade.qty -= partQty;
+    openTrade.partialTaken = true;
+    openTrade.targetPrice = undefined;
+  }
+
   // -------------------------------------------------------------------------
   // Main loop: iterate bars front-to-back
   // -------------------------------------------------------------------------
@@ -402,29 +590,94 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     // Stop fills: apply adverse slippage to the stop price - real stops gap through
     // the level on fast moves / gap opens. Targets fill at the exact price (limit-
     // order equivalent; no slippage applied is already conservative for limit orders).
+    //
+    // Imp 5 (partial exit): checked only when stop is NOT hit. Conservative: a stop
+    // hit on the same bar as a partial target closes the full position at the stop.
     if (openTrade !== null) {
-      const { side, stopPrice, targetPrice } = openTrade;
+      const trade = openTrade as OpenTrade;
+      const { side, stopPrice, targetPrice } = trade;
 
       if (side === 'long') {
         const stopHit   = stopPrice   != null && bar.low  <= stopPrice;
         const targetHit = targetPrice != null && bar.high >= targetPrice;
 
-        if (stopHit || targetHit) {
-          if (stopHit) {
-            closeLong(exitFillPrice('long', stopPrice!, slippageAt(i)), i, bar.time, 'stop');
-          } else {
-            closeLong(targetPrice!, i, bar.time, 'target');
-          }
+        // Imp 5: partial exit target (below full target)
+        const partialTargetPrice = (
+          !trade.partialTaken &&
+          trade.partialExitFraction != null &&
+          trade.partialExitAtTargetPct != null &&
+          trade.targetPrice != null
+        )
+          ? trade.entryFillPrice * (1 + (trade.targetPrice / trade.entryFillPrice - 1) * trade.partialExitAtTargetPct)
+          : null;
+        const partialHit = partialTargetPrice != null && bar.high >= partialTargetPrice;
+
+        if (stopHit) {
+          closeLong(exitFillPrice('long', stopPrice!, slippageAt(i)), i, bar.time, 'stop');
+        } else if (targetHit) {
+          closeLong(targetPrice!, i, bar.time, 'target');
+        } else if (partialHit) {
+          closePartialLong(partialTargetPrice!, i, bar.time);
         }
       } else {
         const stopHit   = stopPrice   != null && bar.high >= stopPrice;
         const targetHit = targetPrice != null && bar.low  <= targetPrice;
 
-        if (stopHit || targetHit) {
-          if (stopHit) {
-            closeShort(exitFillPrice('short', stopPrice!, slippageAt(i)), i, bar.time, 'stop');
-          } else {
-            closeShort(targetPrice!, i, bar.time, 'target');
+        const partialTargetPrice = (
+          !trade.partialTaken &&
+          trade.partialExitFraction != null &&
+          trade.partialExitAtTargetPct != null &&
+          trade.targetPrice != null
+        )
+          ? trade.entryFillPrice + (trade.targetPrice! - trade.entryFillPrice) * trade.partialExitAtTargetPct
+          : null;
+        const partialHit = partialTargetPrice != null && bar.low <= partialTargetPrice;
+
+        if (stopHit) {
+          closeShort(exitFillPrice('short', stopPrice!, slippageAt(i)), i, bar.time, 'stop');
+        } else if (targetHit) {
+          closeShort(targetPrice!, i, bar.time, 'target');
+        } else if (partialHit) {
+          closePartialShort(partialTargetPrice!, i, bar.time);
+        }
+      }
+    }
+
+    // C1.5. Imp 1: Trailing stop ratchet.
+    // Runs AFTER intrabar stop/target (only if position still open).
+    // Updates the running peak from bar i's high/low, arms the trail on first
+    // activation, then ratchets stopPrice upward. The new stopPrice is evaluated
+    // by section C on bar i+1 - no look-ahead.
+    if (openTrade !== null) {
+      const trade = openTrade as OpenTrade;
+      if (trade.trailDistancePct != null && trade.trailActivationPct != null) {
+        if (trade.side === 'long') {
+          // Update peak from bar high
+          if (bar.high > trade.peakPrice) trade.peakPrice = bar.high;
+          // Arm trail once unrealised gain >= activation threshold
+          const unrealised = (trade.peakPrice - trade.entryFillPrice) / trade.entryFillPrice;
+          if (!trade.trailActive && unrealised >= trade.trailActivationPct) {
+            trade.trailActive = true;
+          }
+          // Ratchet: stop rises but never falls
+          if (trade.trailActive) {
+            const trailStop = trade.peakPrice * (1 - trade.trailDistancePct);
+            trade.stopPrice = trade.stopPrice != null
+              ? Math.max(trade.stopPrice, trailStop)
+              : trailStop;
+          }
+        } else {
+          // Short: peak tracks bar low (running trough)
+          if (bar.low < trade.peakPrice) trade.peakPrice = bar.low;
+          const unrealised = (trade.entryFillPrice - trade.peakPrice) / trade.entryFillPrice;
+          if (!trade.trailActive && unrealised >= trade.trailActivationPct) {
+            trade.trailActive = true;
+          }
+          if (trade.trailActive) {
+            const trailStop = trade.peakPrice * (1 + trade.trailDistancePct);
+            trade.stopPrice = trade.stopPrice != null
+              ? Math.min(trade.stopPrice, trailStop)
+              : trailStop;
           }
         }
       }
@@ -481,13 +734,35 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
         // Effective hold cap = the tighter of strategy decision and engine config
         const capCandidates = [decision.maxHoldBars, maxHoldBars]
           .filter((v): v is number => v != null && v > 0);
+
+        // Imp 3: dynamic sizing via signalStrength (0..1 -> 0.5x..2x multiplier)
+        // Enabled by cfgDynSize (config-level) OR when strategy returns signalStrength.
+        let effectiveSizePct = decision.sizePct ?? 1;
+        if (cfgDynSize && strategy.signalStrength) {
+          const strength = strategy.signalStrength(ctx, parsedParams);
+          // Linear map: strength 0 -> 0.5x, 0.5 -> 1x, 1 -> 2x
+          const multiplier = 0.5 + Math.max(0, Math.min(1, strength)) * 1.5;
+          effectiveSizePct = Math.min(1, effectiveSizePct * multiplier);
+        }
+
+        // Config-level overrides take precedence over decision fields
         pendingEntry = {
-          side:      decision.action === 'enter_long' ? 'long' : 'short',
-          sizePct:   decision.sizePct   ?? 1,
-          stopPct:   decision.stopPct,
-          targetPct: decision.targetPct,
+          side:        decision.action === 'enter_long' ? 'long' : 'short',
+          sizePct:     effectiveSizePct,
+          stopPct:     decision.stopPct,
+          targetPct:   decision.targetPct,
           maxHoldBars: capCandidates.length > 0 ? Math.min(...capCandidates) : undefined,
-          reason:    decision.reason ?? '',
+          reason:      decision.reason ?? '',
+          signalClose: bar.close,
+          // Imp 1: config override > decision field
+          trailingStopActivationPct: cfgTrailAct ?? decision.trailingStopActivationPct,
+          trailingStopDistancePct:   cfgTrailDist ?? decision.trailingStopDistancePct,
+          // Imp 2: config override > decision field
+          maxEntrySlippagePct: cfgMaxSlip ?? decision.maxEntrySlippagePct,
+          gapDownWidenPct:     cfgGapDn   ?? decision.gapDownWidenPct,
+          // Imp 5: config override > decision field
+          partialExitFraction:    cfgPartialFrac ?? decision.partialExitFraction,
+          partialExitAtTargetPct: cfgPartialAt   ?? decision.partialExitAtTargetPct,
         };
       }
     }

@@ -59,6 +59,46 @@ export interface StrategyDecision {
   maxHoldBars?: number;
   /** Human-readable reason surfaced in the trade record and signal UI. */
   reason?: string;
+
+  // --- Improvement 1: Trailing stop ---
+  /**
+   * Arm the trailing stop once the trade is profitable by this fraction
+   * (e.g. 0.03 = trail activates when trade is up 3%). Only read on entry.
+   */
+  trailingStopActivationPct?: number;
+  /**
+   * Once armed, trail the stop this fraction below the running peak close
+   * (long) / above the running trough close (short). e.g. 0.02 = trail 2%
+   * from peak. Only read on entry.
+   */
+  trailingStopDistancePct?: number;
+
+  // --- Improvement 2: Gap filter ---
+  /**
+   * If next-bar open gaps up more than this fraction above the signal close
+   * (long entry), skip the trade - the bounce already happened overnight.
+   * e.g. 0.03 = skip if gap > 3%. Only read on entry.
+   */
+  maxEntrySlippagePct?: number;
+  /**
+   * If next-bar open gaps down more than this fraction below the signal close
+   * (long entry), widen the stop from signal-close to fill-price basis so
+   * the gap itself does not trigger an immediate stop-out. e.g. 0.02.
+   * Only read on entry.
+   */
+  gapDownWidenPct?: number;
+
+  // --- Improvement 5: Partial profit taking ---
+  /**
+   * Fraction of qty to close when the partial target is hit (e.g. 0.5 = half).
+   * The runner stays open to the full target. Only read on entry.
+   */
+  partialExitFraction?: number;
+  /**
+   * Fraction of the full target distance at which to trigger the partial exit
+   * (e.g. 0.5 = halfway to full target). Only read on entry.
+   */
+  partialExitAtTargetPct?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -101,4 +141,14 @@ export interface Strategy {
    * @param rawParams Raw params; call this.params.parse(rawParams) inside.
    */
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision;
+
+  /**
+   * Improvement 3 - optional signal-strength scorer (0..1).
+   *
+   * Called at bar i when an entry signal fires. Returns a normalised conviction
+   * score used by the engine to scale position size (0.5x..2x base sizePct).
+   * Must obey the same no-look-ahead contract as onBar: reads only bars[0..i]
+   * and causal indicator slices. When absent, flat sizing is used.
+   */
+  signalStrength?(ctx: StrategyContext, rawParams: unknown): number;
 }

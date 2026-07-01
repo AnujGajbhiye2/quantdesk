@@ -32,6 +32,23 @@ export class RSIReversionStrategy implements Strategy {
   readonly tier        = 'baseline' as const;
   readonly params      = paramsSchema;
 
+  /**
+   * Imp 3: signal strength for dynamic sizing.
+   * Deeper RSI oversold = stronger signal = larger position.
+   * RSI at oversold threshold -> 0 (min), RSI at floor (15) -> 1 (max).
+   * Causal: reads only bars[0..i] via indicator.
+   */
+  signalStrength(ctx: StrategyContext, rawParams: unknown): number {
+    const p      = paramsSchema.parse(rawParams);
+    const rsi    = ctx.indicator('rsi', { period: p.period }) as number[];
+    const rsiNow = rsi[ctx.i];
+    if (!Number.isFinite(rsiNow)) return 0.5; // warm-up: neutral size
+    const floor = 15; // RSI floor for 2x sizing
+    // Clamp: strength = 0 when rsi=oversold, 1 when rsi<=floor
+    const strength = Math.min(1, Math.max(0, (p.oversold - rsiNow) / (p.oversold - floor)));
+    return strength;
+  }
+
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision {
     const p = paramsSchema.parse(rawParams);
     const rsi    = ctx.indicator('rsi', { period: p.period }) as number[];

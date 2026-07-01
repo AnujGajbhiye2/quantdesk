@@ -31,6 +31,27 @@ export class BollingerReversionStrategy implements Strategy {
   readonly tier        = 'baseline' as const;
   readonly params      = paramsSchema;
 
+  /**
+   * Imp 3: signal strength for dynamic sizing.
+   * Deeper below lower band = stronger signal.
+   * strength = (lower - close) / (upper - lower), clamped 0..1.
+   * At lower band -> 0, one full band-width below -> 1.
+   * Causal: reads only bars[0..i].
+   */
+  signalStrength(ctx: StrategyContext, rawParams: unknown): number {
+    const p  = paramsSchema.parse(rawParams);
+    const bb = ctx.indicator('bbands', { period: p.period, stddev: p.stddev }) as {
+      lower: number[]; middle: number[]; upper: number[];
+    };
+    const close  = ctx.bars[ctx.i].close;
+    const lower  = bb.lower[ctx.i];
+    const upper  = bb.upper[ctx.i];
+    if (!Number.isFinite(lower) || !Number.isFinite(upper) || upper <= lower) return 0.5;
+    const bandWidth = upper - lower;
+    const dist      = lower - close; // positive when below lower band
+    return Math.min(1, Math.max(0, dist / bandWidth));
+  }
+
   onBar(ctx: StrategyContext, rawParams: unknown): StrategyDecision {
     const p  = paramsSchema.parse(rawParams);
     const bb = ctx.indicator('bbands', { period: p.period, stddev: p.stddev }) as {
