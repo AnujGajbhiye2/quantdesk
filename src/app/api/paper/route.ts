@@ -18,6 +18,7 @@ import { currentExposure } from '@/core/risk/exposure';
 import { buildTradeBook } from '@/core/paper/tradebook';
 import { withEstHold } from '@/core/paper/hold';
 import { accountSummary } from '@/core/paper/summary';
+import { buildPerformanceMetrics } from '@/core/paper/perf';
 import { setStartingBalance } from '@/core/db/account';
 import { getPaperTrades } from '@/core/db/paper';
 import { openTradingViewChart } from '@/core/tradingview/open';
@@ -168,6 +169,10 @@ export async function POST(request: Request) {
 
       case 'account': {
         return NextResponse.json({ account: accountSummary() });
+      }
+
+      case 'performance': {
+        return NextResponse.json({ performance: buildPerformanceMetrics() });
       }
 
       case 'risk': {

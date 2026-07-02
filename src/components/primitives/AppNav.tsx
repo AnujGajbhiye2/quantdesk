@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useIsMobile } from './useIsMobile';
 
-const LINKS = [
+const BASE_LINKS = [
   { href: '/',                   label: 'DASH' },
   { href: '/backtest',           label: 'BACKTEST' },
   { href: '/compare',            label: 'COMPARE' },
@@ -14,11 +14,34 @@ const LINKS = [
   { href: '/settings',           label: 'SETTINGS' },
 ];
 
+/** Sensible always-available fallback when no symbol is in context (e.g. landing on DASH). */
+const DEFAULT_DOSSIER_SYMBOL = 'AAPL';
+
 export default function AppNav() {
   const pathname  = usePathname();
   const isMobile  = useIsMobile();
   const [open, setOpen] = useState(false);
   const menuRef   = useRef<HTMLDivElement>(null);
+
+  // DOSSIER has no fixed URL (route is /symbol/[symbol]) - carry whatever
+  // symbol is currently in view (?symbol= on backtest/compare) or fall back
+  // to a default, so it's always one click away instead of unreachable from
+  // the nav (previous gap: dossier only linked from inside backtest/scan rows).
+  // Read via window.location (client-only, after mount) rather than
+  // useSearchParams() - that hook requires a Suspense boundary around every
+  // page AppNav renders in, which this shared layout component doesn't have.
+  const [contextSymbol, setContextSymbol] = useState<string | null>(null);
+  useEffect(() => {
+    setContextSymbol(new URLSearchParams(window.location.search).get('symbol'));
+  }, [pathname]);
+  const dossierHref    = pathname.startsWith('/symbol/')
+    ? pathname
+    : `/symbol/${(contextSymbol ?? DEFAULT_DOSSIER_SYMBOL).toUpperCase()}`;
+  const LINKS = [
+    ...BASE_LINKS.slice(0, 4),
+    { href: dossierHref, label: 'DOSSIER', matchPrefix: '/symbol/' },
+    ...BASE_LINKS.slice(4),
+  ];
 
   useEffect(() => {
     if (!open) return;

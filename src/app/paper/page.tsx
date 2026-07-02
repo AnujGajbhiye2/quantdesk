@@ -16,6 +16,8 @@ import type { PendingFillResult } from '@/core/paper/broker';
 import { DataTable } from '@/components/table/DataTable';
 import type { ColumnDef } from '@tanstack/react-table';
 import { fmtDate } from '@/core/format/date';
+import EquityCurveChart from '@/components/charts/EquityCurveChart';
+import type { PerfMetrics } from '@/core/paper/perf';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -575,6 +577,7 @@ function PendingOrdersTable({
 
 export default function PaperPage() {
   const [trades,       setTrades]       = useState<PaperTradeWithHold[]>([]);
+  const [performance,  setPerformance]  = useState<PerfMetrics | null>(null);
   const [marks,        setMarks]        = useState<Map<string, MarkEntry>>(new Map());
   const [book,         setBook]         = useState<TradeBook | null>(null);
   const [account,      setAccount]      = useState<AccountSummary | null>(null);
@@ -591,15 +594,20 @@ export default function PaperPage() {
   // Load data on mount (and after mutations)
   // FX rates come from SettingsProvider (already fetched app-wide); skip /api/fx here.
   const loadData = useCallback(async () => {
-    const [tRes, bRes, mRes, aRes] = await Promise.all([
+    const [tRes, bRes, mRes, aRes, pRes] = await Promise.all([
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'list' }) }),
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'tradebook' }) }),
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'mark', useQuotes: false }) }),
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'account' }) }),
+      fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'performance' }) }),
     ]);
     if (aRes.ok) {
       const { account: acct } = await aRes.json() as { account: AccountSummary | null };
       setAccount(acct);
+    }
+    if (pRes.ok) {
+      const { performance: perf } = await pRes.json() as { performance: PerfMetrics };
+      setPerformance(perf);
     }
     if (tRes.ok) {
       const { trades: t } = await tRes.json() as { trades: PaperTrade[] };
@@ -832,6 +840,19 @@ export default function PaperPage() {
               [ PERFORMANCE BY STRATEGY ]
             </div>
             <ByStrategyTable book={book} displayCur={displayCur} fromUSD={fromUSD} />
+          </div>
+        )}
+
+        {/* Account equity curve - notional $100-start, one point per closed trade.
+            Every backtest already had this chart; the live account never did. */}
+        {performance && performance.equityCurve.length > 1 && (
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', height: 260 }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em', marginBottom: 8 }}>
+              [ ACCOUNT EQUITY CURVE ]
+            </div>
+            <div style={{ height: 210 }}>
+              <EquityCurveChart equityCurve={performance.equityCurve} />
+            </div>
           </div>
         )}
 

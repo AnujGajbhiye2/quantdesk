@@ -1,5 +1,6 @@
 import 'server-only';
 import { getPaperTrades } from '@/core/db/paper';
+import type { EquityPoint } from '@/core/backtest/engine';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -16,6 +17,14 @@ export interface PerfMetrics {
   maxDrawdownPct:   number;   // worst peak-to-trough on equity curve (positive %)
   /** Only present when totalTrades >= 30 - not meaningful with fewer samples. */
   sharpe?:          number;
+  /**
+   * Notional $100-start compounded equity curve, one point per closed trade
+   * (keyed by exitTime, so same-day trades collapse to their last value -
+   * same convention EquityCurveChart already uses for backtest curves).
+   * Reuses the existing EquityCurveChart component (built for backtests) -
+   * the live paper account never had its own equity curve until this field.
+   */
+  equityCurve:      EquityPoint[];
 }
 
 // ---------------------------------------------------------------------------
@@ -49,6 +58,7 @@ export function buildPerformanceMetrics(): PerfMetrics {
       totalReturnPct:     0,
       currentDrawdownPct: 0,
       maxDrawdownPct:     0,
+      equityCurve:        [],
     };
   }
 
@@ -102,6 +112,13 @@ export function buildPerformanceMetrics(): PerfMetrics {
     sharpe = std > 0 ? (mean / std) * Math.sqrt(252) : 0;
   }
 
+  // equityCurve[0] is the synthetic $100 starting point (no trade yet) -
+  // one chart point per actual trade, dated at its exit, using the
+  // post-trade equity (equityCurve[i+1]).
+  const equityCurvePoints: EquityPoint[] = trades
+    .map((t, i) => ({ time: t.exitTime ?? '', equity: equityCurve[i + 1] }))
+    .filter((p) => p.time !== '');
+
   return {
     totalTrades: trades.length,
     winRate,
@@ -112,5 +129,6 @@ export function buildPerformanceMetrics(): PerfMetrics {
     currentDrawdownPct,
     maxDrawdownPct,
     sharpe,
+    equityCurve: equityCurvePoints,
   };
 }
