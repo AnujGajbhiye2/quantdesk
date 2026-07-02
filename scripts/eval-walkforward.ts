@@ -28,8 +28,10 @@ import { MACrossoverStrategy }        from '@/core/strategy/examples/ma-crossove
 import { MACDMomentumStrategy }       from '@/core/strategy/examples/macd-momentum';
 import { BollingerReversionStrategy } from '@/core/strategy/examples/bollinger-reversion';
 import { DonchianBreakoutStrategy }   from '@/core/strategy/examples/donchian-breakout';
-import { RocMomentumStrategy }        from '@/core/strategy/examples/roc-momentum';
-import { AtrTrendStrategy }           from '@/core/strategy/examples/atr-trend';
+// Binned strategies (unregistered, kept in graveyard/) stay in this eval so
+// their rejection evidence remains reproducible.
+import { RocMomentumStrategy }        from '@/core/strategy/graveyard/roc-momentum';
+import { AtrTrendStrategy }           from '@/core/strategy/graveyard/atr-trend';
 import { StochReversalStrategy }      from '@/core/strategy/examples/stoch-reversal';
 import { Rsi2PullbackStrategy }       from '@/core/strategy/examples/rsi2-pullback';
 import { DownStreakStrategy }         from '@/core/strategy/examples/down-streak';

@@ -5,8 +5,6 @@ import { MACrossoverStrategy }        from './examples/ma-crossover';
 import { MACDMomentumStrategy }       from './examples/macd-momentum';
 import { BollingerReversionStrategy } from './examples/bollinger-reversion';
 import { DonchianBreakoutStrategy }   from './examples/donchian-breakout';
-import { RocMomentumStrategy }        from './examples/roc-momentum';
-import { AtrTrendStrategy }           from './examples/atr-trend';
 import { StochReversalStrategy }      from './examples/stoch-reversal';
 import { Rsi2PullbackStrategy }       from './examples/rsi2-pullback';
 import { DownStreakStrategy }         from './examples/down-streak';
@@ -33,12 +31,18 @@ import { Ma44SupportStrategy }        from './examples/ma44-support';
  * All other registered strategies are available for backtesting and UI research
  * but are excluded from live signal generation.
  *
- * DISABLED strategies (do not add to this set without walk-forward validation):
+ * Registered non-live strategies are not walk-forward validated for live paper
+ * trading - do not add to this set without walk-forward validation.
+ *
+ * BINNED strategies live in strategy/graveyard/ and are NOT registered at all
+ * (they no longer appear in backtest or research UI):
  *   roc-momentum  - BROKEN: zero trades generated across entire SP500 OOS run.
  *                   Entry threshold too aggressive; never triggers in normal conditions.
  *   atr-trend     - BROKEN: negative Sharpe in OOS walk-forward (-0.4 to -0.8).
  *                   Systematic underperformance; not suitable for capital allocation.
- *   All others    - Not walk-forward validated for live paper trading.
+ * Both re-confirmed broken in the Phase 5 roster re-evaluation (Sharpe 0.00 and
+ * -0.25). scripts/eval-walkforward.ts still imports them from the graveyard so
+ * the evidence stays reproducible.
  */
 const LIVE_STRATEGY_IDS = new Set<string>([
   'bollinger-reversion',
@@ -89,8 +93,6 @@ register(new MACrossoverStrategy());
 register(new MACDMomentumStrategy());
 register(new BollingerReversionStrategy());
 register(new DonchianBreakoutStrategy());
-register(new RocMomentumStrategy());
-register(new AtrTrendStrategy());
 register(new StochReversalStrategy());
 register(new Rsi2PullbackStrategy());
 register(new DownStreakStrategy());
