@@ -51,6 +51,7 @@ export const FundamentalsSchema = z.object({
   fiftyTwoWeekHigh: nullableFiniteNumber,
   recommendation:   z.string().nullable(),
   targetMeanPrice:  nullableFiniteNumber,
+  nextEarningsDate: z.string().nullable(),
 });
 
 export const NewsItemSchema = z.object({

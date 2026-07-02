@@ -38,6 +38,8 @@ import { getFlag, setFlag } from '@/core/db/flags';
 import { acquireLock, releaseLock } from '@/core/db/lock';
 import { buildEntryAlert, buildExitAlert, buildRotationAlert, buildScanDigest } from '@/core/notify/format';
 import { maybeRotateForCandidate, openTradesForScope, compensateFailedRotation } from '@/core/paper/rotation';
+import { isWithinEarningsBlackout, earningsBlackoutConfigFromEnv } from '@/core/paper/earnings-blackout';
+import { getCachedFundamentals } from '@/core/db/research';
 
 const ROTATION_SCOPE = 'intraday';
 
@@ -120,7 +122,8 @@ export type SkipReason =
   | 'no-budget'
   | 'recommend-failed'
   | 'risk-check'
-  | 'broker-error';
+  | 'broker-error'
+  | 'earnings-blackout';
 
 export interface AutoTradeSkip {
   symbol:      string;
@@ -270,6 +273,7 @@ async function runAutoTradeInner(
   // 3. Determine today's auto-trade count (for max-trades-per-day gate)
   // ------------------------------------------------------------------
   const today            = todayET();
+  const earningsBlackout = earningsBlackoutConfigFromEnv();
   const allTrades        = getPaperTrades({ status: 'open' });
   const closedToday      = getPaperTrades({ status: 'closed' }).filter(
     (t) => t.exitTime != null && etDateOfIso(t.exitTime) === today,
@@ -442,6 +446,17 @@ async function runAutoTradeInner(
     if (stoppedTodaySyms.has(sym)) {
       summary.skips.push({ symbol: sym, reason: 'no-re-entry-today' });
       continue;
+    }
+
+    // Earnings blackout: no entry within N days of a known earnings date.
+    // Fails open (does not block) when the fetch config is off or no
+    // earnings date is cached for this symbol - see earnings-blackout.ts.
+    if (earningsBlackout) {
+      const fundamentals = getCachedFundamentals(sym);
+      if (isWithinEarningsBlackout(fundamentals?.nextEarningsDate ?? null, today, earningsBlackout.blackoutDays)) {
+        summary.skips.push({ symbol: sym, reason: 'earnings-blackout', details: `earnings ${fundamentals?.nextEarningsDate}` });
+        continue;
+      }
     }
 
     // Daily P&L halt (checked globally above, but also per-symbol when halted)

@@ -255,7 +255,7 @@ export class YahooProvider implements DataProvider {
     try {
       qs = await this._withRetry(() =>
         yahooFinance.quoteSummary(providerSym, {
-          modules: ['summaryDetail', 'defaultKeyStatistics', 'financialData'],
+          modules: ['summaryDetail', 'defaultKeyStatistics', 'financialData', 'calendarEvents'],
         }),
       ) as Record<string, Record<string, unknown> | undefined>;
     } catch {
@@ -265,8 +265,19 @@ export class YahooProvider implements DataProvider {
     const sd = qs.summaryDetail ?? {};
     const ks = qs.defaultKeyStatistics ?? {};
     const fd = qs.financialData ?? {};
+    const ce = qs.calendarEvents ?? {};
     const num = (v: unknown): number | null =>
       typeof v === 'number' && Number.isFinite(v) ? v : null;
+
+    // calendarEvents.earningsDate is Date[] - a range when the exact day
+    // isn't confirmed yet. Use the earliest date in the range.
+    let nextEarningsDate: string | null = null;
+    const earningsDates = ce.earningsDate;
+    if (Array.isArray(earningsDates) && earningsDates.length > 0) {
+      const first = earningsDates[0];
+      const d = first instanceof Date ? first : new Date(first as string);
+      if (!Number.isNaN(d.getTime())) nextEarningsDate = d.toISOString().slice(0, 10);
+    }
 
     const raw: Fundamentals = {
       symbol,
@@ -280,6 +291,7 @@ export class YahooProvider implements DataProvider {
       fiftyTwoWeekHigh: num(sd.fiftyTwoWeekHigh),
       recommendation:   typeof fd.recommendationKey === 'string' ? fd.recommendationKey : null,
       targetMeanPrice:  num(fd.targetMeanPrice),
+      nextEarningsDate,
     };
     const parsed = FundamentalsSchema.safeParse(raw);
     return parsed.success ? parsed.data : null;

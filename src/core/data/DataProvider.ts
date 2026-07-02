@@ -21,6 +21,13 @@ export interface Fundamentals {
   recommendation: string | null;
   /** Provider analyst mean price target. */
   targetMeanPrice: number | null;
+  /**
+   * Next scheduled earnings date, 'YYYY-MM-DD', or null if unknown/unscheduled.
+   * Feeds the earnings blackout gate (core/paper/earnings-blackout.ts) - no
+   * new entry within N days of a known earnings date, since the strategy's
+   * technical thesis has no bearing on an earnings-driven gap.
+   */
+  nextEarningsDate: string | null;
 }
 
 export interface NewsItem {

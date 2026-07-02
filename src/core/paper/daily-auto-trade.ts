@@ -34,6 +34,8 @@ import { toUSD } from '@/core/format/fx';
 import type { Signal, PaperTrade } from '@/core/types';
 import { buildEntryAlert, buildExitAlert, buildRotationAlert, buildScanDigest } from '@/core/notify/format';
 import { maybeRotateForCandidate, openTradesForScope, compensateFailedRotation } from '@/core/paper/rotation';
+import { isWithinEarningsBlackout, earningsBlackoutConfigFromEnv } from '@/core/paper/earnings-blackout';
+import { getCachedFundamentals } from '@/core/db/research';
 
 // ---------------------------------------------------------------------------
 // Config
@@ -153,6 +155,7 @@ async function runDailyAutoTradeInner(
   const t0  = Date.now();
   const cfg = loadConfig();
   const { market } = opts;
+  const earningsBlackout = earningsBlackoutConfigFromEnv();
 
   const summary: DailyAutoTradeSummary = {
     market,
@@ -340,6 +343,17 @@ async function runDailyAutoTradeInner(
     if (stoppedTodaySyms.has(sym)) {
       summary.skips.push({ symbol: sym, reason: 'no-re-entry-today' });
       continue;
+    }
+
+    // Earnings blackout: no entry within N days of a known earnings date.
+    // Fails open when the fetch config is off or no earnings date is
+    // cached for this symbol - see earnings-blackout.ts.
+    if (earningsBlackout) {
+      const fundamentals = getCachedFundamentals(sym);
+      if (isWithinEarningsBlackout(fundamentals?.nextEarningsDate ?? null, todayUTC(), earningsBlackout.blackoutDays)) {
+        summary.skips.push({ symbol: sym, reason: 'earnings-blackout', details: `earnings ${fundamentals?.nextEarningsDate}` });
+        continue;
+      }
     }
 
     // Load bars for recommend

@@ -311,21 +311,44 @@ re-run once that re-ingest happens):
   ratchet together, and tuning `extensionR`/`maxExtensions` beyond the 1/3 defaults -
   worth a follow-up sweep before deciding on live parameters.
 
-**Not done this pass** (each is real feature work with trading-behavior judgment
-calls, not a mechanical fix - deliberately left for a dedicated phase rather than
-rushed):
+**Round 2 evidence** (continuing this pass):
 
-- **Volatility regime filter:** realized-vol (or ^VIX via Yahoo - free) position
-  scaler. Not yet built or evaluated.
-- **Regime declarations:** no live strategy declares `Strategy.regime` yet, so
-  `checkRegime` stays inert. Needs a per-strategy regime spec + its own walk-forward
-  evidence, not a blanket flip.
-- **Earnings blackout:** no new entry within N days of a known earnings date. Data
-  exists (`fundamentals_cache`); the blackout window N is unvalidated.
-- **Resolve the 15m mismatch:** the 3 live strategies are daily-designed but execute
-  on 15m bars intraday, never walk-forward-validated at that timeframe. Needs a
-  decision backed by a 15m walk-forward run (now that `barsPerYear` annualizes
-  correctly - Phase 1) or a move to the daily-only execution path.
+- **Realized-vol regime filter: built, evaluated, REJECTED.** Added a free VIX-proxy
+  regime kind (`core/market/regime.ts`, `'realized-vol'`: trailing annualized stddev
+  of an index's own daily log returns - no separate VIX ticker needed) and a dedicated
+  harness (`scripts/eval-vol-regime.ts`) that overrides `.regime` on a copy of each
+  live strategy for a clean gated-vs-ungated walk-forward comparison. Tested at 25%
+  and 18% annualized thresholds on SP500: same story as the ADX gate - drawdown
+  improves slightly, Sharpe and win rate consistently get *worse* for all 3
+  strategies. Caveat: the local snapshot likely lacks a real crash window (the
+  known pre-2020 gap - Phase 1), so this filter may look different once the
+  reingest adds bear-market history. Left off; re-test after the reingest before
+  concluding harder than "rejected on the data available now."
+- **Earnings blackout: built, NOT evaluated (data doesn't exist to evaluate it).**
+  The original Phase 3 plan assumed earnings-date data "already lands in
+  fundamentals_cache" - it did not; `Fundamentals` had no earnings-date field at
+  all. Added `nextEarningsDate` to the `Fundamentals` type and the Yahoo adapter
+  (via `calendarEvents.earningsDate`, a real free Yahoo module), plus
+  `core/paper/earnings-blackout.ts` (pure blackout-window check) wired into both
+  auto-trade engines as an opt-in skip gate (`EARNINGS_BLACKOUT_ENABLED`). Unlike
+  the vol/ADX gates this cannot be walk-forward evaluated: Yahoo's calendarEvents
+  only exposes the *next upcoming* earnings date, not history, and there is no free
+  point-in-time earnings calendar to backtest against. Ships on trust, not evidence.
+  Also worth knowing: `fundamentals_cache` is populated lazily (only symbols a user
+  has viewed the dossier for), not proactively for the whole auto-trade universe -
+  so today this gate fails open (does nothing) for most symbols until something
+  proactively fetches fundamentals for the trading universe.
+- **Resolve the 15m mismatch: BLOCKED on data, not a decision to make yet.** The
+  local snapshot only has ~3 weeks of 15m history (500 bars/symbol) - nowhere near
+  enough for a meaningful walk-forward split (70/30 train/OOS across 3 windows
+  leaves ~15-20 OOS bars per window, far under the project's own 15-trade
+  minimum-sample gate). Did not fabricate a result on insufficient data.
+  Recommendation without evidence either way: default to the side that's actually
+  validated - move live execution to the daily path (`daily-auto-trade.ts`, where
+  these strategies were designed and walk-forward tested) rather than keep running
+  unvalidated on 15m bars, until enough 15m history accumulates (or is backfilled)
+  to actually test it. This is an architecture change to which path is live - the
+  user's call, not something to switch silently.
 
 Definition of Done: each filter ships with a before/after walk-forward comparison in
 the journal or a research note; live config reflects the winning variant. Met for

@@ -6,10 +6,15 @@
  * before allowing an entry signal. Strategy.onBar() never sees this - it
  * remains pure and ignorant of market-level state.
  *
- * Three kinds:
- *   market-trend  index close > SMA(period)         e.g. SPY > 200dma
- *   volatility    index close within [min, max]      e.g. VIX < 30
- *   adx           index ADX(period) within [min,max] e.g. ADX > 25 = trending
+ * Four kinds:
+ *   market-trend   index close > SMA(period)              e.g. SPY > 200dma
+ *   volatility     index close within [min, max]           e.g. VIX < 30 (needs a VIX-like index series)
+ *   adx            index ADX(period) within [min,max]      e.g. ADX > 25 = trending
+ *   realized-vol   trailing annualized stddev of the index's daily log returns
+ *                  within [min, max]% - a free VIX proxy computed from any
+ *                  already-ingested index (e.g. ^GSPC), no separate VIX
+ *                  ticker required. e.g. maxAnnualizedPct=25 blocks entries
+ *                  when trailing realized vol exceeds 25%/year.
  *
  * buildRegimeMap pre-computes date->aligned in O(n) for the backtest engine.
  * checkRegime evaluates the latest bar only (for the scanner / live path).
@@ -26,7 +31,8 @@ import { compute } from '@/core/indicators/registry';
 export type RegimeRequirement =
   | { kind: 'market-trend'; index: string; over: 'sma'; period: number }
   | { kind: 'volatility';   index: string; max?: number; min?: number }
-  | { kind: 'adx';          index: string; min?: number; max?: number; period?: number };
+  | { kind: 'adx';          index: string; min?: number; max?: number; period?: number }
+  | { kind: 'realized-vol'; index: string; period: number; maxAnnualizedPct?: number; minAnnualizedPct?: number };
 
 // ---------------------------------------------------------------------------
 // buildRegimeMap - O(n), used by backtest engine
@@ -68,6 +74,31 @@ export function buildRegimeMap(req: RegimeRequirement, bars: readonly Bar[]): Ma
         const aligned = !Number.isFinite(v)
           ? true
           : (req.min == null || v >= req.min) && (req.max == null || v <= req.max);
+        map.set(bars[i].time.slice(0, 10), aligned);
+      }
+      break;
+    }
+    case 'realized-vol': {
+      // Trailing annualized stddev of daily log returns, in percent.
+      // dailyStd * sqrt(252) * 100 - the standard realized-vol annualization.
+      const logReturns: number[] = new Array(bars.length).fill(NaN);
+      for (let i = 1; i < bars.length; i++) {
+        const prev = bars[i - 1].close;
+        const cur  = bars[i].close;
+        logReturns[i] = prev > 0 && cur > 0 ? Math.log(cur / prev) : NaN;
+      }
+      for (let i = 0; i < bars.length; i++) {
+        const window = logReturns.slice(Math.max(0, i - req.period + 1), i + 1)
+          .filter((r) => Number.isFinite(r));
+        let aligned = true; // warm-up: neutral
+        if (window.length >= Math.min(req.period, 5)) {
+          const mean = window.reduce((s, r) => s + r, 0) / window.length;
+          const variance = window.reduce((s, r) => s + (r - mean) ** 2, 0) / window.length;
+          const annualizedPct = Math.sqrt(variance) * Math.sqrt(252) * 100;
+          aligned =
+            (req.maxAnnualizedPct == null || annualizedPct <= req.maxAnnualizedPct) &&
+            (req.minAnnualizedPct == null || annualizedPct >= req.minAnnualizedPct);
+        }
         map.set(bars[i].time.slice(0, 10), aligned);
       }
       break;

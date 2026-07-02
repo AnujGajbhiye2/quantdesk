@@ -159,6 +159,12 @@ vi.mock('@/core/db/bars', () => ({
   getLatestBarTime: () => '2025-06-18T14:30:00Z',
 }));
 
+// Fundamentals cache (earnings blackout) - no data by default (gate fails open)
+const mockGetCachedFundamentals = vi.fn(() => null);
+vi.mock('@/core/db/research', () => ({
+  getCachedFundamentals: (...args: unknown[]) => mockGetCachedFundamentals(...args),
+}));
+
 // ---------------------------------------------------------------------------
 // Environment: set AUTO_TRADE_ENABLED=1 by default
 // ---------------------------------------------------------------------------
@@ -178,6 +184,7 @@ beforeEach(() => {
     signal:   { symbol: sym, time: '2025-06-18T14:30:00Z', side: 'long', strategyId: strategy.id, reason: 'test' },
     decision: { action: 'enter_long', stopPct: 0.05, targetPct: 0.10 },
   }));
+  mockGetCachedFundamentals.mockReturnValue(null);
 
   // Set env
   process.env.AUTO_TRADE_ENABLED       = '1';
@@ -185,6 +192,8 @@ beforeEach(() => {
   process.env.AUTO_TRADE_MIN_CONSENSUS = '2';
   process.env.AUTO_TRADE_MAX_TRADES_PER_DAY = '5';
   process.env.AUTO_TRADE_DAILY_LOSS_HALT_PCT = '0.03';
+  delete process.env.EARNINGS_BLACKOUT_ENABLED;
+  delete process.env.EARNINGS_BLACKOUT_DAYS;
 });
 
 // Lazy import so env/mocks are applied before module load
@@ -361,6 +370,47 @@ describe('runAutoTrade - dry run', () => {
     expect(res.dryRun).toBe(true);
     // Entries listed even in dry-run (intended)
     expect(res.entries.every((e) => e.dryRun)).toBe(true);
+  });
+});
+
+describe('runAutoTrade - earnings blackout', () => {
+  // todayET() is mocked to new Date().toISOString().slice(0,10) (see the
+  // @/core/market/hours mock above) - compute test dates relative to that,
+  // not a hardcoded date, so this doesn't silently pass/fail as time moves on.
+  const today = new Date().toISOString().slice(0, 10);
+  function daysFromToday(n: number): string {
+    return new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+  }
+
+  it('does not block entries when EARNINGS_BLACKOUT_ENABLED is unset (default off)', async () => {
+    mockGetCachedFundamentals.mockReturnValue({ nextEarningsDate: today });
+    const res = await autoTrade();
+    expect(res.skips.some((s) => s.reason === 'earnings-blackout')).toBe(false);
+  });
+
+  it('blocks entries within the blackout window when enabled', async () => {
+    process.env.EARNINGS_BLACKOUT_ENABLED = '1';
+    process.env.EARNINGS_BLACKOUT_DAYS = '3';
+    mockGetCachedFundamentals.mockReturnValue({ nextEarningsDate: daysFromToday(1) });
+    const res = await autoTrade();
+    expect(res.entries).toHaveLength(0);
+    expect(res.skips.length).toBeGreaterThan(0);
+    expect(res.skips.every((s) => s.reason === 'earnings-blackout')).toBe(true);
+  });
+
+  it('fails open (does not block) when no earnings date is cached for the symbol', async () => {
+    process.env.EARNINGS_BLACKOUT_ENABLED = '1';
+    mockGetCachedFundamentals.mockReturnValue(null);
+    const res = await autoTrade();
+    expect(res.skips.some((s) => s.reason === 'earnings-blackout')).toBe(false);
+  });
+
+  it('does not block when earnings are outside the blackout window', async () => {
+    process.env.EARNINGS_BLACKOUT_ENABLED = '1';
+    process.env.EARNINGS_BLACKOUT_DAYS = '3';
+    mockGetCachedFundamentals.mockReturnValue({ nextEarningsDate: daysFromToday(30) });
+    const res = await autoTrade();
+    expect(res.skips.some((s) => s.reason === 'earnings-blackout')).toBe(false);
   });
 });
 
