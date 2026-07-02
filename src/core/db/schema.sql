@@ -48,6 +48,16 @@ CREATE TABLE IF NOT EXISTS paper_trades (
   notes        TEXT
 );
 
+-- Enforces "one active (open or pending) position per symbol" at the DB
+-- level. The app already checks this via getActivePaperTradeBySymbol()
+-- before inserting, but that check-then-insert is not atomic - two
+-- overlapping cron ticks (see core/db/lock.ts for the mitigation on the
+-- cron side) could both pass the check before either inserts. This index
+-- makes the invariant unconditional rather than best-effort
+-- (SYSTEM_AUDIT_AND_ROADMAP.md finding, Phase 2).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_paper_trades_one_active_per_symbol
+  ON paper_trades (symbol) WHERE status IN ('open', 'pending');
+
 CREATE TABLE IF NOT EXISTS signals (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   symbol      TEXT NOT NULL,

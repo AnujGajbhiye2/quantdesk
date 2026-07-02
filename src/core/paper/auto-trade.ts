@@ -35,8 +35,9 @@ import { isTradingHalted } from '@/core/paper/halt';
 import { classifyFreshness } from '@/core/notify/freshness';
 import { getLatestBarTime } from '@/core/db/bars';
 import { getFlag, setFlag } from '@/core/db/flags';
+import { acquireLock, releaseLock } from '@/core/db/lock';
 import { buildEntryAlert, buildExitAlert, buildRotationAlert, buildScanDigest } from '@/core/notify/format';
-import { maybeRotateForCandidate, openTradesForScope } from '@/core/paper/rotation';
+import { maybeRotateForCandidate, openTradesForScope, compensateFailedRotation } from '@/core/paper/rotation';
 
 const ROTATION_SCOPE = 'intraday';
 
@@ -164,7 +165,34 @@ async function tg(text: string): Promise<void> {
 // Main entry point
 // ---------------------------------------------------------------------------
 
+const LOCK_KEY = 'auto-trade-intraday';
+
+/**
+ * Public entry point. Wraps runAutoTradeInner with an overlap lock: a slow
+ * tick (network-bound ingest/scan across hundreds of symbols) can otherwise
+ * still be running when the next 15-min cron tick fires, letting two ticks
+ * race on the same open positions (finding #9). Callers - the cron and the
+ * manual /api/paper auto-trigger action - both go through this, so a manual
+ * trigger can't race a live cron tick either.
+ */
 export async function runAutoTrade(
+  opts: { timeframe?: Timeframe; bypassMarketHours?: boolean } = {},
+): Promise<AutoTradeSummary> {
+  if (!acquireLock(LOCK_KEY)) {
+    return {
+      enabled: true, dryRun: false, marketOpen: false, halted: true,
+      haltReason: 'Skipped: a previous auto-trade tick is still running (overlap lock held).',
+      entries: [], exits: [], rotations: [], skips: [], durationMs: 0, etTime: etTimeString(),
+    };
+  }
+  try {
+    return await runAutoTradeInner(opts);
+  } finally {
+    releaseLock(LOCK_KEY);
+  }
+}
+
+async function runAutoTradeInner(
   opts: { timeframe?: Timeframe; bypassMarketHours?: boolean } = {},
 ): Promise<AutoTradeSummary> {
   const t0     = Date.now();
@@ -206,9 +234,11 @@ export async function runAutoTrade(
   // 2. Sweep open trades (exits first - free up capital + know today's P&L)
   // ------------------------------------------------------------------
   let sweepResults: SweepResult[] = [];
+  let sweepFailed = false;
   try {
     sweepResults = sweepOpenTrades(tf);
   } catch (err) {
+    sweepFailed = true;
     console.error('[auto-trade] sweepOpenTrades failed:', err);
   }
 
@@ -308,6 +338,14 @@ export async function runAutoTrade(
 
   const signals: import('@/core/types').Signal[] = [];
   const barsCache = new Map<string, import('@/core/types').Bar[]>();
+  // Keyed by `${symbol}:${strategyId}` - the exact decision (incl. stopPct/
+  // targetPct) that produced each signal, so execution reuses it instead of
+  // re-running scanSymbol. Re-running was previously assumed deterministic,
+  // but a stateful strategy (e.g. atr-trend's WeakMap-held trailing high)
+  // can return a different decision - or 'hold' - on a second call with the
+  // same bars, silently dropping the stop/target that generated the
+  // consensus (SYSTEM_AUDIT_AND_ROADMAP.md finding, Phase 2).
+  const decisionCache = new Map<string, import('@/core/strategy/Strategy').StrategyDecision>();
 
   for (const entry of universe) {
     const sym  = entry.symbol;
@@ -318,7 +356,10 @@ export async function runAutoTrade(
     for (const { strategy, parsedParams } of strategies) {
       try {
         const res = scanSymbol(sym, bars, strategy, parsedParams);
-        if (res) signals.push(res.signal);
+        if (res) {
+          signals.push(res.signal);
+          decisionCache.set(`${sym}:${strategy.id}`, res.decision);
+        }
       } catch { /* skip */ }
     }
   }
@@ -357,6 +398,19 @@ export async function runAutoTrade(
         'Set a budget in /settings to activate the breaker and enable entries.',
       );
     }
+  }
+
+  // ------------------------------------------------------------------
+  // 7d. A failed sweep means open stops/targets weren't checked this tick -
+  // don't compound that by opening new, also-unmanaged positions on top of
+  // it (SYSTEM_AUDIT_AND_ROADMAP.md finding #9). Exits already attempted
+  // above; only new entries are blocked here.
+  // ------------------------------------------------------------------
+  if (sweepFailed) {
+    summary.halted     = true;
+    summary.haltReason = 'Sweep failed this tick - blocking new entries until next tick.';
+    summary.durationMs = Date.now() - t0;
+    return summary;
   }
 
   // ------------------------------------------------------------------
@@ -411,15 +465,11 @@ export async function runAutoTrade(
       (s) => s.symbol === sym && s.strategyId === leadStrategyId,
     );
 
-    // Re-run to get stopPct/targetPct from the strategy decision
-    let stopPct: number | undefined;
-    let targetPct: number | undefined;
-    try {
-      const params = leadStrategy.params.parse({});
-      const res    = scanSymbol(sym, bars, leadStrategy, params);
-      stopPct      = res?.decision.stopPct;
-      targetPct    = res?.decision.targetPct;
-    } catch { /* use undefined - recommendTrade falls back to ATR */ }
+    // Use the decision captured at scan time - not a re-run - so the
+    // executed stop/target always matches what generated this consensus.
+    const leadDecision = decisionCache.get(`${sym}:${leadStrategyId}`);
+    const stopPct   = leadDecision?.stopPct;
+    const targetPct = leadDecision?.targetPct;
 
     // Synthesize a signal for recommendTrade
     const proxySignal: import('@/core/types').Signal = {
@@ -581,7 +631,19 @@ export async function runAutoTrade(
             await tg(entryAlert(cappedIdea));
           } catch (retryErr) {
             const msg = retryErr instanceof Error ? retryErr.message : String(retryErr);
-            summary.skips.push({ symbol: sym, reason: 'risk-check', details: `post-rotation retry failed: ${msg}` });
+            // The incumbent is already closed at this point - don't leave the
+            // book strictly worse off for nothing. Best-effort restore it.
+            const restored = compensateFailedRotation(rotated.closed);
+            summary.skips.push({
+              symbol: sym,
+              reason: 'risk-check',
+              details: restored
+                ? `post-rotation retry failed: ${msg}. Restored ${rotated.closed.symbol}.`
+                : `post-rotation retry failed: ${msg}. FAILED to restore ${rotated.closed.symbol} - book is down one position.`,
+            });
+            if (!restored) {
+              console.error(`[auto-trade] rotation compensation failed for ${rotated.closed.symbol} after ${sym} retry failure`);
+            }
           }
         }
       } else {

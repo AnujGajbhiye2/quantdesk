@@ -15,6 +15,7 @@ import 'server-only';
  * The intraday runAutoTrade() is unchanged and still handles 15m US entries.
  */
 
+import { acquireLock, releaseLock } from '@/core/db/lock';
 import { scanAll } from '@/core/scan/scan-all';
 import { buildConsensus } from '@/core/scan/consensus';
 import { sweepOpenTrades } from '@/core/paper/broker';
@@ -24,16 +25,15 @@ import { markOpenTrades } from '@/core/paper/broker';
 import { getActivePaperTradeBySymbol, getPaperTrades } from '@/core/db/paper';
 import { getLatestBarTime, getRecentBars, getAllSymbols } from '@/core/db/bars';
 import { recommendTrade, capIdeaToCash } from '@/core/signals/recommend';
-import { get as getStrategy, listLive as listLiveStrategies } from '@/core/strategy/registry';
+import { listLive as listLiveStrategies } from '@/core/strategy/registry';
 import { refreshUniverse } from '@/core/data/ingest';
 import { universeForMarket, type ScanMarket } from '@/core/data/universe';
 import { sendTelegram, telegramConfigured } from '@/core/notify/telegram';
 import { insertJournalWhy } from '@/core/db/journal';
 import { toUSD } from '@/core/format/fx';
-import type { Signal } from '@/core/types';
-import { scanSymbol } from '@/core/scan/scanner';
+import type { Signal, PaperTrade } from '@/core/types';
 import { buildEntryAlert, buildExitAlert, buildRotationAlert, buildScanDigest } from '@/core/notify/format';
-import { maybeRotateForCandidate, openTradesForScope } from '@/core/paper/rotation';
+import { maybeRotateForCandidate, openTradesForScope, compensateFailedRotation } from '@/core/paper/rotation';
 
 // ---------------------------------------------------------------------------
 // Config
@@ -119,12 +119,35 @@ async function tg(msg: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 /**
+ * Public entry point. Wraps runDailyAutoTradeInner with a per-market overlap
+ * lock - each market bucket runs independently, but two ticks for the SAME
+ * market must not race on the same open positions (finding #9).
+ */
+export async function runDailyAutoTrade(
+  opts: { market: ScanMarket },
+): Promise<DailyAutoTradeSummary> {
+  const lockKey = `daily-auto-trade-${opts.market}`;
+  if (!acquireLock(lockKey)) {
+    return {
+      market: opts.market, enabled: true, dryRun: false, halted: true,
+      haltReason: `Skipped: a previous ${opts.market} daily auto-trade run is still in progress (overlap lock held).`,
+      entries: [], exits: [], rotations: [], skips: [], signals: 0, durationMs: 0,
+    };
+  }
+  try {
+    return await runDailyAutoTradeInner(opts);
+  } finally {
+    releaseLock(lockKey);
+  }
+}
+
+/**
  * Run a single daily market scan: refresh -> scan -> execute -> digest.
  * Called by per-market crons in instrumentation.ts.
  *
  * Returns summary even when disabled (enabled: false, entries/exits empty).
  */
-export async function runDailyAutoTrade(
+async function runDailyAutoTradeInner(
   opts: { market: ScanMarket },
 ): Promise<DailyAutoTradeSummary> {
   const t0  = Date.now();
@@ -169,6 +192,7 @@ export async function runDailyAutoTrade(
   //    Sweep runs after fresh bars land so daily bar stop/target checks
   //    use today's final close.
   // ------------------------------------------------------------------
+  let sweepFailed = false;
   try {
     const sweepResults = sweepOpenTrades('1d');
     for (const r of sweepResults) {
@@ -192,6 +216,7 @@ export async function runDailyAutoTrade(
       }));
     }
   } catch (err) {
+    sweepFailed = true;
     console.error(`[daily-auto-trade:${market}] sweep failed:`, err);
   }
 
@@ -245,6 +270,19 @@ export async function runDailyAutoTrade(
   }
 
   // ------------------------------------------------------------------
+  // 4b. A failed sweep means open stops/targets weren't checked this cycle -
+  // don't compound that by opening new, also-unmanaged positions on top of
+  // it (SYSTEM_AUDIT_AND_ROADMAP.md finding #9). Exits already attempted
+  // above; only new entries are blocked here.
+  // ------------------------------------------------------------------
+  if (sweepFailed) {
+    summary.halted     = true;
+    summary.haltReason = `Sweep failed for ${market} this cycle - blocking new entries until next run.`;
+    summary.durationMs = Date.now() - t0;
+    return summary;
+  }
+
+  // ------------------------------------------------------------------
   // 5. Scan for signals (daily bars, this market only)
   // ------------------------------------------------------------------
   const symbols = universe.map((e) => e.symbol);
@@ -263,6 +301,14 @@ export async function runDailyAutoTrade(
 
   const consensus = buildConsensus(scanResult.signals, totalStrats)
     .filter((c) => c.agreeCount >= cfg.minConsensus);
+
+  // Decisions (incl. stopPct/targetPct) captured at scan time, keyed by
+  // `${symbol}:${strategyId}` - reused at execution instead of re-running
+  // scanSymbol, so the executed stop/target always matches what generated
+  // this consensus (SYSTEM_AUDIT_AND_ROADMAP.md finding, Phase 2).
+  const decisionCache = new Map(
+    scanResult.rawResults.map((r) => [`${r.signal.symbol}:${r.signal.strategyId}`, r.decision]),
+  );
 
   // ------------------------------------------------------------------
   // 6. Execute entries
@@ -303,17 +349,12 @@ export async function runDailyAutoTrade(
       continue;
     }
 
-    // Get stopPct/targetPct from lead strategy
+    // stopPct/targetPct from the decision captured at scan time - not a
+    // re-run - so the executed bracket matches what generated this signal.
     const leadStrategyId = c.strategyIds[0];
-    const leadStrategy   = getStrategy(leadStrategyId);
-    let stopPct: number | undefined;
-    let targetPct: number | undefined;
-    try {
-      const params = leadStrategy.params.parse({});
-      const res    = scanSymbol(sym, bars, leadStrategy, params);
-      stopPct      = res?.decision.stopPct;
-      targetPct    = res?.decision.targetPct;
-    } catch { /* fall through to ATR fallback */ }
+    const leadDecision   = decisionCache.get(`${sym}:${leadStrategyId}`);
+    const stopPct   = leadDecision?.stopPct;
+    const targetPct = leadDecision?.targetPct;
 
     const proxySignal: Signal = {
       symbol:     sym,
@@ -333,6 +374,11 @@ export async function runDailyAutoTrade(
     let cappedIdea = capIdeaToCash(idea, cashAcc.cash, equity);
     const currency = getAllSymbols().find((s) => s.symbol === sym)?.currency ?? 'USD';
 
+    // Tracks a rotation that already happened via the cash-cap path below, so
+    // the primary open attempt further down can (a) compensate if it still
+    // fails and (b) skip triggering a second, compounding rotation.
+    let rotatedIncumbent: PaperTrade | null = null;
+
     // Rotation attempt #1: book is cash-capped in this market - see if a
     // weaker holding in the same market should be closed to make room.
     if (cappedIdea.qty <= 0) {
@@ -342,14 +388,34 @@ export async function runDailyAutoTrade(
         openTradesForScope(market),
       );
       if (rotated) {
+        const freshCash = computeCashAccount();
+        if (freshCash) cappedIdea = capIdeaToCash(idea, freshCash.cash, equity);
+
+        // The incumbent is closed now - if freeing that cash still isn't
+        // enough to size the candidate, don't leave the book down one
+        // position for nothing (SYSTEM_AUDIT_AND_ROADMAP.md finding #6).
+        if (cappedIdea.qty <= 0) {
+          const restored = compensateFailedRotation(rotated.closed);
+          summary.skips.push({
+            symbol: sym,
+            reason: 'no-budget',
+            details: restored
+              ? `Rotation freed insufficient cash. Restored ${rotated.closed.symbol}.`
+              : `Rotation freed insufficient cash. FAILED to restore ${rotated.closed.symbol} - book is down one position.`,
+          });
+          if (!restored) {
+            console.error(`[daily-auto-trade:${market}] rotation compensation failed for ${rotated.closed.symbol} after ${sym} still had qty=0`);
+          }
+          continue;
+        }
+
         summary.rotations.push({ closedSymbol: rotated.closed.symbol, openedSymbol: sym });
         await tg(buildRotationAlert({
           market, closedSymbol: rotated.closed.symbol,
           closedPnlPct: rotated.closedPnlPct ?? undefined, closedAgree: rotated.closedAgree,
           openedSymbol: sym, openedAgree: c.agreeCount, totalStrats,
         }));
-        const freshCash = computeCashAccount();
-        if (freshCash) cappedIdea = capIdeaToCash(idea, freshCash.cash, equity);
+        rotatedIncumbent = rotated.closed;
       }
     }
 
@@ -439,6 +505,22 @@ export async function runDailyAutoTrade(
     } catch (err) {
       if (err instanceof DuplicateOpenTradeError) {
         summary.skips.push({ symbol: sym, reason: 'position-exists', details: 'duplicate at broker' });
+      } else if (err instanceof RiskCheckError && rotatedIncumbent) {
+        // Rotation #1 already closed a position to free cash for this
+        // candidate; don't fire a second, compounding rotation on top of
+        // it. Compensate for the one we already did.
+        const restored = compensateFailedRotation(rotatedIncumbent);
+        const msg = err.message;
+        summary.skips.push({
+          symbol: sym,
+          reason: 'risk-check',
+          details: restored
+            ? `Open failed after cash-cap rotation: ${msg}. Restored ${rotatedIncumbent.symbol}.`
+            : `Open failed after cash-cap rotation: ${msg}. FAILED to restore ${rotatedIncumbent.symbol} - book is down one position.`,
+        });
+        if (!restored) {
+          console.error(`[daily-auto-trade:${market}] rotation compensation failed for ${rotatedIncumbent.symbol} after ${sym} open failure`);
+        }
       } else if (err instanceof RiskCheckError) {
         const rotated = maybeRotateForCandidate(
           { symbol: sym, agreeCount: c.agreeCount },
@@ -460,7 +542,17 @@ export async function runDailyAutoTrade(
             await tg(entryAlert(cappedIdea));
           } catch (retryErr) {
             const msg = retryErr instanceof Error ? retryErr.message : String(retryErr);
-            summary.skips.push({ symbol: sym, reason: 'risk-check', details: `post-rotation retry failed: ${msg}` });
+            const restored = compensateFailedRotation(rotated.closed);
+            summary.skips.push({
+              symbol: sym,
+              reason: 'risk-check',
+              details: restored
+                ? `post-rotation retry failed: ${msg}. Restored ${rotated.closed.symbol}.`
+                : `post-rotation retry failed: ${msg}. FAILED to restore ${rotated.closed.symbol} - book is down one position.`,
+            });
+            if (!restored) {
+              console.error(`[daily-auto-trade:${market}] rotation compensation failed for ${rotated.closed.symbol} after ${sym} retry failure`);
+            }
           }
         }
       } else {

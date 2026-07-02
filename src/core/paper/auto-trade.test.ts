@@ -350,4 +350,27 @@ describe('runAutoTrade - successful live entry', () => {
       expect(entry.qty).toBeGreaterThan(0);
     }
   });
+
+  it('does not re-run scanSymbol for the lead strategy at execution time (no re-derivation drift)', async () => {
+    // Stateful mock: a real stateful strategy (e.g. atr-trend's WeakMap-held
+    // trailing high) can return a different decision on a second call with
+    // the same bars. scanSymbol should be called exactly once per
+    // (symbol, strategy) during the scan phase - the execution phase must
+    // reuse that cached decision, not call it again.
+    let callCount = 0;
+    mockScanSymbol.mockImplementation((sym: string, _bars: Bar[], strategy: { id: string }) => {
+      callCount++;
+      return {
+        signal:   { symbol: sym, time: '2025-06-18T14:30:00Z', side: 'long', strategyId: strategy.id, reason: 'test' },
+        decision: { action: 'enter_long', stopPct: 0.05, targetPct: 0.10 },
+      };
+    });
+
+    await autoTrade();
+
+    // 3 universe symbols x 2 strategies = 6 calls total during the scan
+    // phase. If execution re-ran scanSymbol for the lead strategy per
+    // opened symbol, the count would be higher.
+    expect(callCount).toBe(6);
+  });
 });

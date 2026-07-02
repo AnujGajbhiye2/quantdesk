@@ -4,6 +4,7 @@ import type { PaperTrade } from '@/core/types';
 const mockGetPaperTrades = vi.fn();
 const mockClosePaperTrade = vi.fn();
 const mockMarkOpenTrades = vi.fn();
+const mockOpenPaperTrade = vi.fn();
 const flagStore = new Map<string, string>();
 
 vi.mock('@/core/db/paper', () => ({
@@ -13,6 +14,7 @@ vi.mock('@/core/db/paper', () => ({
 vi.mock('@/core/paper/broker', () => ({
   closePaperTrade: (...args: unknown[]) => mockClosePaperTrade(...args),
   markOpenTrades:  (...args: unknown[]) => mockMarkOpenTrades(...args),
+  openPaperTrade:  (...args: unknown[]) => mockOpenPaperTrade(...args),
 }));
 
 vi.mock('@/core/db/flags', () => ({
@@ -20,7 +22,7 @@ vi.mock('@/core/db/flags', () => ({
   setFlag: (key: string, value: string) => { flagStore.set(key, value); },
 }));
 
-const { maybeRotateForCandidate, openTradesForScope, parseConviction } = await import('./rotation');
+const { maybeRotateForCandidate, openTradesForScope, parseConviction, compensateFailedRotation } = await import('./rotation');
 
 function daysAgo(n: number): string {
   return new Date(Date.now() - n * 86_400_000).toISOString();
@@ -45,6 +47,7 @@ beforeEach(() => {
   mockGetPaperTrades.mockReset();
   mockClosePaperTrade.mockReset();
   mockMarkOpenTrades.mockReset();
+  mockOpenPaperTrade.mockReset();
   process.env.ROTATION_ENABLED = '1';
   process.env.ROTATION_MIN_HOLD_BARS = '3';
   process.env.ROTATION_MAX_PER_DAY = '2';
@@ -147,5 +150,50 @@ describe('maybeRotateForCandidate', () => {
 
     const second = maybeRotateForCandidate({ symbol: 'NEW2', agreeCount: 3 }, 'sp500', held);
     expect(second).toBeNull();
+  });
+});
+
+describe('compensateFailedRotation', () => {
+  it('reopens the closed trade with the same symbol, side, qty, and relative stop/target distances', () => {
+    mockOpenPaperTrade.mockImplementation((input) => ({ id: 'restored', ...input }));
+    const closed = trade({
+      id: 'GE', symbol: 'GE', side: 'long', qty: 10,
+      entryPrice: 100, exitPrice: 105, stopPrice: 90, targetPrice: 120,
+      market: 'sp500', notes: 'auto:rsi-reversion consensus=2/3',
+    });
+
+    const result = compensateFailedRotation(closed);
+
+    expect(result).not.toBeNull();
+    expect(mockOpenPaperTrade).toHaveBeenCalledWith(
+      expect.objectContaining({
+        symbol:       'GE',
+        side:         'long',
+        entryPrice:   105,      // re-entered at the price it was just closed at
+        _overrideQty: 10,
+        stopPct:      0.1,      // |100-90|/100
+        targetPct:    0.2,      // |120-100|/100
+        market:       'sp500',
+      }),
+    );
+  });
+
+  it('falls back to entryPrice when the closed trade has no exitPrice', () => {
+    mockOpenPaperTrade.mockImplementation((input) => ({ id: 'restored', ...input }));
+    const closed = trade({ id: 'X', symbol: 'X', entryPrice: 50, stopPrice: 45, targetPrice: 60 });
+
+    compensateFailedRotation(closed);
+
+    expect(mockOpenPaperTrade).toHaveBeenCalledWith(
+      expect.objectContaining({ entryPrice: 50 }),
+    );
+  });
+
+  it('returns null (does not throw) when the restoring open itself fails', () => {
+    mockOpenPaperTrade.mockImplementation(() => { throw new Error('still no room'); });
+    const closed = trade({ id: 'Y', symbol: 'Y' });
+
+    expect(() => compensateFailedRotation(closed)).not.toThrow();
+    expect(compensateFailedRotation(closed)).toBeNull();
   });
 });

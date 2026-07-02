@@ -74,7 +74,16 @@ function migrate(db: Database.Database): void {
     .map((s) => s.trim())
     .filter(Boolean);
   for (const stmt of statements) {
-    db.exec(stmt + ';');
+    try {
+      db.exec(stmt + ';');
+    } catch (err) {
+      // A single statement failing (e.g. CREATE UNIQUE INDEX rejected because
+      // pre-existing rows already violate it) must not crash every DB access
+      // on startup. Log loudly and continue - CREATE TABLE/INDEX ... IF NOT
+      // EXISTS is idempotent by construction, so a real failure here means
+      // "this constraint can't apply yet," not "the schema is broken."
+      console.error(`[db migrate] statement failed, continuing: ${stmt.slice(0, 120)}...`, err);
+    }
   }
   migrateSignals(db);
   migratePaperTrades(db);

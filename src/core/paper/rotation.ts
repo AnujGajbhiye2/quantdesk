@@ -13,7 +13,7 @@ import 'server-only';
  * Pure-ish: reads/writes via broker + flags, no scanning/sizing logic here.
  */
 import { getPaperTrades } from '@/core/db/paper';
-import { closePaperTrade, markOpenTrades } from '@/core/paper/broker';
+import { closePaperTrade, markOpenTrades, openPaperTrade } from '@/core/paper/broker';
 import { getFlag, setFlag } from '@/core/db/flags';
 import type { PaperTrade } from '@/core/types';
 
@@ -133,4 +133,44 @@ export function openTradesForScope(scope: string): PaperTrade[] {
   const open = getPaperTrades({ status: 'open' });
   if (scope === 'intraday') return open.filter((t) => !t.market);
   return open.filter((t) => t.market === scope);
+}
+
+/**
+ * Best-effort compensating action: maybeRotateForCandidate() actually closes
+ * the incumbent position (it has to, to free the slot the risk-check needed
+ * freed - see rotation.ts header). If the caller's retry-open for the new
+ * candidate then fails too, we're left flat where we previously held a
+ * position, for no gain - see SYSTEM_AUDIT_AND_ROADMAP.md finding #6. Call
+ * this in that failure path to re-open an equivalent position at the current
+ * market price, restoring the incumbent's relative risk (stop/target
+ * distance as a % of entry, not its absolute prices).
+ *
+ * Returns null if the restoration itself also fails (e.g. still no room) -
+ * that outcome is at least surfaced explicitly by the caller rather than
+ * silently recorded as a plain "risk-check" skip.
+ */
+export function compensateFailedRotation(closed: PaperTrade): PaperTrade | null {
+  const stopPct = closed.stopPrice != null
+    ? Math.abs(closed.entryPrice - closed.stopPrice) / closed.entryPrice
+    : undefined;
+  const targetPct = closed.targetPrice != null
+    ? Math.abs(closed.targetPrice - closed.entryPrice) / closed.entryPrice
+    : undefined;
+
+  try {
+    return openPaperTrade({
+      strategyId:   closed.strategyId,
+      symbol:       closed.symbol,
+      side:         closed.side,
+      entryPrice:   closed.exitPrice ?? closed.entryPrice,
+      entryTime:    new Date().toISOString(),
+      stopPct,
+      targetPct,
+      _overrideQty: closed.qty,
+      notes:        `rotation-restore: reopened after a failed post-rotation retry (was ${closed.notes ?? ''})`,
+      market:       closed.market,
+    });
+  } catch {
+    return null;
+  }
 }
