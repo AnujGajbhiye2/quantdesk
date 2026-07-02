@@ -35,6 +35,18 @@ export function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/**
+ * Strip a bot token out of any string before logging it. The Telegram Bot
+ * API only supports auth via the URL path (`/bot<token>/method`), so the
+ * token has to be in the request URL - and node's fetch embeds the full
+ * request URL in network-error messages/stacks (not just in a successful
+ * response body). Without this, a transient network failure could leak the
+ * live bot token into application logs.
+ */
+export function redactToken(s: string, token: string): string {
+  return token ? s.split(token).join('[redacted]') : s;
+}
+
 /** Send a message. Returns true when Telegram accepted it. */
 export async function sendTelegram(text: string, opts: SendTelegramOpts = {}): Promise<boolean> {
   const token  = process.env.TELEGRAM_BOT_TOKEN;
@@ -59,12 +71,14 @@ export async function sendTelegram(text: string, opts: SendTelegramOpts = {}): P
       }),
     });
     if (!res.ok) {
-      console.error('[telegram] send failed:', res.status, await res.text());
+      const body = await res.text();
+      console.error('[telegram] send failed:', res.status, redactToken(body, token));
       return false;
     }
     return true;
   } catch (err) {
-    console.error('[telegram] send failed:', err);
+    const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    console.error('[telegram] send failed:', redactToken(msg, token));
     return false;
   }
 }

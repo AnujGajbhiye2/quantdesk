@@ -327,6 +327,29 @@ describe('runAutoTrade - daily-loss halt', () => {
     expect(res.haltReason).toMatch(/daily loss halt/i);
     expect(res.entries).toHaveLength(0);
   });
+
+  it('counts a realized loss on a manual trade toward the halt (account-wide scope)', async () => {
+    // Previously realizedToday excluded strategyId === 'manual' trades while
+    // unrealizedUSD summed every open position including manual - a scope
+    // mismatch. A bad day driven entirely by a manual trade should still
+    // trip the safety brake.
+    const today = new Date().toISOString().slice(0, 10);
+    mockGetPaperTrades.mockImplementation((opts?: { status?: string }) => {
+      if (opts?.status === 'open') return [];
+      if (opts?.status === 'closed') return [{
+        id: 'loss1', symbol: 'AAPL', side: 'long', qty: 1, entryPrice: 150,
+        entryTime: `${today}T09:30:00Z`, exitTime: `${today}T09:45:00Z`,
+        status: 'closed', strategyId: 'manual', pnl: -500, pnlPct: -0.05,
+        costs: 1, stopPrice: null, targetPrice: null, notes: 'manual entry',
+        currency: 'USD',
+      }];
+      return [];
+    });
+    mockMarkOpen.mockReturnValue([]);
+    const res = await autoTrade();
+    expect(res.halted).toBe(true);
+    expect(res.haltReason).toMatch(/daily loss halt/i);
+  });
 });
 
 describe('runAutoTrade - dry run', () => {

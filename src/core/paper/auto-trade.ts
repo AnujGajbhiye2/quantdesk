@@ -296,10 +296,14 @@ async function runAutoTradeInner(
     const acc   = buildAccountSummary(cashAcc, unrealizedUSD);
     equity      = acc.equity;
 
-    // Daily loss = realized P&L on auto trades that closed today + unrealized on opens
-    const realizedToday = closedToday
-      .filter((t) => t.strategyId !== 'manual')
-      .reduce((s, t) => s + (t.pnl ?? 0), 0);
+    // Daily loss = whole-account realized P&L today + unrealized on all opens.
+    // Previously realizedToday excluded manual trades while unrealizedUSD
+    // summed every open position (manual included) - a scope mismatch that
+    // could under-count a bad day driven by a manual position. Matches
+    // daily-auto-trade.ts's account-wide scope, and is the conservative
+    // choice for a safety brake: halt on any real day loss, not just the
+    // auto-trader's own.
+    const realizedToday = closedToday.reduce((s, t) => s + (t.pnl ?? 0), 0);
     const dayLoss = realizedToday + unrealizedUSD;
 
     if (dayLoss < -(cfg.dailyLossHaltPct * equity)) {

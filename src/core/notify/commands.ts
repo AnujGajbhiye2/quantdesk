@@ -21,7 +21,7 @@ import 'server-only';
 
 import { getFlag, setFlag } from '@/core/db/flags';
 import { isTradingHalted, setTradingHalt, clearTradingHalt } from '@/core/paper/halt';
-import { sendTelegram, telegramConfigured } from './telegram';
+import { sendTelegram, telegramConfigured, redactToken } from './telegram';
 import { computeCashAccount, buildAccountSummary } from '@/core/paper/account';
 import { markOpenTrades } from '@/core/paper/broker';
 import { getPaperTrades } from '@/core/db/paper';
@@ -89,17 +89,18 @@ export async function pollTelegramCommands(): Promise<void> {
       `https://api.telegram.org/bot${token}/getUpdates?offset=${offset}&timeout=0&limit=100`,
     );
     if (!res.ok) {
-      console.error('[telegram-commands] getUpdates failed:', res.status, await res.text());
+      console.error('[telegram-commands] getUpdates failed:', res.status, redactToken(await res.text(), token));
       return;
     }
     const body = await res.json() as GetUpdatesResponse;
     if (!body.ok) {
-      console.error('[telegram-commands] getUpdates not ok:', body);
+      console.error('[telegram-commands] getUpdates not ok:', redactToken(JSON.stringify(body), token));
       return;
     }
     updates = body.result;
   } catch (err) {
-    console.error('[telegram-commands] getUpdates error:', err);
+    const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    console.error('[telegram-commands] getUpdates error:', redactToken(msg, token));
     return;
   }
 
