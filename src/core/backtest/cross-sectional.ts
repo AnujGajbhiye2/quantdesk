@@ -34,11 +34,18 @@
  * SURVIVORSHIP BIAS: if the caller's universe is sourced from a present-day
  * constituent list (e.g. scripts/universe/sp500.json) applied retroactively,
  * delisted/failed names are structurally excluded and returns are inflated.
- * This module has no way to detect or correct that - callers (e.g.
- * scripts/eval-cross-sectional.ts) must surface it explicitly to the reader.
+ * Passing `membership` (point-in-time index membership, see
+ * core/data/pit-membership.ts) removes the SELECTION half of that bias: at
+ * each rebalance only symbols that were actually index members on that date
+ * are ranked. The PRICE half remains on free data - names that delisted
+ * before today usually have no Yahoo history at all, so they still cannot
+ * be held even with membership filtering. Callers must surface whichever
+ * mode ran explicitly to the reader.
  */
 import type { Bar } from '@/core/types';
 import type { TradeRecord, EquityPoint, BacktestMetrics } from './engine';
+import type { MembershipChange } from '@/core/data/pit-membership';
+import { membershipAsOf } from '@/core/data/pit-membership';
 import { computeMetrics } from './metrics';
 import { entryFillPrice, exitFillPrice, realizedPnl, qtyForCash } from './fills';
 import { momentumScore, indexAsOf } from './momentum';
@@ -76,6 +83,17 @@ export interface CrossSectionalConfig {
   activeFrom?: string;
   /** ISO date; rebalances/equity curve stop here (inclusive). */
   activeTo?: string;
+  /**
+   * Point-in-time index membership. When set, each rebalance only ranks
+   * symbols that were members of the index on that rebalance date
+   * (reconstructed by replaying `changes` backward from `currentMembers` -
+   * see core/data/pit-membership.ts). Omit to rank the full bars universe
+   * (survivorship-biased when that universe is a present-day snapshot).
+   */
+  membership?: {
+    currentMembers: readonly string[];
+    changes:        readonly MembershipChange[];
+  };
 }
 
 export interface RebalanceLog {
@@ -187,10 +205,25 @@ export function runCrossSectional(config: CrossSectionalConfig): CrossSectionalR
   // 3. Rebalance dates: step every rebalanceDays once minNamesToTrade names
   //    have enough native history.
   // ---------------------------------------------------------------------
+
+  // Point-in-time membership check, memoized per date (the replay walks the
+  // whole change ledger each call). No membership config = everyone passes.
+  const membershipCache = new Map<string, Set<string>>();
+  function isMemberOn(sym: string, date: string): boolean {
+    if (!config.membership) return true;
+    let members = membershipCache.get(date);
+    if (!members) {
+      members = membershipAsOf(config.membership.currentMembers, config.membership.changes, date);
+      membershipCache.set(date, members);
+    }
+    return members.has(sym);
+  }
+
   function eligibleCountAt(masterIdx: number): number {
     const d = masterDates[masterIdx];
     let n = 0;
     for (const sym of symbols) {
+      if (!isMemberOn(sym, d)) continue;
       const nativeIdx = indexAsOf(config.bars[sym], d);
       if (nativeIdx >= 0 && Number.isFinite(momentumScore(config.bars[sym], nativeIdx, lookbackBars, skipBars))) {
         n++;
@@ -276,6 +309,7 @@ export function runCrossSectional(config: CrossSectionalConfig): CrossSectionalR
 
       const scored: { symbol: string; score: number }[] = [];
       for (const sym of symbols) {
+        if (!isMemberOn(sym, d)) continue; // not in the index on this date - PIT filter
         const nativeIdx = indexAsOf(config.bars[sym], d);
         if (nativeIdx < 0) continue;
         const score = momentumScore(config.bars[sym], nativeIdx, lookbackBars, skipBars);

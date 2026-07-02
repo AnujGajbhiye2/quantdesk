@@ -20,12 +20,16 @@
  *   SKIP=21               - bars excluded from the end of the lookback (~1 month)
  *
  * ============================================================================
- * SURVIVORSHIP BIAS WARNING: the SP500 universe below is sourced from a
- * PRESENT-DAY constituent snapshot (scripts/universe/sp500.json), applied
- * retroactively over the full history. Delisted/failed/removed names are
- * structurally absent from this backtest, which inflates momentum returns -
- * you are only ever ranking companies that survived to today. Treat these
- * numbers as an optimistic upper bound, not a live-tradable estimate.
+ * SURVIVORSHIP BIAS: the SP500 universe below is sourced from a PRESENT-DAY
+ * constituent snapshot (scripts/universe/sp500.json). When the
+ * index_membership_changes table is populated (npm run build-pit-membership),
+ * this eval passes point-in-time membership into the backtest so each
+ * rebalance only ranks symbols that were actually in the index on that date -
+ * removing the SELECTION half of the bias. The PRICE half remains on free
+ * data: names that delisted before today usually have no Yahoo history, so
+ * they still cannot be held. Set PIT=0 to force the old unfiltered mode for
+ * a before/after comparison. When the table is empty the eval falls back to
+ * unfiltered mode and says so loudly.
  * ============================================================================
  */
 
@@ -34,6 +38,7 @@ import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
 
 import type { Bar } from '@/core/types';
+import type { MembershipChange } from '@/core/data/pit-membership';
 import { runCrossSectional, type CrossSectionalResult } from '@/core/backtest/cross-sectional';
 
 // ---------------------------------------------------------------------------
@@ -71,6 +76,18 @@ function getBarsForSymbol(symbol: string): Bar[] {
   ).all(symbol) as Bar[];
 }
 
+function getMembershipChanges(): MembershipChange[] {
+  try {
+    return db.prepare(
+      `SELECT effective_date AS effectiveDate, symbol, action
+       FROM index_membership_changes WHERE index_name = 'sp500'
+       ORDER BY effective_date ASC`,
+    ).all() as MembershipChange[];
+  } catch {
+    return []; // table absent in this snapshot - fall back to unfiltered mode
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Load universe
 // ---------------------------------------------------------------------------
@@ -78,11 +95,19 @@ function getBarsForSymbol(symbol: string): Bar[] {
 console.log('\nCross-sectional momentum - time-split walk-forward evaluation');
 console.log(`Config: trainFrac=${TRAIN_FRAC}, windows=${WINDOWS}, minBars=${MIN_BARS}, topN=${TOP_N}, rebalanceDays=${REBALANCE_DAYS}, lookback=${LOOKBACK}, skip=${SKIP}`);
 console.log('Commission: 10bps round-trip | Slippage: 5bps\n');
-console.log('*** SURVIVORSHIP BIAS: universe is a present-day SP500 snapshot applied');
-console.log('*** retroactively - delisted names are absent, returns are optimistically');
-console.log('*** biased upward. Not a live-tradable estimate. ***\n');
 
 const symbols = getSymbolsFromFile(UNIVERSE_FILE);
+const membershipChanges = process.env.PIT === '0' ? [] : getMembershipChanges();
+const pitActive = membershipChanges.length > 0;
+if (pitActive) {
+  console.log(`*** PIT membership ACTIVE: ${membershipChanges.length} change events - each rebalance`);
+  console.log('*** only ranks symbols that were index members on that date (selection bias');
+  console.log('*** removed). Price-history bias remains for delisted names on free data. ***\n');
+} else {
+  console.log('*** SURVIVORSHIP BIAS: PIT membership table empty or PIT=0 - present-day');
+  console.log('*** SP500 snapshot applied retroactively, delisted names absent, returns');
+  console.log('*** optimistically biased upward. Run: npm run build-pit-membership ***\n');
+}
 const bars: Record<string, Bar[]> = {};
 let loaded = 0;
 let skipped = 0;
@@ -123,6 +148,9 @@ const runParams = {
   slippagePct:   0.0005,  // 5bps
   initialEquity: 10_000,
   barsPerYear:   252,
+  membership: pitActive
+    ? { currentMembers: symbols, changes: membershipChanges }
+    : undefined,
 };
 
 // ---------------------------------------------------------------------------
