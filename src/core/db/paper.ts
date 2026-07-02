@@ -101,6 +101,13 @@ export function fillPendingPaperTrade(
   `).run([fill.entryPrice, fill.entryTime, id]);
 }
 
+/** Ratchet an open trade's stop price (trailing stop). No-op on closed/pending trades. */
+export function updatePaperTradeStop(id: string, stopPrice: number): void {
+  getDb()
+    .prepare("UPDATE paper_trades SET stop_price = ? WHERE id = ? AND status = 'open'")
+    .run([stopPrice, id]);
+}
+
 /** Delete a pending trade (cancel a resting limit order - no history kept). */
 export function cancelPendingPaperTrade(id: string): void {
   getDb()

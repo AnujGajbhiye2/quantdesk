@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { DataTable } from '@/components/table/DataTable';
 import type { ColumnDef } from '@tanstack/react-table';
+import { toUSD } from '@/core/format/fx';
 
 interface AutoTradeStatus {
   enabled:          boolean;
@@ -18,7 +19,7 @@ interface AutoTradeStatus {
   todayPnlUsd:      number;
   trades:           Array<{
     id: string; symbol: string; side: string; status: string;
-    qty: number; entryPrice: number; entryTime: string;
+    qty: number; entryPrice: number; entryTime: string; currency?: string;
     pnl?: number | null; pnlPct?: number | null;
   }>;
 }
@@ -57,17 +58,18 @@ const AUTO_TRADE_COLS: ColumnDef<TradeItem, unknown>[] = [
   {
     accessorKey: 'entryPrice',
     header: 'ENTRY',
-    cell: ({ getValue }) => `$${(getValue() as number).toFixed(2)}`,
+    cell: ({ getValue, row }) => `$${toUSD(getValue() as number, row.original.currency).toFixed(2)}`,
     meta: { numeric: true },
   },
   {
     accessorKey: 'pnl',
     header: 'P&L',
-    cell: ({ getValue }) => {
+    cell: ({ getValue, row }) => {
       const v = getValue() as number | null | undefined;
       if (v == null) return <span style={{ color: 'var(--text-muted)' }}>-</span>;
-      const color = v > 0 ? 'var(--color-up)' : v < 0 ? 'var(--color-down)' : 'var(--text-muted)';
-      return <span style={{ color, fontVariantNumeric: 'tabular-nums' }}>{v >= 0 ? '+' : ''}${v.toFixed(2)}</span>;
+      const usd = toUSD(v, row.original.currency);
+      const color = usd > 0 ? 'var(--color-up)' : usd < 0 ? 'var(--color-down)' : 'var(--text-muted)';
+      return <span style={{ color, fontVariantNumeric: 'tabular-nums' }}>{usd >= 0 ? '+' : ''}${usd.toFixed(2)}</span>;
     },
     meta: { numeric: true },
   },

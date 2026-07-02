@@ -13,6 +13,7 @@ import {
 import {
   insertPaperTrade,
   updatePaperTrade,
+  updatePaperTradeStop,
   fillPendingPaperTrade,
   getPaperTrade,
   getPaperTrades,
@@ -698,6 +699,20 @@ export interface SweepResult {
  * Calls closePaperTrade() which books slippage/commission identically to the engine.
  * Returns a SweepResult per open trade.
  */
+/**
+ * Trailing stop config, mirroring the backtest engine's Imp 1 mechanics
+ * (src/core/backtest/engine.ts) so live paper trading realizes the same
+ * OOS Sharpe improvement the backtest measured. Off by default - flip
+ * TRAILING_STOP_ENABLED=1 once verified against dry-run.
+ */
+function trailingStopConfigFromEnv(): { activationPct: number; distancePct: number } | null {
+  if (process.env.TRAILING_STOP_ENABLED !== '1') return null;
+  return {
+    activationPct: Number(process.env.TRAILING_STOP_ACTIVATION_PCT ?? 0.03),
+    distancePct:   Number(process.env.TRAILING_STOP_DISTANCE_PCT   ?? 0.015),
+  };
+}
+
 export function sweepOpenTrades(
   timeframe:   Timeframe = '1d',
   commission:  number = 0,
@@ -707,17 +722,28 @@ export function sweepOpenTrades(
 ): SweepResult[] {
   const openTrades = getPaperTrades({ status: 'open' });
   const results:   SweepResult[] = [];
+  const trail = trailingStopConfigFromEnv();
 
   for (const trade of openTrades) {
     const allBars   = getBars(trade.symbol, timeframe);
     // Only look at bars strictly after the entry time
     const postBars  = allBars.filter((b) => b.time > trade.entryTime);
 
+    // Trailing stop state (Imp 1 parity): re-derived from scratch each sweep
+    // call by walking forward from entry - no persisted intermediate state
+    // needed. curStop is what's actually evaluated against each bar; it only
+    // ratchets in the trade's favor (up for long, down for short), evaluated
+    // one bar after the peak that produced it (no look-ahead).
+    let curStop     = trade.stopPrice ?? undefined;
+    let peak        = trade.entryPrice;
+    let trailActive = false;
+
     let closed = false;
     let barsHeld = 0;
     for (const bar of postBars) {
       barsHeld += 1;
-      const { stopPrice, targetPrice } = trade;
+      const stopPrice   = curStop;
+      const { targetPrice } = trade;
 
       if (trade.side === 'long') {
         const stopHit   = stopPrice   != null && bar.low  <= stopPrice;
@@ -793,10 +819,40 @@ export function sweepOpenTrades(
         closed = true;
         break;
       }
+
+      // Trailing stop ratchet (Imp 1 parity, engine.ts section C1.5): runs
+      // after this bar's stop/target check, so the ratchet from bar i is
+      // only evaluated starting bar i+1 - same no-look-ahead discipline.
+      if (trail) {
+        if (trade.side === 'long') {
+          if (bar.high > peak) peak = bar.high;
+          const unrealised = (peak - trade.entryPrice) / trade.entryPrice;
+          if (!trailActive && unrealised >= trail.activationPct) trailActive = true;
+          if (trailActive) {
+            const trailStop = peak * (1 - trail.distancePct);
+            curStop = curStop != null ? Math.max(curStop, trailStop) : trailStop;
+          }
+        } else {
+          if (bar.low < peak) peak = bar.low;
+          const unrealised = (trade.entryPrice - peak) / trade.entryPrice;
+          if (!trailActive && unrealised >= trail.activationPct) trailActive = true;
+          if (trailActive) {
+            const trailStop = peak * (1 + trail.distancePct);
+            curStop = curStop != null ? Math.min(curStop, trailStop) : trailStop;
+          }
+        }
+      }
     }
 
     if (!closed) {
-      results.push({ trade, action: 'still-open' });
+      // Persist the ratcheted stop so the UI reflects the live trailing
+      // level and the next sweep call starts from it.
+      if (trail && curStop != null && curStop !== trade.stopPrice) {
+        updatePaperTradeStop(trade.id, curStop);
+        results.push({ trade: { ...trade, stopPrice: curStop }, action: 'still-open' });
+      } else {
+        results.push({ trade, action: 'still-open' });
+      }
     }
   }
 
