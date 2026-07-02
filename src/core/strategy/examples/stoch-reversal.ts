@@ -26,7 +26,13 @@ const paramsSchema = z.object({
   targetPct:     z.number().positive().optional(),
   sizePct:       z.number().positive().max(1).default(1),
   adxPeriod:     z.number().int().positive().default(14),
-  /** Entry suppressed when symbol ADX >= adxMax (trending). Default 100 = gate off. */
+  /**
+   * Entry suppressed when symbol ADX >= adxMax (trending). Default 100 =
+   * gate off. Evaluated at adxMax=25 via scripts/eval-adx-gate.ts on SP500 +
+   * Nifty200 walk-forward: REJECTED for all 3 live MR strategies - OOS
+   * Sharpe and win rate both fell (drawdown improved, but not enough to
+   * offset it). Don't flip this default without re-running that harness.
+   */
   adxMax:        z.number().positive().default(100),
 });
 

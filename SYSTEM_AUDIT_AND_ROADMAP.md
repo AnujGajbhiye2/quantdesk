@@ -272,28 +272,47 @@ entries after failed sweeps.
 Goal: activate the already-implemented filters, each justified by before/after
 walk-forward evidence - the cheapest expected P&L improvement in the repo.
 
-- **ADX ranging gate on:** run `scripts/eval-adx-gate.ts` on corrected data, pick the
-  threshold, set `adxMax` on the live MR strategies. Mean reversion in a strong trend
-  is how MR books die; this gate exists for exactly that.
-- **Volatility regime filter:** add a realized-vol (or ^VIX via Yahoo - free) position
-  scaler: when 21-day realized vol of SPY is above a threshold percentile, scale
-  `sizePct` down (e.g. 50%) or block new entries. Volatility-scaled exposure is one of
-  the best-documented Sharpe improvements in the literature - it works by dodging the
-  crash regimes where mean reversion and momentum both bleed.
-- **Regime declarations:** have each live strategy declare its regime (MR strategies:
-  ranging/non-crisis), making the existing `checkRegime` infrastructure actually fire.
-- **Earnings blackout:** no new entry within N days before a known earnings date
-  (data already lands in `fundamentals_cache`); walk-forward the value of N.
-- **Resolve the 15m mismatch:** either walk-forward-validate the live strategies on
-  15m bars (with the corrected `barsPerYear`) or move live execution to the daily
-  path (`daily-auto-trade.ts`) where the strategies were designed and validated.
-  Decide on evidence, not preference.
-- **Trailing stop decision:** the engine and broker both implement it; run the
-  existing improvement harness on corrected data and turn `TRAILING_STOP_ENABLED` on
-  or delete the ambiguity.
+**Evidence gathered this pass** (run against the local `data/quantdesk.db` research
+snapshot - not yet the Phase-1-corrected adjusted/PIT data, so treat as directional,
+re-run once that re-ingest happens):
+
+- **ADX ranging gate: REJECTED.** `scripts/eval-adx-gate.ts` at `adxMax=25` on SP500 +
+  Nifty200 walk-forward: OOS Sharpe and win rate both *fell* for all 3 live strategies
+  on both universes (drawdown improved, but not enough to clear the acceptance bar).
+  Left at the default (100 = off); the rejection reasoning is now inline in each
+  strategy's `adxMax` param comment (`rsi-reversion.ts`, `bollinger-reversion.ts`,
+  `stoch-reversal.ts`) so a future session doesn't re-flip it without re-running the
+  harness. Don't assume "add a trend filter" is free money - it wasn't, here.
+- **Trailing stop: ACCEPTED**, and this was already known - `.env.local.example`
+  documented the same finding before this session touched it (+0.09 avg OOS Sharpe).
+  Independent re-run via `scripts/eval-improvements.ts FEATURE=trailing` vs `FEATURE=none`
+  confirms it: all 3 strategies improve on Sharpe (+0.06 to +0.09), win rate (+9 to
+  +14pp), and drawdown (all lower) at the current default params (3% activation,
+  1.5% distance). **Not flipped `TRAILING_STOP_ENABLED=1` in this pass** - it's a live
+  paper-trading behavior change (not a bug fix), and `.env.local.example`'s own comment
+  already frames it as an intentional user opt-in after dry-run verification, not
+  something to silently switch on. Recommendation stands: turn it on.
+
+**Not done this pass** (each is real feature work with trading-behavior judgment
+calls, not a mechanical fix - deliberately left for a dedicated phase rather than
+rushed):
+
+- **Volatility regime filter:** realized-vol (or ^VIX via Yahoo - free) position
+  scaler. Not yet built or evaluated.
+- **Regime declarations:** no live strategy declares `Strategy.regime` yet, so
+  `checkRegime` stays inert. Needs a per-strategy regime spec + its own walk-forward
+  evidence, not a blanket flip.
+- **Earnings blackout:** no new entry within N days of a known earnings date. Data
+  exists (`fundamentals_cache`); the blackout window N is unvalidated.
+- **Resolve the 15m mismatch:** the 3 live strategies are daily-designed but execute
+  on 15m bars intraday, never walk-forward-validated at that timeframe. Needs a
+  decision backed by a 15m walk-forward run (now that `barsPerYear` annualizes
+  correctly - Phase 1) or a move to the daily-only execution path.
 
 Definition of Done: each filter ships with a before/after walk-forward comparison in
-the journal or a research note; live config reflects the winning variant.
+the journal or a research note; live config reflects the winning variant. Met for
+ADX (rejected, documented) and trailing stop (accepted, documented, opt-in
+recommendation stands); not yet met for vol filter / regime / earnings / 15m.
 
 ### Phase 4 — Alpha: cross-sectional momentum goes live
 
