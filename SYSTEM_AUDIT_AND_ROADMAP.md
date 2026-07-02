@@ -194,9 +194,14 @@ Goal: remove foot-guns and lies from the repo.
   `.bak.json` universe files.
 - Formally bin `roc-momentum` and `atr-trend`: move them out of `examples/` into a
   `graveyard/` folder (or delete) with the OOS evidence recorded in the commit message.
+  *(Done in the second pass: both live in `strategy/graveyard/`, unregistered -
+  gone from the research UI; eval-walkforward still imports them so the rejection
+  evidence stays reproducible.)*
 
 Definition of Done: `git status` clean of DB files; one true deploy story; docs match
-reality; build passes.
+reality; build passes. *(Remaining: the stray `quantdesk*.db` files in the repo root
+are gitignored but still on disk (~780MB) - deleting them is the user's call since
+they may be manual prod snapshots.)*
 
 ### Phase 1 — Data and metrics honesty (the foundation)
 
@@ -240,6 +245,25 @@ this phase.
 Definition of Done: reconciliation script shows Yahoo/Alpaca agreement; metrics tests
 pass; calendar assertion in place; PIT membership table populated; fresh walk-forward
 report on honest data exists and the live roster reflects it.
+
+**Status update (2026-07-02, second pass):** the two items left open by the first
+pass are now closed.
+
+- Reconciliation script: `npm run reconcile-providers` compares Yahoo vs Alpaca
+  daily closes on a split-heavy symbol set (NVDA/AVGO/WMT/CMG + AAPL/MSFT
+  controls). Verified live: 876 overlap days per symbol, mean divergence
+  0.02-0.06%, no split-ratio jumps - the adjclose fix is confirmed against a
+  second source. Fails loudly on an adjustment-break signature (any day > 5%
+  divergence) or persistent drift (> 2% of days over 0.5%).
+- PIT membership: `npm run build-pit-membership` populated
+  `index_membership_changes` (762 events), and `runCrossSectional()` now accepts
+  a `membership` config that filters each rebalance to actual index members on
+  that date (with tests). Before/after on the same snapshot: OOS Sharpe
+  1.44 -> 1.15, OOS CAGR 113.8% -> 67.7%, IS total return 404.9% -> 123.0% -
+  survivorship selection bias was inflating the edge exactly as predicted, and
+  the edge survives the correction. `PIT=0` re-runs unfiltered for comparison.
+- Re-ingest verification: stored NVDA closes before the 2024 10:1 split read
+  ~83 (adjusted), not ~830 (raw) - the stored history is adjusted data.
 
 ### Phase 2 — Execution safety
 
@@ -334,10 +358,13 @@ re-run once that re-ingest happens):
   the vol/ADX gates this cannot be walk-forward evaluated: Yahoo's calendarEvents
   only exposes the *next upcoming* earnings date, not history, and there is no free
   point-in-time earnings calendar to backtest against. Ships on trust, not evidence.
-  Also worth knowing: `fundamentals_cache` is populated lazily (only symbols a user
+  Also worth knowing: `fundamentals_cache` was populated lazily (only symbols a user
   has viewed the dossier for), not proactively for the whole auto-trade universe -
-  so today this gate fails open (does nothing) for most symbols until something
-  proactively fetches fundamentals for the trading universe.
+  so the gate originally failed open (did nothing) for most symbols. *(Fixed in the
+  second pass: `core/data/fundamentals-prefetch.ts` runs nightly from
+  postRefreshTasks when the gate is enabled, filling the cache for the whole
+  auto-trade universe - the gate is armed for every candidate from the first EOD
+  refresh after enabling.)*
 - **Resolve the 15m mismatch: BLOCKED on data, not a decision to make yet.** The
   local snapshot only has ~3 weeks of 15m history (500 bars/symbol) - nowhere near
   enough for a meaningful walk-forward split (70/30 train/OOS across 3 windows
