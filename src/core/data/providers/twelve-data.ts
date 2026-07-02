@@ -154,7 +154,7 @@ export class TwelveDataProvider implements DataProvider {
     // Twelve Data returns newest-first; reverse to ascending
     bars.reverse();
 
-    return validateBars(bars);
+    return validateBars(bars, `${symbol}/${timeframe}`);
   }
 
   async getQuote(symbol: string): Promise<{ price: number; time: string } | null> {

@@ -142,6 +142,51 @@ describe('YahooProvider', () => {
       expect(bars[0].open).toBe(100);
       expect(bars[0].close).toBe(97);
     });
+
+    it('scales OHLC by the adjclose/close ratio (split/dividend adjustment)', async () => {
+      // Simulates a 2:1 split day: raw close 200, adjclose 100 -> ratio 0.5.
+      // Without this, a split shows up as a fake 50% overnight drop in the
+      // stored series (see SYSTEM_AUDIT_AND_ROADMAP.md finding #1).
+      const withAdjclose = {
+        quotes: [
+          { date: new Date('2024-01-03T00:00:00Z'), open: 210, high: 215, low: 205, close: 200, volume: 1000, adjclose: 100 },
+        ],
+      };
+      mockChart.mockResolvedValue(withAdjclose);
+
+      const bars = await provider.getHistory('AAPL', '1d', '2024-01-03', '2024-01-03');
+
+      expect(bars).toHaveLength(1);
+      // Clamp first (low = min(205,210,200) = 200; high = max(215,210,200) = 215),
+      // then scale by the 0.5 adjustment ratio.
+      expect(bars[0].open).toBe(105);
+      expect(bars[0].high).toBe(107.5);
+      expect(bars[0].low).toBe(100);
+      expect(bars[0].close).toBe(100);
+    });
+
+    it('is a no-op (ratio 1) when adjclose is absent (indices/forex/crypto)', async () => {
+      mockChart.mockResolvedValue(mockChartResponse); // no adjclose field on these fixtures
+
+      const bars = await provider.getHistory('^GSPC', '1d', '2024-01-03', '2024-01-05');
+
+      expect(bars[0].open).toBe(185.0);
+      expect(bars[0].close).toBe(186.3);
+    });
+
+    it('is a no-op when adjclose equals close (no corporate action that day)', async () => {
+      const noAdjustment = {
+        quotes: [
+          { date: new Date('2024-01-03T00:00:00Z'), open: 210, high: 215, low: 205, close: 200, volume: 1000, adjclose: 200 },
+        ],
+      };
+      mockChart.mockResolvedValue(noAdjustment);
+
+      const bars = await provider.getHistory('AAPL', '1d', '2024-01-03', '2024-01-03');
+
+      expect(bars[0].open).toBe(210);
+      expect(bars[0].close).toBe(200);
+    });
   });
 
   describe('toProviderSymbol()', () => {

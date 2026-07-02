@@ -27,6 +27,7 @@ import { getPaperTrades } from '@/core/db/paper';
 import { getAllSymbols, getLatestBarTime } from '@/core/db/bars';
 import { isTradingHalted } from '@/core/paper/halt';
 import { worstFreshness } from './freshness';
+import { totalGapCount } from '@/core/data/gaps';
 import type { PostRefreshSummary } from '@/core/data/post-refresh';
 
 const SEQ_KEY = 'heartbeat_seq';
@@ -58,6 +59,7 @@ export function buildHeartbeatText(
     signalCount: number;
     sweepLine: string;
     refreshTime: string;
+    gapsLine: string;
   },
 ): string {
   const lines: string[] = [
@@ -66,6 +68,7 @@ export function buildHeartbeatText(
     `Data refresh: ${stats.totalBars} bars / ${stats.symbolCount} symbols` +
       (stats.refreshErrors > 0 ? ` | ${stats.refreshErrors} ERROR(S)` : ''),
     `Data freshness: ${opts.freshLabel}`,
+    `${opts.gapsLine}`,
     `Scanner signals: ${opts.signalCount}`,
     `${opts.sweepLine}`,
     '',
@@ -138,6 +141,23 @@ export async function sendDailyHeartbeat(stats: HeartbeatStats): Promise<void> {
   // Signal count from scan result
   const signalCount = stats.post.scan.result?.signals.length ?? 0;
 
+  // Missing-trading-day gaps (peer-consensus detection, see core/data/gaps.ts)
+  let gapsLine = 'Gaps: no data';
+  try {
+    if (stats.post.gaps.error) {
+      gapsLine = `Gaps: ERROR - ${stats.post.gaps.error}`;
+    } else {
+      const n = totalGapCount(stats.post.gaps.results);
+      const worst = stats.post.gaps.results
+        .flatMap((r) => r.gaps)
+        .sort((a, b) => b.missingDates.length - a.missingDates.length)[0];
+      gapsLine = n === 0
+        ? 'Gaps: none detected'
+        : `Gaps: ${n} missing bar(s) across universe` +
+          (worst ? ` (worst: ${worst.symbol} x${worst.missingDates.length})` : '');
+    }
+  } catch { /* gapsLine stays 'Gaps: no data' */ }
+
   // Sweep summary
   let sweepLine = 'Sweep: no data';
   try {
@@ -168,6 +188,7 @@ export async function sendDailyHeartbeat(stats: HeartbeatStats): Promise<void> {
     signalCount,
     sweepLine,
     refreshTime,
+    gapsLine,
   });
 
   try {

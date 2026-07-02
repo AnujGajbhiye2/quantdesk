@@ -4,6 +4,7 @@ import { scanAll, type ScanAllResult } from '@/core/scan/scan-all';
 import { computeEdgeForUniverse, type ComputeEdgeResult } from '@/core/edge/compute';
 import { invalidateSnapshotCache } from '@/core/market/snapshot';
 import { updateScanRunCounts } from '@/core/db/runs';
+import { detectUniverseGaps, totalGapCount, type GapDetectionResult } from '@/core/data/gaps';
 
 /**
  * Tasks that must run after every EOD data refresh, regardless of how the
@@ -21,6 +22,7 @@ export interface PostRefreshSummary {
   sweep:        { results: SweepResult[]; error?: string };
   scan:         { result: ScanAllResult | null; error?: string };
   edge:         { result: ComputeEdgeResult | null; error?: string };
+  gaps:         { results: GapDetectionResult[]; error?: string };
 }
 
 export function postRefreshTasks(): PostRefreshSummary {
@@ -29,6 +31,7 @@ export function postRefreshTasks(): PostRefreshSummary {
     sweep:        { results: [] },
     scan:         { result: null },
     edge:         { result: null },
+    gaps:         { results: [] },
   };
 
   // New bars just landed - force a fresh snapshot on the next dashboard load.
@@ -81,5 +84,13 @@ export function postRefreshTasks(): PostRefreshSummary {
     summary.edge.error = err instanceof Error ? err.message : String(err);
   }
 
+  try {
+    summary.gaps.results = detectUniverseGaps();
+  } catch (err) {
+    summary.gaps.error = err instanceof Error ? err.message : String(err);
+  }
+
   return summary;
 }
+
+export { totalGapCount };

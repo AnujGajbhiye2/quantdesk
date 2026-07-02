@@ -93,8 +93,9 @@ export class TemplateProvider implements DataProvider {
 
     bars.sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
 
-    // Validate before returning - this will throw on malformed data
-    return validateBars(bars);
+    // Validate before returning - malformed bars are dropped (quarantined) and
+    // logged, not thrown; pass a context string so quarantine logs are traceable.
+    return validateBars(bars, `${symbol}/${timeframe}`);
 
     void providerSym; // remove this line once you use providerSym above
   }

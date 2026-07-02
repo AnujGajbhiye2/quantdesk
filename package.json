@@ -12,7 +12,8 @@
     "refresh": "tsx --conditions=react-server scripts/refresh.ts",
     "poll": "tsx --conditions=react-server scripts/poll.ts",
     "build-universe": "tsx scripts/build-universe.ts",
-    "validate-universe": "tsx scripts/validate-universe.ts"
+    "validate-universe": "tsx scripts/validate-universe.ts",
+    "build-pit-membership": "tsx --conditions=react-server scripts/build-pit-membership.ts"
   },
   "dependencies": {
     "@ixjb94/indicators": "^1.2.4",

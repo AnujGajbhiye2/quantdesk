@@ -111,9 +111,18 @@ describe('getHistory', () => {
     expect((init.headers as Record<string, string>)['APCA-API-SECRET-KEY']).toBe('test-secret');
   });
 
-  it('validates bar OHLCV via zod - rejects invalid bar', async () => {
-    mockFetch.mockResolvedValueOnce(barsResponse([{ t: '2025-06-18T14:30:00Z', o: 100, h: 90, l: 95, c: 98, v: 100 }]));
-    await expect(provider.getHistory('AAPL', '15m', '2025-06-18', '2025-06-18')).rejects.toThrow();
+  it('validates bar OHLCV via zod - quarantines (drops) an invalid bar instead of failing the whole fetch', async () => {
+    // A single malformed bar used to abort the entire symbol's ingest; now
+    // it's dropped (logged) and valid bars in the same response still come
+    // through. See core/data/schemas.ts validateBars.
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockFetch.mockResolvedValueOnce(barsResponse([
+      { t: '2025-06-18T14:30:00Z', o: 100, h: 90, l: 95, c: 98, v: 100 }, // invalid: high < open
+      VALID_BAR,
+    ]));
+    const result = await provider.getHistory('AAPL', '15m', '2025-06-18', '2025-06-18');
+    warnSpy.mockRestore();
+    expect(result).toHaveLength(1);
   });
 });
 

@@ -9,6 +9,24 @@
  */
 
 import type { TradeRecord, EquityPoint, BacktestMetrics } from './engine';
+import type { Timeframe } from '@/core/types';
+
+/**
+ * Bars per year for Sharpe annualisation, by timeframe. 252 trading days/year,
+ * 6.5h regular trading hours/day (390 minutes).
+ *
+ * Getting this wrong silently mis-scales every non-daily Sharpe: using the
+ * daily default (252) on a 15m backtest understates Sharpe by ~sqrt(6552/252)
+ * ≈ 5x; on a weekly backtest it overstates Sharpe by ~sqrt(252/52) ≈ 2.2x.
+ */
+export const BARS_PER_YEAR: Record<Timeframe, number> = {
+  '1m':  390 * 252,
+  '5m':  78  * 252,
+  '15m': 26  * 252,
+  '1h':  Math.round(6.5 * 252),
+  '1d':  252,
+  '1wk': 52,
+};
 
 /**
  * Compute all metrics from closed trades and the equity curve.
@@ -117,9 +135,11 @@ export function computeMetrics(
   }
 
   // --- Exposure ---
-  // Fraction of bars where a position was open (approximated from trade holding bars)
-  const barsInPosition = trades.reduce((s, t) => s + t.holdingBars, 0);
-  const exposurePct = totalBars > 0 ? (barsInPosition / totalBars) * 100 : 0;
+  // Fraction of bars where a position was open. De-duped via inPositionBars
+  // (same set exposureSharpe uses) rather than summing t.holdingBars directly:
+  // a partial exit pushes an extra trade record spanning the same entry..exit
+  // bar range as the runner, so a naive sum can push exposurePct past 100%.
+  const exposurePct = totalBars > 0 ? (inPositionBars.size / totalBars) * 100 : 0;
 
   return {
     totalReturnPct,

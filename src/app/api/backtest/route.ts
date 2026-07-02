@@ -9,6 +9,7 @@ import { recommendTrade } from '@/core/signals/recommend';
 import { getEdgeStats } from '@/core/db/edge';
 import { GLOBAL_SCOPE } from '@/core/edge/types';
 import { medianWinHoldBars, projectExitRange } from '@/core/edge/projection';
+import { BARS_PER_YEAR } from '@/core/backtest/metrics';
 import type { TradeIdea, Timeframe } from '@/core/types';
 
 /**
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
     }
 
     const timeframe = (body.timeframe ?? '1d') as Timeframe;
+    const barsPerYear = BARS_PER_YEAR[timeframe] ?? BARS_PER_YEAR['1d'];
     // Today's still-forming bar is display-only (charts) - it must not feed
     // the engine or the current-signal evaluation below.
     const bars      = dropPartialToday(getBars(body.symbol, timeframe));
@@ -92,7 +94,7 @@ export async function POST(request: Request) {
         commission:   body.commission,
         slippagePct:  body.slippagePct,
         initialEquity: 10_000,
-        barsPerYear:  252,
+        barsPerYear,
         maxHoldBars:  maxHoldBars(),
       });
       return NextResponse.json({ mode: 'walkforward', symbol: body.symbol, ...wfResult });
@@ -108,6 +110,7 @@ export async function POST(request: Request) {
       slippagePct: body.slippagePct,
       fillOn:      body.fillOn,
       maxHoldBars: maxHoldBars(),
+      barsPerYear,
     });
 
     // Current open signal: evaluate the strategy on the latest bar only.

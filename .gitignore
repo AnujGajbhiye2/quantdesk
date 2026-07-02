@@ -52,3 +52,7 @@ next-env.d.ts
 
 # PM2 logs
 /logs/
+
+# generated backups from scripts/build-universe.ts (build-pit-membership.ts follows the
+# same pattern) - transient local artifacts, not meant to be tracked
+scripts/universe/*.bak.json

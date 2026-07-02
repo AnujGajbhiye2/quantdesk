@@ -17,7 +17,7 @@
 import 'server-only';
 
 import type { Timeframe } from '@/core/types';
-import { isUsMarketOpen, isNearMarketClose, etTimeString } from '@/core/market/hours';
+import { isUsMarketOpen, isNearMarketClose, etTimeString, todayET as todayETShared, etDateOfIso } from '@/core/market/hours';
 import { autoTradeUniverse } from '@/core/data/universe';
 import { getRecentBars } from '@/core/db/bars';
 import { getActivePaperTradeBySymbol, getPaperTrades } from '@/core/db/paper';
@@ -145,14 +145,14 @@ export interface AutoTradeSummary {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Today's date in ET local time as 'YYYY-MM-DD'. */
+/**
+ * Today's date in ET local time as 'YYYY-MM-DD'. Delegates to the DST-aware
+ * hours.ts implementation - this used to return the UTC date, which mis-scopes
+ * the max-trades-per-day and anti-revenge (no re-entry after stop-out) gates
+ * for the ~19-20 hours/day ET and UTC dates disagree.
+ */
 function todayET(): string {
-  const now    = new Date();
-  const offset = now.getTimezoneOffset(); // not reliable in server env; use UTC offset calc
-  // Approximate: ET is UTC-4 (summer) or UTC-5 (winter). Use the hours gate:
-  // entry_time in DB is ISO; for "today" comparisons we just want the UTC date.
-  // Close enough for the anti-revenge filter (re-entry on stopped-out symbol).
-  return now.toISOString().slice(0, 10);
+  return todayETShared();
 }
 
 async function tg(text: string): Promise<void> {
@@ -242,10 +242,10 @@ export async function runAutoTrade(
   const today            = todayET();
   const allTrades        = getPaperTrades({ status: 'open' });
   const closedToday      = getPaperTrades({ status: 'closed' }).filter(
-    (t) => t.exitTime?.slice(0, 10) === today,
+    (t) => t.exitTime != null && etDateOfIso(t.exitTime) === today,
   );
   const openedTodayAuto  = getPaperTrades().filter(
-    (t) => t.entryTime.slice(0, 10) === today && t.strategyId !== 'manual',
+    (t) => etDateOfIso(t.entryTime) === today && t.strategyId !== 'manual',
   );
   const stoppedTodaySyms = new Set(
     closedToday

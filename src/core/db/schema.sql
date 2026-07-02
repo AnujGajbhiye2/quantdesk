@@ -185,3 +185,26 @@ CREATE TABLE IF NOT EXISTS decision_log (
 );
 CREATE INDEX IF NOT EXISTS idx_decision_log_run    ON decision_log(run_id);
 CREATE INDEX IF NOT EXISTS idx_decision_log_runsym ON decision_log(run_id, symbol);
+
+-- Point-in-time index membership changes, scraped from each index's Wikipedia
+-- "selected changes" table (scripts/build-pit-membership.ts). An append-only
+-- ledger, not a snapshot: replay it backward from the current constituent
+-- list to reconstruct membership as of any past date. This is what makes
+-- backtests survivorship-bias-aware - without it, a backtest run today only
+-- ever sees today's constituents, even at 2015 dates.
+--
+-- Coverage caveat (free data): Wikipedia's changes tables are reasonably
+-- complete back to the late 1990s for the S&P 500 but are not a complete
+-- record for a stock's entire multi-decade history. Good enough to remove
+-- lookahead bias in "did this stock enter/exit the index during my backtest
+-- window" - not a substitute for a paid point-in-time data vendor.
+CREATE TABLE IF NOT EXISTS index_membership_changes (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  index_name     TEXT    NOT NULL,        -- e.g. 'sp500'
+  effective_date TEXT    NOT NULL,        -- 'YYYY-MM-DD', the change's effective date
+  symbol         TEXT    NOT NULL,
+  action         TEXT    NOT NULL CHECK (action IN ('added', 'removed')),
+  source         TEXT    NOT NULL DEFAULT 'wikipedia',
+  UNIQUE(index_name, effective_date, symbol, action)
+);
+CREATE INDEX IF NOT EXISTS idx_membership_changes_index ON index_membership_changes(index_name, effective_date);

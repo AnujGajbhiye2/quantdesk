@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isUsMarketOpen, isNearMarketClose } from './hours';
+import { isUsMarketOpen, isNearMarketClose, todayET, etDateOfIso } from './hours';
 
 // Helper: build a UTC Date from an ET local time description.
 // etHour / etMin are the local ET wall-clock hour and minute.
@@ -62,6 +62,76 @@ describe('isUsMarketOpen', () => {
   it('works during winter EST (non-DST)', () => {
     // 2025-01-08 Wednesday 10:30 ET (EST, isDST=false)
     expect(isUsMarketOpen(etDate(2025, 1, 8, 10, 30, false))).toBe(true);
+  });
+});
+
+describe('isUsMarketOpen - algorithmic holiday calendar (regression for the hand-maintained-table expiry bug)', () => {
+  // The old table only covered 2024-2026; the algorithm must keep working
+  // for any year without a manual update. Spot-check 2027 and 2030.
+  it('closed on New Year 2027 (year beyond the old hardcoded table)', () => {
+    expect(isUsMarketOpen(etDate(2027, 1, 1, 10, 0, false))).toBe(false);
+  });
+
+  it('closed on Independence Day 2027', () => {
+    expect(isUsMarketOpen(etDate(2027, 7, 4, 10, 0, true))).toBe(false);
+  });
+
+  it('closed on Thanksgiving 2030 (4th Thursday of November)', () => {
+    // 2030-11-28 is the 4th Thursday of November 2030
+    expect(isUsMarketOpen(etDate(2030, 11, 28, 10, 0, false))).toBe(false);
+  });
+
+  it('closed on Good Friday 2026 (2026-04-03, computed via Easter algorithm)', () => {
+    expect(isUsMarketOpen(etDate(2026, 4, 3, 10, 0, true))).toBe(false);
+  });
+
+  it('closed on Juneteenth', () => {
+    expect(isUsMarketOpen(etDate(2027, 6, 19, 12, 0, true))).toBe(false);
+  });
+
+  it('observes July 4th on the preceding Friday when it falls on a Saturday (2026)', () => {
+    // July 4 2026 is a Saturday -> observed Friday July 3
+    expect(isUsMarketOpen(etDate(2026, 7, 3, 10, 0, true))).toBe(false);
+    // The actual Saturday is closed anyway (weekend), not a meaningful check on its own
+  });
+
+  it('open on an ordinary day adjacent to a holiday', () => {
+    // Day after New Year 2027
+    expect(isUsMarketOpen(etDate(2027, 1, 4, 10, 0, false))).toBe(true);
+  });
+});
+
+describe('isUsMarketOpen - half days (early 1pm ET close)', () => {
+  it('open at 12:30 ET the day after Thanksgiving (before the 1pm early close)', () => {
+    // 2025-11-28 is the day after Thanksgiving 2025
+    expect(isUsMarketOpen(etDate(2025, 11, 28, 12, 30, false))).toBe(true);
+  });
+
+  it('closed at 13:30 ET the day after Thanksgiving (after the 1pm early close)', () => {
+    expect(isUsMarketOpen(etDate(2025, 11, 28, 13, 30, false))).toBe(false);
+  });
+
+  it('open at 12:30 ET on Christmas Eve when it falls on a weekday (2026-12-24 is a Thursday)', () => {
+    expect(isUsMarketOpen(etDate(2026, 12, 24, 12, 30, false))).toBe(true);
+  });
+
+  it('closed at 13:30 ET on Christmas Eve when it falls on a weekday', () => {
+    expect(isUsMarketOpen(etDate(2026, 12, 24, 13, 30, false))).toBe(false);
+  });
+});
+
+describe('todayET / etDateOfIso', () => {
+  it('todayET returns the ET calendar date, not the UTC date', () => {
+    // 21:00 ET on 2025-06-18 (EDT, UTC-4) is 01:00 UTC on 2025-06-19 -
+    // the old bug (`new Date().toISOString().slice(0,10)`) would have
+    // returned the UTC date '2025-06-19' here, one day ahead of ET.
+    const d = etDate(2025, 6, 18, 21, 0, true);
+    expect(todayET(d)).toBe('2025-06-18');
+  });
+
+  it('etDateOfIso converts a UTC ISO timestamp to its ET calendar date', () => {
+    // 2025-06-19T01:00:00Z is 2025-06-18 21:00 ET (EDT)
+    expect(etDateOfIso('2025-06-19T01:00:00.000Z')).toBe('2025-06-18');
   });
 });
 

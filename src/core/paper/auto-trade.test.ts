@@ -21,6 +21,11 @@ vi.mock('@/core/market/hours', () => ({
   isUsMarketOpen:    (...args: unknown[]) => mockIsUsMarketOpen(...args),
   isNearMarketClose: (...args: unknown[]) => mockIsNearMarketClose(...args),
   etTimeString:      (...args: unknown[]) => mockEtTimeString(...args),
+  // Tests build fixture trade times off new Date().toISOString().slice(0,10)
+  // ("today"); mirror that here rather than doing a real ET conversion so
+  // fixtures and the code under test agree on what "today" is.
+  todayET:           () => new Date().toISOString().slice(0, 10),
+  etDateOfIso:       (iso: string) => iso.slice(0, 10),
 }));
 
 // Universe

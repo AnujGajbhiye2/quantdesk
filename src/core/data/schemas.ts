@@ -68,17 +68,33 @@ export function validateNewsItems(raw: unknown[]): z.infer<typeof NewsItemSchema
   });
 }
 
-/** Parse and validate an array of raw bar objects; throws ZodError on failure. */
-export function validateBars(raw: unknown[]): z.infer<typeof BarSchema>[] {
-  return raw.map((b, i) => {
-    const result = BarSchema.safeParse(b);
-    if (!result.success) {
-      throw new Error(
-        `Bar[${i}] validation failed: ${result.error.message}`,
+/**
+ * Parse and validate an array of raw bar objects. Bars that fail validation
+ * are quarantined (logged + dropped), NOT thrown - a single malformed bar
+ * (a known-occasional Yahoo/Alpaca glitch) used to abort ingest for the
+ * entire symbol, silently dropping it from that run. One bad bar should cost
+ * one bar, not the whole symbol.
+ */
+export function validateBars(raw: unknown[], context?: string): z.infer<typeof BarSchema>[] {
+  const good: z.infer<typeof BarSchema>[] = [];
+  let dropped = 0;
+  for (let i = 0; i < raw.length; i++) {
+    const result = BarSchema.safeParse(raw[i]);
+    if (result.success) {
+      good.push(result.data);
+    } else {
+      dropped++;
+      console.warn(
+        `[validateBars]${context ? ` ${context}` : ''} bar[${i}] quarantined: ${result.error.message}`,
       );
     }
-    return result.data;
-  });
+  }
+  if (dropped > 0) {
+    console.warn(
+      `[validateBars]${context ? ` ${context}` : ''} dropped ${dropped}/${raw.length} bars, kept ${good.length}.`,
+    );
+  }
+  return good;
 }
 
 /** Parse and validate an array of raw SymbolMeta objects; throws ZodError on failure. */

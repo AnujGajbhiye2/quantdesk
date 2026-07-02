@@ -4,6 +4,7 @@ import { list as listStrategies, get as getStrategy } from '@/core/strategy/regi
 import { runBacktest } from '@/core/backtest/engine';
 import { maxHoldBars } from '@/core/config';
 import { dropPartialToday } from '@/core/scan/scanner';
+import { BARS_PER_YEAR } from '@/core/backtest/metrics';
 import type { Timeframe } from '@/core/types';
 
 /**
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
     }
 
     const timeframe = (body.timeframe ?? '1d') as Timeframe;
+    const barsPerYear = BARS_PER_YEAR[timeframe] ?? BARS_PER_YEAR['1d'];
     // Same partial-bar rule as /api/backtest: today's forming bar never feeds the engine
     const bars = dropPartialToday(getBars(symbol, timeframe));
     if (bars.length < 2) {
@@ -57,6 +59,7 @@ export async function POST(request: Request) {
           timeframe,
           rawParams: {},
           maxHoldBars: maxHoldBars(),
+          barsPerYear,
         });
         const m = result.metrics;
         return {

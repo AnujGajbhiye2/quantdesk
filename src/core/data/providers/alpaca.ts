@@ -180,7 +180,7 @@ export class AlpacaProvider implements DataProvider {
     } while (pageToken);
 
     bars.sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
-    return validateBars(bars);
+    return validateBars(bars, `${symbol}/${timeframe}`);
   }
 
   // -----------------------------------------------------------------------
@@ -232,7 +232,7 @@ export class AlpacaProvider implements DataProvider {
     // Sort and validate each symbol's bars
     for (const sym of Object.keys(result)) {
       result[sym].sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
-      result[sym] = validateBars(result[sym]);
+      result[sym] = validateBars(result[sym], `${sym}/${timeframe}`);
     }
 
     return result;

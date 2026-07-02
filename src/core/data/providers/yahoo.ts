@@ -32,6 +32,13 @@ interface YFChartQuote {
   low: number | null;
   close: number | null;
   volume: number | null;
+  /**
+   * Split/dividend-adjusted close. Used to scale OHLC to an adjusted series so
+   * Yahoo-sourced bars match Alpaca's `adjustment: 'all'` series - without this,
+   * a split on a Yahoo-sourced symbol injects a raw price gap that looks like a
+   * real move to every strategy and backtest.
+   */
+  adjclose: number | null;
 }
 
 interface YFChartResult {
@@ -157,14 +164,27 @@ export class YahooProvider implements DataProvider {
           ? toDateString(q.date)
           : q.date.toISOString(); // full ISO for intraday
 
+      // Split/dividend adjustment: scale raw OHLC by adjclose/close so the stored
+      // series matches Alpaca's `adjustment: 'all'` series. Without this, a split
+      // on a Yahoo-sourced symbol shows up as a raw price gap in the stored bars -
+      // false stop-outs, false breakout signals, distorted backtests. Indices/forex/
+      // crypto have no adjclose (or adjclose === close); the ratio is then 1 (no-op).
+      const adjRatio =
+        q.adjclose != null && q.close > 0 ? q.adjclose / q.close : 1;
+
       // Clamp high/low to enforce OHLC integrity.
       // Yahoo forex data occasionally returns bars where low > open or low > close
       // by small floating-point amounts (bid/ask rounding). Conservative fix:
       // treat max(open, high, close) as high and min(open, low, close) as low.
-      const open  = q.open;
-      const close = q.close;
-      const high  = Math.max(q.high, open, close);
-      const low   = Math.min(q.low,  open, close);
+      const rawOpen  = q.open;
+      const rawClose = q.close;
+      const rawHigh  = Math.max(q.high, rawOpen, rawClose);
+      const rawLow   = Math.min(q.low,  rawOpen, rawClose);
+
+      const open  = rawOpen  * adjRatio;
+      const high  = rawHigh  * adjRatio;
+      const low   = rawLow   * adjRatio;
+      const close = rawClose * adjRatio;
 
       bars.push({
         time: dateStr,
@@ -180,7 +200,7 @@ export class YahooProvider implements DataProvider {
     bars.sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
 
     // Validate every bar with our shared schema before returning
-    return validateBars(bars);
+    return validateBars(bars, `${symbol}/${timeframe}`);
   }
 
   async getQuote(
