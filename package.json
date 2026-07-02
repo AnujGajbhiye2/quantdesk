@@ -13,7 +13,8 @@
     "poll": "tsx --conditions=react-server scripts/poll.ts",
     "build-universe": "tsx scripts/build-universe.ts",
     "validate-universe": "tsx scripts/validate-universe.ts",
-    "build-pit-membership": "tsx --conditions=react-server scripts/build-pit-membership.ts"
+    "build-pit-membership": "tsx --conditions=react-server scripts/build-pit-membership.ts",
+    "reconcile-providers": "tsx --conditions=react-server --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/reconcile-providers.ts"
   },
   "dependencies": {
     "@ixjb94/indicators": "^1.2.4",
