@@ -148,7 +148,6 @@ export async function register() {
 
           // Daily heartbeat
           try {
-            const { refreshUniverse }    = await import('@/core/data/ingest');
             const { sendDailyHeartbeat } = await import('@/core/notify/heartbeat');
             // Re-use aggregate from postRefreshTasks scan result for heartbeat
             await sendDailyHeartbeat({
@@ -157,7 +156,6 @@ export async function register() {
               refreshErrors: 0,
               post,
             });
-            void refreshUniverse; // imported above for potential future use
           } catch (err) {
             console.error('[cron:us] heartbeat failed:', err);
           }

@@ -30,7 +30,7 @@ To verify a phase is **done**:
 - **Strategies** (`core/strategy/examples/`): small pure modules. Engine structurally enforces no-look-ahead via a frozen context.
 - **Backtest engine** (`core/backtest/engine.ts`): iterates bars front-to-back, fills at next bar's open, applies commission + slippage, produces metrics.
 - **Indicators** (`core/indicators/`): wrapped registry with uniform signature. Outputs left-padded with NaN during warm-up so index `i` always maps to bar `i`.
-- **DB** (`core/db/`): SQLite schema handles symbols, bars, strategies, signals, paper trades. Migrations run on startup.
+- **DB** (`core/db/`): Turso (libSQL) embedded-replica schema handles symbols, bars, strategies, signals, paper trades. Migrations run on startup.
 - **UI** (`src/app/`, `src/components/`): panels read from DB; no direct provider or strategy knowledge.
 - **Auto-trade engine** (`core/paper/auto-trade.ts`): `runAutoTrade()` called by intraday cron every 15 min. Reuses scanner, broker, risk, recommend, Telegram - no new primitives. Gated by `AUTO_TRADE_ENABLED=1`.
 - **Intraday ingest** (`core/data/intraday-ingest.ts`): `ingestIntraday(timeframe)` fetches 15m bars via Alpaca batch endpoint for the auto-trade universe (S&P500 + gold). Upserts into `bars` table with intraday timeframe.

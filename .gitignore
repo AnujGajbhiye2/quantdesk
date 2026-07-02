@@ -41,8 +41,14 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# SQLite database - only ignore the root data/ directory (holds quantdesk.db)
+# SQLite / libSQL database - the data/ directory holds the local replica cache
 /data/
+
+# stray local libSQL replica caches that have accumulated in the repo root
+# (source of truth is the remote Turso DB; these are regenerable, never authoritative)
+/*.db
+/*.db-wal
+/*.db-shm
 
 # PM2 logs
 /logs/
