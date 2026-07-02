@@ -83,7 +83,7 @@ async function main() {
 
   // Post-refresh: sweep open paper trades, then run the all-strategies scan
   console.log('\nRunning post-refresh tasks (sweep + scan-all)...');
-  const post = postRefreshTasks();
+  const post = await postRefreshTasks();
 
   if (post.sweep.error) {
     console.error(`Sweep error: ${post.sweep.error}`);
@@ -115,6 +115,16 @@ async function main() {
     console.log(
       `Edge stats done. ${e.symbols} symbols x ${e.strategies} strategies, ` +
       `${e.rows} rows (${e.recomputed} recomputed), ${e.durationMs}ms.`,
+    );
+  }
+
+  if (post.fundamentalsPrefetch?.error) {
+    console.error(`Fundamentals prefetch error: ${post.fundamentalsPrefetch.error}`);
+  } else if (post.fundamentalsPrefetch?.result) {
+    const f = post.fundamentalsPrefetch.result;
+    console.log(
+      `Fundamentals prefetch done. ${f.fetched} fetched, ${f.cached} cached, ` +
+      `${f.failed} failed of ${f.attempted} (earnings-blackout gate armed).`,
     );
   }
 

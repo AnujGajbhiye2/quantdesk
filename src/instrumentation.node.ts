@@ -133,10 +133,17 @@ export async function register() {
         const ingestStartedAt = new Date().toISOString();
         try {
           const { postRefreshTasks } = await import('@/core/data/post-refresh');
-          const post = postRefreshTasks();
+          const post = await postRefreshTasks();
           if (post.sweep.error)        console.error('[cron:us] sweep failed:', post.sweep.error);
           if (post.scan.error)         console.error('[cron:us] scan-all failed:', post.scan.error);
           if (post.edge.error)         console.error('[cron:us] edge compute failed:', post.edge.error);
+          if (post.fundamentalsPrefetch?.error) {
+            console.error('[cron:us] fundamentals prefetch failed:', post.fundamentalsPrefetch.error);
+          }
+          if (post.fundamentalsPrefetch?.result) {
+            const f = post.fundamentalsPrefetch.result;
+            console.log(`[cron:us] fundamentals prefetch: ${f.fetched} fetched, ${f.cached} cached, ${f.failed} failed of ${f.attempted}.`);
+          }
           if (post.scan.result) {
             const s = post.scan.result;
             console.log(`[cron:us] scan-all done. ${s.scanned} symbols, ${s.signals.length} signals, ${s.durationMs}ms.`);

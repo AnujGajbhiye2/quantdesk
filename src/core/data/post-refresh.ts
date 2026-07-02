@@ -5,6 +5,7 @@ import { computeEdgeForUniverse, type ComputeEdgeResult } from '@/core/edge/comp
 import { invalidateSnapshotCache } from '@/core/market/snapshot';
 import { updateScanRunCounts } from '@/core/db/runs';
 import { detectUniverseGaps, totalGapCount, type GapDetectionResult } from '@/core/data/gaps';
+import { prefetchFundamentalsForAutoTradeUniverse, type FundamentalsPrefetchResult } from '@/core/data/fundamentals-prefetch';
 
 /**
  * Tasks that must run after every EOD data refresh, regardless of how the
@@ -15,6 +16,9 @@ import { detectUniverseGaps, totalGapCount, type GapDetectionResult } from '@/co
  * 2. Run the all-strategies x all-symbols scan and persist signals,
  *    so signal history accumulates daily without manual scans.
  * 3. Recompute backtested edge stats (trailing 2y) for every strategy.
+ * 4. Prefetch fundamentals (earnings dates) for the auto-trade universe so
+ *    the earnings-blackout gate has data instead of failing open
+ *    (only when EARNINGS_BLACKOUT_ENABLED=1).
  */
 
 export interface PostRefreshSummary {
@@ -23,15 +27,18 @@ export interface PostRefreshSummary {
   scan:         { result: ScanAllResult | null; error?: string };
   edge:         { result: ComputeEdgeResult | null; error?: string };
   gaps:         { results: GapDetectionResult[]; error?: string };
+  /** null when the earnings-blackout gate is disabled (prefetch skipped). */
+  fundamentalsPrefetch?: { result: FundamentalsPrefetchResult | null; error?: string };
 }
 
-export function postRefreshTasks(): PostRefreshSummary {
+export async function postRefreshTasks(): Promise<PostRefreshSummary> {
   const summary: PostRefreshSummary = {
     pendingFills: { results: [] },
     sweep:        { results: [] },
     scan:         { result: null },
     edge:         { result: null },
     gaps:         { results: [] },
+    fundamentalsPrefetch: { result: null },
   };
 
   // New bars just landed - force a fresh snapshot on the next dashboard load.
@@ -88,6 +95,15 @@ export function postRefreshTasks(): PostRefreshSummary {
     summary.gaps.results = detectUniverseGaps();
   } catch (err) {
     summary.gaps.error = err instanceof Error ? err.message : String(err);
+  }
+
+  try {
+    summary.fundamentalsPrefetch = { result: await prefetchFundamentalsForAutoTradeUniverse() };
+  } catch (err) {
+    summary.fundamentalsPrefetch = {
+      result: null,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 
   return summary;

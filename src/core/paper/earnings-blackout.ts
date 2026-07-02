@@ -8,11 +8,12 @@ import 'server-only';
  *
  * Data source: Fundamentals.nextEarningsDate, fetched via the Yahoo adapter's
  * calendarEvents module and cached in fundamentals_cache (core/db/research.ts,
- * getCachedFundamentals). That cache is populated lazily when a symbol's
- * dossier is viewed - NOT proactively for the whole auto-trade universe - so
- * for most symbols this will have no data yet and the gate fails open (does
- * not block). Making this gate reliably effective needs a proactive fetch
- * job for the trading universe, which is out of scope here.
+ * getCachedFundamentals). The cache is filled two ways: lazily when a symbol's
+ * dossier is viewed, and proactively for the whole auto-trade universe by the
+ * nightly prefetch job (core/data/fundamentals-prefetch.ts, run from
+ * postRefreshTasks when EARNINGS_BLACKOUT_ENABLED=1). The gate still fails
+ * open per-symbol when no earnings date is cached (e.g. first night after
+ * enabling, or a Yahoo fetch failure).
  *
  * Unevaluated: unlike the ADX and realized-vol regime gates, this cannot be
  * walk-forward tested without a free historical point-in-time earnings
