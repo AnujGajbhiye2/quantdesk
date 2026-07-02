@@ -58,6 +58,8 @@ export interface WalkForwardConfig {
   dynamicSizing?:             boolean;
   partialExitFraction?:       number;
   partialExitAtTargetPct?:    number;
+  targetRatchetExtensionR?:     number;
+  targetRatchetMaxExtensions?:  number;
 }
 
 export interface WalkForwardWindow {
@@ -115,6 +117,8 @@ export function runWalkForward(config: WalkForwardConfig): WalkForwardResult {
     dynamicSizing,
     partialExitFraction,
     partialExitAtTargetPct,
+    targetRatchetExtensionR,
+    targetRatchetMaxExtensions,
   } = config;
 
   const n = bars.length;
@@ -137,6 +141,8 @@ export function runWalkForward(config: WalkForwardConfig): WalkForwardResult {
     dynamicSizing,
     partialExitFraction,
     partialExitAtTargetPct,
+    targetRatchetExtensionR,
+    targetRatchetMaxExtensions,
   };
 
   // --- Full in-sample run (all bars) ---

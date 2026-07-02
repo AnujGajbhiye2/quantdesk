@@ -14,6 +14,7 @@ import {
   insertPaperTrade,
   updatePaperTrade,
   updatePaperTradeStop,
+  updatePaperTradeStopAndTarget,
   fillPendingPaperTrade,
   getPaperTrade,
   getPaperTrades,
@@ -713,6 +714,27 @@ function trailingStopConfigFromEnv(): { activationPct: number; distancePct: numb
   };
 }
 
+/**
+ * Target ratchet config, mirroring the backtest engine's Imp 6 mechanics
+ * (src/core/backtest/engine.ts). On hitting target, instead of closing,
+ * locks the stop at the old target price and pushes a new target out by
+ * extensionR * R (R = the trade's original entry-to-stop distance), up to
+ * maxExtensions times. Backtest evidence (scripts/eval-improvements.ts
+ * FEATURE=ratchet): a real but modest, strategy-dependent OOS Sharpe
+ * improvement (+0.02 to +0.04 for rsi-reversion/stoch-reversal; ~0 for
+ * bollinger-reversion, whose own signal exit usually fires before the
+ * fixed target price is reached) - weaker than trailing stop's +0.06 to
+ * +0.09. Off by default - flip TARGET_RATCHET_ENABLED=1 once verified
+ * against dry-run.
+ */
+function targetRatchetConfigFromEnv(): { extensionR: number; maxExtensions: number } | null {
+  if (process.env.TARGET_RATCHET_ENABLED !== '1') return null;
+  return {
+    extensionR:    Number(process.env.TARGET_RATCHET_EXTENSION_R    ?? 1.0),
+    maxExtensions: Number(process.env.TARGET_RATCHET_MAX_EXTENSIONS ?? 3),
+  };
+}
+
 export function sweepOpenTrades(
   timeframe:   Timeframe = '1d',
   commission:  number = 0,
@@ -722,7 +744,8 @@ export function sweepOpenTrades(
 ): SweepResult[] {
   const openTrades = getPaperTrades({ status: 'open' });
   const results:   SweepResult[] = [];
-  const trail = trailingStopConfigFromEnv();
+  const trail   = trailingStopConfigFromEnv();
+  const ratchet = targetRatchetConfigFromEnv();
 
   for (const trade of openTrades) {
     const allBars   = getBars(trade.symbol, timeframe);
@@ -738,12 +761,22 @@ export function sweepOpenTrades(
     let peak        = trade.entryPrice;
     let trailActive = false;
 
+    // Target ratchet state (Imp 6 parity): also re-derived from scratch each
+    // sweep. curTarget mutates on each ratchet; ratchetRDistance is fixed at
+    // the trade's original entry-to-stop distance (undefined - and ratchet
+    // effectively disabled for this trade - when it never had a stop).
+    let curTarget         = trade.targetPrice ?? undefined;
+    let extensionsUsed    = 0;
+    const ratchetRDistance = trade.stopPrice != null
+      ? Math.abs(trade.entryPrice - trade.stopPrice)
+      : undefined;
+
     let closed = false;
     let barsHeld = 0;
     for (const bar of postBars) {
       barsHeld += 1;
       const stopPrice   = curStop;
-      const { targetPrice } = trade;
+      const targetPrice = curTarget;
 
       if (trade.side === 'long') {
         const stopHit   = stopPrice   != null && bar.low  <= stopPrice;
@@ -763,16 +796,23 @@ export function sweepOpenTrades(
           break;
         }
         if (targetHit) {
-          const closed_ = closePaperTrade(trade.id, {
-            exitPrice:   targetPrice!,
-            exitTime:    bar.time,
-            commission,
-            slippagePct,
-            exitReason:  'target',
-          });
-          results.push({ trade: closed_, action: 'targeted', exitPrice: targetPrice!, exitTime: bar.time });
-          closed = true;
-          break;
+          const canRatchet = ratchet != null && ratchetRDistance != null && extensionsUsed < ratchet.maxExtensions;
+          if (canRatchet) {
+            curStop = curStop != null ? Math.max(curStop, targetPrice!) : targetPrice!;
+            curTarget = targetPrice! + ratchetRDistance! * ratchet!.extensionR;
+            extensionsUsed += 1;
+          } else {
+            const closed_ = closePaperTrade(trade.id, {
+              exitPrice:   targetPrice!,
+              exitTime:    bar.time,
+              commission,
+              slippagePct,
+              exitReason:  'target',
+            });
+            results.push({ trade: closed_, action: 'targeted', exitPrice: targetPrice!, exitTime: bar.time });
+            closed = true;
+            break;
+          }
         }
       } else {
         // Short position: stop is above entry, target is below
@@ -792,16 +832,23 @@ export function sweepOpenTrades(
           break;
         }
         if (targetHit) {
-          const closed_ = closePaperTrade(trade.id, {
-            exitPrice:   targetPrice!,
-            exitTime:    bar.time,
-            commission,
-            slippagePct,
-            exitReason:  'target',
-          });
-          results.push({ trade: closed_, action: 'targeted', exitPrice: targetPrice!, exitTime: bar.time });
-          closed = true;
-          break;
+          const canRatchet = ratchet != null && ratchetRDistance != null && extensionsUsed < ratchet.maxExtensions;
+          if (canRatchet) {
+            curStop = curStop != null ? Math.min(curStop, targetPrice!) : targetPrice!;
+            curTarget = targetPrice! - ratchetRDistance! * ratchet!.extensionR;
+            extensionsUsed += 1;
+          } else {
+            const closed_ = closePaperTrade(trade.id, {
+              exitPrice:   targetPrice!,
+              exitTime:    bar.time,
+              commission,
+              slippagePct,
+              exitReason:  'target',
+            });
+            results.push({ trade: closed_, action: 'targeted', exitPrice: targetPrice!, exitTime: bar.time });
+            closed = true;
+            break;
+          }
         }
       }
 
@@ -845,10 +892,16 @@ export function sweepOpenTrades(
     }
 
     if (!closed) {
-      // Persist the ratcheted stop so the UI reflects the live trailing
-      // level and the next sweep call starts from it.
-      if (trail && curStop != null && curStop !== trade.stopPrice) {
-        updatePaperTradeStop(trade.id, curStop);
+      // Persist whichever of stop/target ratcheted so the UI reflects the
+      // live level and the next sweep call starts from it.
+      const stopChanged   = curStop   != null && curStop   !== trade.stopPrice;
+      const targetChanged = curTarget != null && curTarget !== trade.targetPrice;
+      if (targetChanged) {
+        // Target ratchet always moves the stop too (locked at the old target).
+        updatePaperTradeStopAndTarget(trade.id, curStop!, curTarget!);
+        results.push({ trade: { ...trade, stopPrice: curStop, targetPrice: curTarget }, action: 'still-open' });
+      } else if (stopChanged) {
+        updatePaperTradeStop(trade.id, curStop!);
         results.push({ trade: { ...trade, stopPrice: curStop }, action: 'still-open' });
       } else {
         results.push({ trade, action: 'still-open' });

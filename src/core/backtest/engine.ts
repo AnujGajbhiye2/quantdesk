@@ -60,6 +60,8 @@ export interface TradeRecord {
   holdingBars: number;   // exitBar - entryBar
   exitReason: 'stop' | 'target' | 'signal' | 'time' | 'end-of-series';
   entryReason: string;
+  /** Imp 6: number of times the target was ratcheted before this trade closed. 0 when disabled/never fired. */
+  ratchetExtensionsUsed?: number;
 }
 
 export interface EquityPoint {
@@ -163,6 +165,19 @@ export interface BacktestConfig {
   partialExitFraction?: number;
   /** Fraction of target distance to trigger partial exit (e.g. 0.5 = halfway). */
   partialExitAtTargetPct?: number;
+
+  // Imp 6: target ratchet ("let winners run" - ratchets stop to the old
+  // target and extends a new one instead of closing at target, up to a cap).
+  /**
+   * On hitting target, lock the stop at the old target price and push a new
+   * target out by this many multiples of the ORIGINAL entry-to-stop distance
+   * (R). 1.0 = extend by another full R each time. Requires the trade to
+   * have both a stop and a target set at entry (R is undefined otherwise -
+   * ratchet is skipped for that trade).
+   */
+  targetRatchetExtensionR?: number;
+  /** Max number of times a single trade may be extended. Default 3 if ratchet is enabled. */
+  targetRatchetMaxExtensions?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -189,6 +204,11 @@ interface OpenTrade {
   partialExitAtTargetPct?: number; // fraction of target distance to trigger partial
   partialTaken: boolean;           // whether partial exit has fired
   originalQty: number;             // qty at entry (before any partial exit)
+  // Imp 6: target ratchet state
+  ratchetExtensionR?: number;      // multiple of R to extend on each target hit
+  ratchetMaxExtensions?: number;   // cap on extensions for this trade
+  ratchetRDistance?: number;       // original |entry - stop| distance, the R unit
+  ratchetExtensionsUsed: number;   // count so far
 }
 
 interface PendingEntry {
@@ -208,6 +228,9 @@ interface PendingEntry {
   // Imp 5
   partialExitFraction?: number;
   partialExitAtTargetPct?: number;
+  // Imp 6
+  targetRatchetExtensionR?: number;
+  targetRatchetMaxExtensions?: number;
 }
 
 interface PendingExit {
@@ -241,6 +264,8 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     dynamicSizing:             cfgDynSize = false,
     partialExitFraction:       cfgPartialFrac,
     partialExitAtTargetPct:    cfgPartialAt,
+    targetRatchetExtensionR:     cfgRatchetR,
+    targetRatchetMaxExtensions:  cfgRatchetMaxExt,
   } = config;
 
   // Pre-compute ATR% for each bar when a slippageFn is provided (O(n) once).
@@ -355,6 +380,11 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       partialExitAtTargetPct: pending.partialExitAtTargetPct,
       partialTaken: false,
       originalQty: qty,
+      // Imp 6: R is only defined when both a stop and a ratchet config exist
+      ratchetExtensionR:    pending.targetRatchetExtensionR,
+      ratchetMaxExtensions: pending.targetRatchetMaxExtensions,
+      ratchetRDistance:     stopPrice != null ? Math.abs(fillPrice - stopPrice) : undefined,
+      ratchetExtensionsUsed: 0,
     };
     position = 'long';
   }
@@ -400,6 +430,11 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       partialExitAtTargetPct: pending.partialExitAtTargetPct,
       partialTaken: false,
       originalQty: qty,
+      // Imp 6
+      ratchetExtensionR:    pending.targetRatchetExtensionR,
+      ratchetMaxExtensions: pending.targetRatchetMaxExtensions,
+      ratchetRDistance:     stopPrice != null ? Math.abs(fillPrice - stopPrice) : undefined,
+      ratchetExtensionsUsed: 0,
     };
     position = 'short';
   }
@@ -434,6 +469,7 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       holdingBars: exitBar - entryBar,
       exitReason,
       entryReason: exitReasonLabel ?? entryReason,
+      ratchetExtensionsUsed: openTrade.ratchetExtensionsUsed,
     });
 
     openTrade = null;
@@ -470,6 +506,7 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       holdingBars: exitBar - entryBar,
       exitReason,
       entryReason: exitReasonLabel ?? entryReason,
+      ratchetExtensionsUsed: openTrade.ratchetExtensionsUsed,
     });
 
     openTrade = null;
@@ -615,7 +652,21 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
         if (stopHit) {
           closeLong(exitFillPrice('long', stopPrice!, slippageAt(i)), i, bar.time, 'stop');
         } else if (targetHit) {
-          closeLong(targetPrice!, i, bar.time, 'target');
+          // Imp 6: target ratchet - lock the stop at the old target and push
+          // a new target out, instead of closing, while extensions remain.
+          const canRatchet =
+            trade.ratchetExtensionR != null &&
+            trade.ratchetRDistance != null &&
+            trade.ratchetExtensionsUsed < (trade.ratchetMaxExtensions ?? 3);
+          if (canRatchet) {
+            trade.stopPrice = trade.stopPrice != null
+              ? Math.max(trade.stopPrice, targetPrice!)
+              : targetPrice!;
+            trade.targetPrice = targetPrice! + trade.ratchetRDistance! * trade.ratchetExtensionR!;
+            trade.ratchetExtensionsUsed += 1;
+          } else {
+            closeLong(targetPrice!, i, bar.time, 'target');
+          }
         } else if (partialHit) {
           closePartialLong(partialTargetPrice!, i, bar.time);
         }
@@ -636,7 +687,20 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
         if (stopHit) {
           closeShort(exitFillPrice('short', stopPrice!, slippageAt(i)), i, bar.time, 'stop');
         } else if (targetHit) {
-          closeShort(targetPrice!, i, bar.time, 'target');
+          // Imp 6: target ratchet (short: mirror of the long case)
+          const canRatchet =
+            trade.ratchetExtensionR != null &&
+            trade.ratchetRDistance != null &&
+            trade.ratchetExtensionsUsed < (trade.ratchetMaxExtensions ?? 3);
+          if (canRatchet) {
+            trade.stopPrice = trade.stopPrice != null
+              ? Math.min(trade.stopPrice, targetPrice!)
+              : targetPrice!;
+            trade.targetPrice = targetPrice! - trade.ratchetRDistance! * trade.ratchetExtensionR!;
+            trade.ratchetExtensionsUsed += 1;
+          } else {
+            closeShort(targetPrice!, i, bar.time, 'target');
+          }
         } else if (partialHit) {
           closePartialShort(partialTargetPrice!, i, bar.time);
         }
@@ -763,6 +827,9 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
           // Imp 5: config override > decision field
           partialExitFraction:    cfgPartialFrac ?? decision.partialExitFraction,
           partialExitAtTargetPct: cfgPartialAt   ?? decision.partialExitAtTargetPct,
+          // Imp 6: config-only (no per-strategy decision field)
+          targetRatchetExtensionR:    cfgRatchetR,
+          targetRatchetMaxExtensions: cfgRatchetMaxExt,
         };
       }
     }

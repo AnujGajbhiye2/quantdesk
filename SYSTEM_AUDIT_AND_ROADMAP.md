@@ -292,6 +292,24 @@ re-run once that re-ingest happens):
   paper-trading behavior change (not a bug fix), and `.env.local.example`'s own comment
   already frames it as an intentional user opt-in after dry-run verification, not
   something to silently switch on. Recommendation stands: turn it on.
+- **Target ratchet (new, user-proposed): built, evaluated, ACCEPTED with caveats.**
+  Idea from the user: don't close at target - lock the stop at the old target and
+  push a new target out further, "let winners run" instead of leaving money on the
+  table at a fixed target. Implemented as Imp 6 in the backtest engine
+  (`targetRatchetExtensionR` / `targetRatchetMaxExtensions`) and mirrored in the live
+  broker's sweep (`TARGET_RATCHET_ENABLED`), following the exact pattern trailing stop
+  already established: state re-derived from scratch each sweep (no persisted
+  counters), composes with trailing stop (the stop only ever ratchets in the trade's
+  favor - `Math.max`/`Math.min`), off by default. `scripts/eval-improvements.ts
+  FEATURE=ratchet` on SP500 walk-forward (extensionR=1, maxExtensions=3): OOS Sharpe
+  +0.02 (rsi-reversion), +0.04 (stoch-reversal), ~0 (bollinger-reversion - its own
+  signal exit usually fires before the fixed 10% target price is ever reached, so the
+  ratchet rarely gets a chance to trigger for that strategy specifically). Real edge,
+  smaller and more strategy-dependent than trailing stop's. Not flipped
+  `TARGET_RATCHET_ENABLED=1` for the same reason trailing stop wasn't - live
+  trading-behavior change, user's call. Untried in this pass: combining trailing +
+  ratchet together, and tuning `extensionR`/`maxExtensions` beyond the 1/3 defaults -
+  worth a follow-up sweep before deciding on live parameters.
 
 **Not done this pass** (each is real feature work with trading-behavior judgment
 calls, not a mechanical fix - deliberately left for a dedicated phase rather than

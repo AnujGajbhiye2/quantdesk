@@ -16,9 +16,14 @@ const mockGetActiveBySymbol  = vi.fn();
 const mockGetClose           = vi.fn();
 const mockGetBars            = vi.fn();
 
+const mockUpdateStop         = vi.fn();
+const mockUpdateStopAndTarget = vi.fn();
+
 vi.mock('@/core/db/paper', () => ({
   insertPaperTrade:          (...args: unknown[]) => mockInsert(...args),
   updatePaperTrade:          (...args: unknown[]) => mockUpdate(...args),
+  updatePaperTradeStop:          (...args: unknown[]) => mockUpdateStop(...args),
+  updatePaperTradeStopAndTarget: (...args: unknown[]) => mockUpdateStopAndTarget(...args),
   fillPendingPaperTrade:     (...args: unknown[]) => mockFillPending(...args),
   cancelPendingPaperTrade:   (...args: unknown[]) => mockCancelPending(...args),
   getPaperTrade:             (...args: unknown[]) => mockGetOne(...args),
@@ -61,7 +66,7 @@ vi.mock('@/core/notify/telegram', () => ({
 }));
 
 // Import broker AFTER mocks are registered
-const { openPaperTrade, closePaperTrade, markOpenTrades, projectTrade, DuplicateOpenTradeError, sweepPendingTrades } =
+const { openPaperTrade, closePaperTrade, markOpenTrades, projectTrade, DuplicateOpenTradeError, sweepPendingTrades, sweepOpenTrades } =
   await import('./broker');
 
 // ---------------------------------------------------------------------------
@@ -87,6 +92,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockGetOpenBySymbol.mockReturnValue(undefined);
   mockGetActiveBySymbol.mockReturnValue(undefined);
+  delete process.env.TRAILING_STOP_ENABLED;
+  delete process.env.TARGET_RATCHET_ENABLED;
 });
 
 // ---------------------------------------------------------------------------
@@ -488,5 +495,112 @@ describe('sweepPendingTrades - gap safety', () => {
     expect(results).toHaveLength(1);
     expect(results[0].action).toBe('filled');
     expect(results[0].fillPrice).toBe(200);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// sweepOpenTrades - target ratchet (Imp 6 live parity)
+// ---------------------------------------------------------------------------
+
+function makeOpenLongTrade(overrides: Partial<PaperTrade> = {}): PaperTrade {
+  return {
+    id: 'trade-1', strategyId: 'rsi', symbol: 'AAPL', side: 'long',
+    qty: 10, entryTime: '2024-01-01T00:00:00Z', entryPrice: 100,
+    stopPrice: 95, targetPrice: 110, status: 'open', costs: 0,
+    ...overrides,
+  } as PaperTrade;
+}
+
+describe('sweepOpenTrades - target ratchet', () => {
+  beforeEach(() => {
+    // closePaperTrade (used internally on a real close) looks the trade up
+    // again via getPaperTrade - keep it in sync with whatever mockGetAll returns.
+    mockGetOne.mockImplementation((id: string) => mockGetAll()[0]?.id === id ? mockGetAll()[0] : undefined);
+  });
+
+  it('closes normally at target when TARGET_RATCHET_ENABLED is unset (default off)', () => {
+    const trade = makeOpenLongTrade();
+    mockGetAll.mockReturnValue([trade]);
+    mockGetBars.mockReturnValue([
+      { time: '2023-12-31', open: 99, high: 100, low: 98, close: 99, volume: 1000 },
+      { time: '2024-01-02', open: 100, high: 111, low: 100, close: 108, volume: 1000 }, // hits target 110
+    ]);
+
+    const results = sweepOpenTrades('1d');
+    expect(results).toHaveLength(1);
+    expect(results[0].action).toBe('targeted');
+    expect(mockUpdateStopAndTarget).not.toHaveBeenCalled();
+  });
+
+  it('ratchets instead of closing when TARGET_RATCHET_ENABLED=1, and persists the new stop+target', () => {
+    process.env.TARGET_RATCHET_ENABLED = '1';
+    process.env.TARGET_RATCHET_EXTENSION_R = '1';
+    process.env.TARGET_RATCHET_MAX_EXTENSIONS = '3';
+
+    const trade = makeOpenLongTrade(); // entry 100, stop 95 (R=5), target 110
+    mockGetAll.mockReturnValue([trade]);
+    mockGetBars.mockReturnValue([
+      { time: '2023-12-31', open: 99, high: 100, low: 98, close: 99, volume: 1000 },
+      // touches 110 intrabar but closes below it - stays open, ratchets (stop->110, target->115)
+      { time: '2024-01-02', open: 100, high: 111, low: 100, close: 109, volume: 1000 },
+    ]);
+
+    const results = sweepOpenTrades('1d');
+    expect(results).toHaveLength(1);
+    expect(results[0].action).toBe('still-open');
+    expect(mockUpdateStopAndTarget).toHaveBeenCalledWith('trade-1', 110, 115);
+  });
+
+  it('exits at the ratcheted (locked-in) stop on a pullback, not the original stop', () => {
+    process.env.TARGET_RATCHET_ENABLED = '1';
+    process.env.TARGET_RATCHET_EXTENSION_R = '1';
+    process.env.TARGET_RATCHET_MAX_EXTENSIONS = '3';
+
+    const trade = makeOpenLongTrade();
+    mockGetAll.mockReturnValue([trade]);
+    mockGetBars.mockReturnValue([
+      { time: '2023-12-31', open: 99, high: 100, low: 98, close: 99, volume: 1000 },
+      { time: '2024-01-02', open: 100, high: 111, low: 100, close: 109, volume: 1000 }, // ratchets: stop->110, target->115
+      { time: '2024-01-03', open: 109, high: 111, low: 108, close: 109, volume: 1000 }, // pulls back through 110
+    ]);
+
+    const results = sweepOpenTrades('1d');
+    expect(results).toHaveLength(1);
+    expect(results[0].action).toBe('stopped');
+    expect(results[0].exitPrice).toBe(110); // the ratcheted stop, not the original 95
+  });
+
+  it('stops ratcheting after TARGET_RATCHET_MAX_EXTENSIONS and closes at target', () => {
+    process.env.TARGET_RATCHET_ENABLED = '1';
+    process.env.TARGET_RATCHET_EXTENSION_R = '1';
+    process.env.TARGET_RATCHET_MAX_EXTENSIONS = '1';
+
+    const trade = makeOpenLongTrade();
+    mockGetAll.mockReturnValue([trade]);
+    mockGetBars.mockReturnValue([
+      { time: '2023-12-31', open: 99, high: 100, low: 98, close: 99, volume: 1000 },
+      { time: '2024-01-02', open: 100, high: 111, low: 109, close: 110, volume: 1000 }, // ratchets once (stop->110, target->115)
+      { time: '2024-01-03', open: 111, high: 116, low: 111, close: 115, volume: 1000 }, // hits new target 115, no extensions left
+    ]);
+
+    const results = sweepOpenTrades('1d');
+    expect(results).toHaveLength(1);
+    expect(results[0].action).toBe('targeted');
+    expect(results[0].exitPrice).toBe(115);
+  });
+
+  it('never fires when the trade has no stop', () => {
+    process.env.TARGET_RATCHET_ENABLED = '1';
+    const trade = makeOpenLongTrade({ stopPrice: undefined });
+    mockGetAll.mockReturnValue([trade]);
+    mockGetBars.mockReturnValue([
+      { time: '2023-12-31', open: 99, high: 100, low: 98, close: 99, volume: 1000 },
+      { time: '2024-01-02', open: 100, high: 111, low: 100, close: 108, volume: 1000 },
+    ]);
+
+    const results = sweepOpenTrades('1d');
+    expect(results).toHaveLength(1);
+    expect(results[0].action).toBe('targeted');
+    expect(mockUpdateStopAndTarget).not.toHaveBeenCalled();
   });
 });

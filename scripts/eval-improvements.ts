@@ -39,7 +39,7 @@ import { StochReversalStrategy }      from '@/core/strategy/examples/stoch-rever
 // Config
 // ---------------------------------------------------------------------------
 
-const FEATURE      = (process.env.FEATURE ?? 'none') as 'none' | 'trailing' | 'gap' | 'dynsize' | 'partial' | 'all';
+const FEATURE      = (process.env.FEATURE ?? 'none') as 'none' | 'trailing' | 'gap' | 'dynsize' | 'partial' | 'ratchet' | 'all';
 const STOP_PCT     = Number(process.env.STOP_PCT    ?? 0.05);
 const TARGET_PCT   = Number(process.env.TARGET_PCT  ?? 0.10);
 const TRAIL_ACT    = Number(process.env.TRAIL_ACT   ?? 0.03);
@@ -48,6 +48,8 @@ const MAX_SLIP     = Number(process.env.MAX_SLIP    ?? 0.03);
 const GAP_DN       = Number(process.env.GAP_DN      ?? 0.02);
 const PARTIAL_FRAC = Number(process.env.PARTIAL_FRAC ?? 0.5);
 const PARTIAL_AT   = Number(process.env.PARTIAL_AT   ?? 0.5);
+const RATCHET_R    = Number(process.env.RATCHET_R    ?? 1.0);
+const RATCHET_MAX  = Number(process.env.RATCHET_MAX  ?? 3);
 const TRAIN_FRAC   = Number(process.env.TRAIN_FRAC   ?? 0.7);
 const WINDOWS      = Number(process.env.WINDOWS      ?? 3);
 const MIN_BARS     = Number(process.env.MIN_BARS     ?? 200);
@@ -66,6 +68,8 @@ interface EngineOverrides {
   dynamicSizing?:             boolean;
   partialExitFraction?:       number;
   partialExitAtTargetPct?:    number;
+  targetRatchetExtensionR?:     number;
+  targetRatchetMaxExtensions?:  number;
 }
 
 function buildEngineOverrides(feature: typeof FEATURE): EngineOverrides {
@@ -84,6 +88,10 @@ function buildEngineOverrides(feature: typeof FEATURE): EngineOverrides {
   if (feature === 'partial' || feature === 'all') {
     cfg.partialExitFraction    = PARTIAL_FRAC;
     cfg.partialExitAtTargetPct = PARTIAL_AT;
+  }
+  if (feature === 'ratchet' || feature === 'all') {
+    cfg.targetRatchetExtensionR    = RATCHET_R;
+    cfg.targetRatchetMaxExtensions = RATCHET_MAX;
   }
   return cfg;
 }

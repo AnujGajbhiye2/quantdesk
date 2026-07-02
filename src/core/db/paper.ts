@@ -108,6 +108,13 @@ export function updatePaperTradeStop(id: string, stopPrice: number): void {
     .run([stopPrice, id]);
 }
 
+/** Ratchet an open trade's stop AND target price together (target ratchet). No-op on closed/pending trades. */
+export function updatePaperTradeStopAndTarget(id: string, stopPrice: number, targetPrice: number): void {
+  getDb()
+    .prepare("UPDATE paper_trades SET stop_price = ?, target_price = ? WHERE id = ? AND status = 'open'")
+    .run([stopPrice, targetPrice, id]);
+}
+
 /** Delete a pending trade (cancel a resting limit order - no history kept). */
 export function cancelPendingPaperTrade(id: string): void {
   getDb()
