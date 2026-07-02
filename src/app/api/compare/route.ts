@@ -30,6 +30,24 @@ export interface CompareRow {
   error?:         string;
 }
 
+/** Benchmark symbol for market-context comparison. Non-tradeable regime index (see universe.ts reference.json). */
+const BENCHMARK_SYMBOL = '^GSPC';
+
+/**
+ * Buy-and-hold return of the benchmark over the SAME date range as the
+ * strategies being compared - a strategy that underperforms flat market
+ * exposure, with more drawdown, has no business being traded regardless of
+ * its own absolute return (SYSTEM_AUDIT_AND_ROADMAP.md Phase 5).
+ */
+function benchmarkReturnPct(fromTime: string, toTime: string): number | null {
+  const benchBars = getBars(BENCHMARK_SYMBOL, '1d').filter((b) => b.time >= fromTime && b.time <= toTime);
+  if (benchBars.length < 2) return null;
+  const first = benchBars[0].close;
+  const last  = benchBars[benchBars.length - 1].close;
+  if (first <= 0) return null;
+  return ((last - first) / first) * 100;
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as { symbol?: string; timeframe?: string };
@@ -84,10 +102,16 @@ export async function POST(request: Request) {
       }
     });
 
+    const range = { from: bars[0].time, to: bars[bars.length - 1].time };
+
     return NextResponse.json({
       symbol,
-      range:      { from: bars[0].time, to: bars[bars.length - 1].time },
-      rows:       JSON.parse(JSON.stringify(rows, (_, v) => (typeof v === 'number' && !isFinite(v) ? null : v))),
+      range,
+      rows: JSON.parse(JSON.stringify(rows, (_, v) => (typeof v === 'number' && !isFinite(v) ? null : v))),
+      benchmark: {
+        symbol: BENCHMARK_SYMBOL,
+        totalReturnPct: benchmarkReturnPct(range.from, range.to),
+      },
       durationMs: Date.now() - started,
     });
   } catch (err) {

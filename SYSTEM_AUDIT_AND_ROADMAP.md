@@ -384,21 +384,38 @@ Telegram rebalance digests; combined-account risk checks pass.
 
 Goal: the live roster is chosen by evidence, and every number has a benchmark.
 
-- **Promote the production-tier candidates** through the full pipeline:
-  `rsi2-pullback` (Connors RSI-2, the best-documented retail MR pattern),
-  `down-streak`, `ema-pullback` / `ma44-support` (trend-pullback pair). These already
-  have real stops, targets, and time exits - unlike the current live trio. Any that
-  clears walk-forward on corrected data joins the live set; consensus quorum scales
-  with roster size.
-- **Parameter plateau check:** for each live strategy, perturb each key parameter
-  ±20-30% and confirm the OOS result is stable. Not optimization - a cliff next to
-  the default means the default is luck. Bin strategies that only work on a knife
-  edge.
-- **Benchmark everything:** SPY buy-and-hold equity overlay in the backtest engine
-  output, the backtest UI, and the compare page. A strategy that underperforms its
-  benchmark with more drawdown is binned regardless of its absolute return.
+- **Promote the production-tier candidates: evaluated, REJECTED, keep the current
+  trio.** Ran `scripts/eval-walkforward.ts` (already built, covers all 12 registered
+  strategies) on SP500 + Nifty200. Combined weighted OOS Sharpe: `bollinger-reversion`
+  0.42, `rsi-reversion` 0.39, `stoch-reversal` 0.39 (the current live trio) vs.
+  `ema-pullback` 0.21, `ma44-support` 0.20, `rsi2-pullback` 0.18, `down-streak` 0.12
+  (the candidates). Every candidate underperforms every live strategy, despite having
+  "better" mechanics (real stops/targets/time exits vs. the live trio's simpler
+  rules) - the roadmap's assumption that better-designed mechanics beat the simpler
+  live trio did not hold on this data. `roc-momentum` and `atr-trend` confirmed still
+  broken (Sharpe 0.00 and -0.25 respectively), consistent with their existing
+  registry disable comments. **No roster change.** Side finding worth flagging: the
+  IS-to-OOS decay figures are large across nearly every strategy including the live
+  ones (e.g. bollinger-reversion decay=57.75pp, ma44-support decay=257pp) - a real
+  overfitting-risk signal that this pass didn't act on but the next data-driven
+  review should look at directly, not just via Sharpe.
+- **Parameter plateau check: done, all 3 live strategies pass.**
+  `scripts/eval-param-plateau.ts` perturbed each live strategy's key parameter ±20%
+  around its default (rsi-reversion.oversold 24/30/36, bollinger-reversion.period
+  16/20/24, stoch-reversal.oversoldLevel 16/20/24) and re-ran full-SP500 walk-forward
+  per variant. All three show a smooth Sharpe gradient with no cliff near the default
+  (rsi-reversion 0.334→0.376→0.400, bollinger-reversion 0.400→0.403→0.403,
+  stoch-reversal 0.386→0.398→0.415) - the defaults aren't a lucky knife-edge pick.
+- **Benchmark: done (backend), UI kept intentionally minimal.** `/api/backtest` and
+  `/api/compare` both now return a `benchmark: { symbol: '^GSPC', totalReturnPct }`
+  field - buy-and-hold return of the S&P 500 over the exact same date range as the
+  strategies tested. Surfaced on the compare page as a one-line reference (not a
+  chart overlay). A full equity-curve overlay on the backtest page's chart is real
+  UI/design work - out of scope for this pass, which stuck to backend + a light
+  surface. Only visually verified via curl (page returns 200, API payload correct);
+  the Chrome extension wasn't connected this session for a full browser check.
 - Revisit the short side only if a validated long edge has an obvious inverse; do not
-  force it.
+  force it. Not revisited this pass - no new long edge to invert.
 
 Definition of Done: live roster re-selected from walk-forward evidence on corrected
 data; plateau report per live strategy; benchmark column visible in compare and

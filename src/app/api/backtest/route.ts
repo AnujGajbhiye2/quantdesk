@@ -33,6 +33,9 @@ import type { TradeIdea, Timeframe } from '@/core/types';
  *                 'universe' = strategy_edge global fallback when < 10)
  */
 
+/** Benchmark symbol for market-context comparison (see /api/compare's identical const). */
+const BENCHMARK_SYMBOL = '^GSPC';
+
 interface ExitProjectionPayload {
   earliest:       string;
   latest:         string;
@@ -163,7 +166,17 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ ...result, currentIdea, projection });
+    const benchBars = getBars(BENCHMARK_SYMBOL, '1d').filter(
+      (b) => b.time >= result.range.from && b.time <= result.range.to,
+    );
+    const benchmark = benchBars.length >= 2 && benchBars[0].close > 0
+      ? {
+          symbol: BENCHMARK_SYMBOL,
+          totalReturnPct: ((benchBars[benchBars.length - 1].close - benchBars[0].close) / benchBars[0].close) * 100,
+        }
+      : { symbol: BENCHMARK_SYMBOL, totalReturnPct: null };
+
+    return NextResponse.json({ ...result, currentIdea, projection, benchmark });
   } catch (err) {
     console.error('[POST /api/backtest]', err);
     return NextResponse.json(

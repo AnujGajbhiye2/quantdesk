@@ -35,6 +35,7 @@ function ComparePageInner() {
   const [symbol,  setSymbol]  = useState(searchParams.get('symbol') ?? '');
   const [rows,    setRows]    = useState<CompareRow[]>([]);
   const [range,   setRange]   = useState<{ from: string; to: string } | null>(null);
+  const [benchmark, setBenchmark] = useState<{ symbol: string; totalReturnPct: number | null } | null>(null);
   const [status,  setStatus]  = useState('');
   const [busy,       setBusy]       = useState(false);
   const [legendOpen, setLegendOpen] = useState(false);
@@ -55,12 +56,14 @@ function ComparePageInner() {
       const data = (await res.json()) as {
         rows?: CompareRow[];
         range?: { from: string; to: string };
+        benchmark?: { symbol: string; totalReturnPct: number | null };
         durationMs?: number;
         error?: string;
       };
       if (!res.ok) throw new Error(data.error ?? res.statusText);
       setRows(data.rows ?? []);
       setRange(data.range ?? null);
+      setBenchmark(data.benchmark ?? null);
       setStatus(`${(data.rows ?? []).length} strategies compared in ${data.durationMs}ms`);
     } catch (err) {
       setStatus(`error: ${err instanceof Error ? err.message : String(err)}`);
@@ -210,6 +213,17 @@ function ComparePageInner() {
         {range && (
           <span style={{ marginLeft: 8 }}>
             Tested window: {fmtDate(range.from)} to {fmtDate(range.to)}.
+          </span>
+        )}
+        {benchmark && benchmark.totalReturnPct != null && (
+          <span style={{ marginLeft: 8 }} title="Buy-and-hold return of the S&P 500 (^GSPC) over the same tested window - a strategy beating this with less drawdown is doing something; one that doesn't isn't worth the complexity.">
+            {benchmark.symbol} buy-and-hold over the same window:{' '}
+            <span style={{
+              color: benchmark.totalReturnPct >= 0 ? 'var(--color-up)' : 'var(--color-down)',
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              {benchmark.totalReturnPct >= 0 ? '+' : ''}{benchmark.totalReturnPct.toFixed(1)}%
+            </span>.
           </span>
         )}
         <button
