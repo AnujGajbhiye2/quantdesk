@@ -68,6 +68,65 @@ export function computeCashAccount(): CashAccount | null {
   };
 }
 
+export interface EquityHistoryPoint {
+  /** Exit date (YYYY-MM-DD). */
+  time: string;
+  /** starting balance + cumulative realized P&L after this date's exits (USD). */
+  equity: number;
+}
+
+export interface DailyPnl {
+  date: string;
+  /** Realized P&L from trades closed on this date (USD). */
+  pnl: number;
+  trades: number;
+}
+
+export interface EquityHistory {
+  startingBalance: number;
+  /** Realized-only equity curve, one point per date with at least one exit. */
+  points: EquityHistoryPoint[];
+  /** Realized P&L per calendar date, ascending. */
+  dailyPnl: DailyPnl[];
+}
+
+/**
+ * Realized equity history derived from closed trades, one point per exit
+ * date. Same derive-on-read philosophy as computeCashAccount - nothing is
+ * stored. Unrealized marks are the caller's concern (the UI appends a
+ * provisional "today" point from its live marks if it wants one).
+ * Null when no budget has been set.
+ */
+export function computeEquityHistory(): EquityHistory | null {
+  const row = getAccountRow();
+  if (!row) return null;
+
+  const closed = getPaperTrades({ status: 'closed' })
+    .filter((t) => t.exitTime != null)
+    .sort((a, b) => (a.exitTime! < b.exitTime! ? -1 : 1));
+
+  const byDate = new Map<string, { pnl: number; trades: number }>();
+  for (const t of closed) {
+    const date = t.exitTime!.slice(0, 10);
+    const cur = byDate.get(date) ?? { pnl: 0, trades: 0 };
+    cur.pnl += toUSD(t.pnl ?? 0, t.currency);
+    cur.trades += 1;
+    byDate.set(date, cur);
+  }
+
+  const dailyPnl: DailyPnl[] = [...byDate.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([date, v]) => ({ date, pnl: v.pnl, trades: v.trades }));
+
+  let equity = row.startingBalance;
+  const points: EquityHistoryPoint[] = dailyPnl.map((d) => {
+    equity += d.pnl;
+    return { time: d.date, equity };
+  });
+
+  return { startingBalance: row.startingBalance, points, dailyPnl };
+}
+
 /**
  * Full summary given the unrealized USD P&L (callers obtain it from
  * markOpenTrades / markOpenTradesWithQuotes to avoid a circular import here).

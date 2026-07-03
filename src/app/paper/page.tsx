@@ -6,7 +6,8 @@ import AppHeader from '@/components/primitives/AppHeader';
 import NewPaperTrade from '@/components/trade/NewPaperTrade';
 import AccountStrip from '@/components/panels/AccountStrip';
 import AutoTradePanel from '@/components/panels/AutoTradePanel';
-import type { AccountSummary } from '@/core/paper/account';
+import type { AccountSummary, EquityHistory } from '@/core/paper/account';
+import PnlCalendar from '@/components/charts/PnlCalendar';
 import { fmtMoney, curGlyph } from '@/core/format/currency';
 import type { TradeBook } from '@/core/paper/tradebook';
 import type { PaperTradeWithHold } from '@/core/paper/hold';
@@ -581,6 +582,7 @@ export default function PaperPage() {
   const [marks,        setMarks]        = useState<Map<string, MarkEntry>>(new Map());
   const [book,         setBook]         = useState<TradeBook | null>(null);
   const [account,      setAccount]      = useState<AccountSummary | null>(null);
+  const [equityHistory, setEquityHistory] = useState<EquityHistory | null>(null);
   const [sweeping,     setSweeping]     = useState(false);
   const [sweepMsg,     setSweepMsg]     = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed' | 'pending'>('all');
@@ -594,12 +596,13 @@ export default function PaperPage() {
   // Load data on mount (and after mutations)
   // FX rates come from SettingsProvider (already fetched app-wide); skip /api/fx here.
   const loadData = useCallback(async () => {
-    const [tRes, bRes, mRes, aRes, pRes] = await Promise.all([
+    const [tRes, bRes, mRes, aRes, pRes, hRes] = await Promise.all([
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'list' }) }),
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'tradebook' }) }),
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'mark', useQuotes: false }) }),
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'account' }) }),
       fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'performance' }) }),
+      fetch('/api/paper', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'equity-history' }) }),
     ]);
     if (aRes.ok) {
       const { account: acct } = await aRes.json() as { account: AccountSummary | null };
@@ -608,6 +611,10 @@ export default function PaperPage() {
     if (pRes.ok) {
       const { performance: perf } = await pRes.json() as { performance: PerfMetrics };
       setPerformance(perf);
+    }
+    if (hRes.ok) {
+      const { history } = await hRes.json() as { history: EquityHistory | null };
+      setEquityHistory(history);
     }
     if (tRes.ok) {
       const { trades: t } = await tRes.json() as { trades: PaperTrade[] };
@@ -843,16 +850,40 @@ export default function PaperPage() {
           </div>
         )}
 
-        {/* Account equity curve - notional $100-start, one point per closed trade.
-            Every backtest already had this chart; the live account never did. */}
-        {performance && performance.equityCurve.length > 1 && (
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', height: 260 }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em', marginBottom: 8 }}>
-              [ ACCOUNT EQUITY CURVE ]
+        {/* Account equity curve + daily P&L calendar. Curve prefers the real
+            USD history (starting balance + cumulative realized per exit date);
+            falls back to the notional $100-start per-trade curve when no
+            budget has been set. */}
+        {((equityHistory && equityHistory.points.length > 0) ||
+          (performance && performance.equityCurve.length > 1)) && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: equityHistory ? '1fr 460px' : '1fr',
+              gap: '1px',
+              background: 'var(--border)',
+              borderBottom: '1px solid var(--border)',
+            }}
+          >
+            <div style={{ padding: '12px 16px', height: 260, background: 'var(--bg-page)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em', marginBottom: 8 }}>
+                [ ACCOUNT EQUITY CURVE {equityHistory ? '(USD, realized)' : '(notional)'} ]
+              </div>
+              <div style={{ height: 210 }}>
+                <EquityCurveChart
+                  equityCurve={
+                    equityHistory && equityHistory.points.length > 0
+                      ? equityHistory.points
+                      : performance!.equityCurve
+                  }
+                />
+              </div>
             </div>
-            <div style={{ height: 210 }}>
-              <EquityCurveChart equityCurve={performance.equityCurve} />
-            </div>
+            {equityHistory && (
+              <div style={{ height: 260, overflow: 'auto', background: 'var(--bg-page)' }}>
+                <PnlCalendar dailyPnl={equityHistory.dailyPnl} months={3} />
+              </div>
+            )}
           </div>
         )}
 

@@ -18,6 +18,7 @@ import { currentExposure } from '@/core/risk/exposure';
 import { buildTradeBook } from '@/core/paper/tradebook';
 import { withEstHold } from '@/core/paper/hold';
 import { accountSummary } from '@/core/paper/summary';
+import { computeEquityHistory } from '@/core/paper/account';
 import { buildPerformanceMetrics } from '@/core/paper/perf';
 import { setStartingBalance } from '@/core/db/account';
 import { getPaperTrades } from '@/core/db/paper';
@@ -171,6 +172,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ account: accountSummary() });
       }
 
+      case 'equity-history': {
+        return NextResponse.json({ history: computeEquityHistory() });
+      }
+
       case 'performance': {
         return NextResponse.json({ performance: buildPerformanceMetrics() });
       }
@@ -237,7 +242,7 @@ export async function POST(request: Request) {
 
       default:
         return NextResponse.json(
-          { error: `Unknown action '${action}'. Valid: open, close, mark, project, tradebook, list, account, account-set, auto-status` },
+          { error: `Unknown action '${action}'. Valid: open, close, mark, project, tradebook, list, account, equity-history, account-set, auto-status` },
           { status: 400 },
         );
     }
