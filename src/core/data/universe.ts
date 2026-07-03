@@ -61,10 +61,11 @@ export function autoTradeUniverse(): UniverseEntry[] {
     (CURATED_UNIVERSE).filter((e) => SP500_SYMBOLS.has(e.symbol) || GOLD_SYMBOLS.has(e.symbol)),
   ).map((e) => ({
     ...e,
-    // Force providerId to alpaca for all auto-trade entries so intraday
-    // ingest routes to the correct provider. Fallback to 'yahoo' when
-    // Alpaca is not registered (i.e. keys not set).
-    providerId: 'alpaca',
+    // Route auto-trade entries to the intraday provider (Alpaca is the only
+    // built-in with a batch intraday endpoint). Override with INTRADAY_PROVIDER
+    // if that ever changes. Intraday ingest falls back to the default provider
+    // when the chosen one is not registered (i.e. keys not set).
+    providerId: process.env.INTRADAY_PROVIDER ?? 'alpaca',
   }));
 }
 

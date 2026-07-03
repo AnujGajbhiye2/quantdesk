@@ -96,6 +96,15 @@ describe('DataProvider registry', () => {
     expect(registry.get('test').assetClasses).toEqual(['forex']);
   });
 
+  it('getOrDefault falls back to the default provider for unknown ids', async () => {
+    // Test the REAL registry module: yahoo is always registered, so an unknown
+    // id must resolve to the default (DEFAULT_PROVIDER unset -> 'yahoo').
+    const real = await import('./registry');
+    expect(real.defaultProviderId()).toBe('yahoo');
+    expect(real.getOrDefault('nonexistent-provider').id).toBe('yahoo');
+    expect(real.getOrDefault('yahoo').id).toBe('yahoo');
+  });
+
   it('DataProvider interface requires only the mandatory methods', () => {
     // Verify that a provider with no optional methods (getQuote, search) is valid
     const minimal: DataProvider = {

@@ -41,6 +41,9 @@ function sleep(ms: number): Promise<void> {
 export async function prefetchFundamentalsForAutoTradeUniverse(): Promise<FundamentalsPrefetchResult | null> {
   if (!earningsBlackoutConfigFromEnv()) return null;
 
+  // Intentionally pinned to Yahoo regardless of DEFAULT_PROVIDER: fundamentals,
+  // news, and earnings dates are a Yahoo capability, orthogonal to which
+  // provider sources bars. Do not "fix" this during a bar-provider migration.
   const yahoo = getProvider('yahoo');
   if (!yahoo.getFundamentals) return null;
 

@@ -110,7 +110,9 @@ export default function GoToSymbolOverlay({ allSymbols, onClose }: Props) {
             assetClass: item.assetClass ?? 'equity',
             currency:   item.currency ?? 'USD',
             exchange:   item.exchange,
-            providerId: item.providerId ?? 'yahoo',
+            // Remote search results always carry providerId (SymbolMeta requires
+            // it); the ingest API fails loudly on an unknown provider id.
+            providerId: item.providerId,
           }],
         }),
       });

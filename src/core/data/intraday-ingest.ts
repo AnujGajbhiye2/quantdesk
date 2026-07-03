@@ -12,7 +12,7 @@ import 'server-only';
 
 import type { Timeframe } from '@/core/types';
 import { autoTradeUniverse } from './universe';
-import { get as getProvider, list as listProviders } from './registry';
+import { get as getProvider, list as listProviders, defaultProviderId } from './registry';
 import { upsertBars, upsertSymbol, getLatestBarTime } from '@/core/db/bars';
 
 export interface IntradayIngestResult {
@@ -68,7 +68,7 @@ export async function ingestIntraday(
   const byProvider = new Map<string, typeof universe>();
 
   for (const entry of universe) {
-    const pid = registered.has(entry.providerId) ? entry.providerId : 'yahoo';
+    const pid = registered.has(entry.providerId) ? entry.providerId : defaultProviderId();
     if (!byProvider.has(pid)) byProvider.set(pid, []);
     byProvider.get(pid)!.push(entry);
   }
