@@ -5,6 +5,8 @@ import EmptyState from '@/components/primitives/EmptyState';
 import {
   createChart,
   CandlestickSeries,
+  LineSeries,
+  HistogramSeries,
   ColorType,
   LineStyle,
   createSeriesMarkers,
@@ -21,6 +23,27 @@ import type { TradeRecord } from '@/core/backtest/engine';
 // Types
 // ---------------------------------------------------------------------------
 
+/** A line drawn on the main price pane (MA, Bollinger band, ...). */
+export interface OverlayLine {
+  id:    string;
+  color: string;
+  /** Aligned to bars: values[i] belongs to bars[i]; NaN warm-up values are skipped. */
+  values: number[];
+  lineWidth?: 1 | 2;
+  dashed?: boolean;
+}
+
+/** A separate pane below the price chart (RSI, stochastic, volume, ...). */
+export interface IndicatorPane {
+  id:    string;
+  /** Line series in this pane, values aligned to bars like OverlayLine. */
+  lines: { id: string; color: string; values: number[] }[];
+  /** Horizontal reference lines (e.g. RSI 30/70). */
+  refLines?: { value: number; color?: string }[];
+  /** Render as histogram colored by bar direction (volume). Uses `lines[0]`. */
+  histogram?: boolean;
+}
+
 interface Props {
   bars:        Bar[];
   trades?:     TradeRecord[];
@@ -28,6 +51,10 @@ interface Props {
   entryPrice?:  number;
   stopPrice?:   number;
   targetPrice?: number;
+  /** Indicator lines on the price pane, aligned to `bars`. */
+  overlays?:   OverlayLine[];
+  /** Indicator panes below the price pane, aligned to `bars`. */
+  panes?:      IndicatorPane[];
   className?:  string;
 }
 
@@ -63,6 +90,8 @@ export default function PriceChart({
   entryPrice,
   stopPrice,
   targetPrice,
+  overlays = [],
+  panes = [],
   className,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -70,6 +99,7 @@ export default function PriceChart({
   const candlesRef   = useRef<ISeriesApi<keyof SeriesOptionsMap, string> | null>(null);
   const markersRef   = useRef<ISeriesMarkersPluginApi<string> | null>(null);
   const priceLinesRef = useRef<IPriceLine[]>([]);
+  const indicatorSeriesRef = useRef<ISeriesApi<keyof SeriesOptionsMap>[]>([]);
 
   // Create chart on mount
   useEffect(() => {
@@ -124,6 +154,7 @@ export default function PriceChart({
       candlesRef.current  = null;
       markersRef.current  = null;
       priceLinesRef.current = [];
+      indicatorSeriesRef.current = [];
     };
   }, []);
 
@@ -174,6 +205,89 @@ export default function PriceChart({
 
     chart.timeScale().fitContent();
   }, [bars, trades]);
+
+  // Indicator overlays (price pane) + indicator panes below.
+  // Series are torn down and re-added when the selection changes - cheap at
+  // this scale and avoids tracking per-series identity across toggles.
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+
+    for (const s of indicatorSeriesRef.current) {
+      try { chart.removeSeries(s); } catch { /* already removed with a pane */ }
+    }
+    indicatorSeriesRef.current = [];
+
+    // Aligned values -> line data keyed by bar date; NaN warm-up values and
+    // duplicate dates (daily + intraday rows) are skipped, mirroring candles.
+    const toLineData = (values: number[]) => {
+      const byDate = new Map<string, { time: string; value: number }>();
+      for (let i = 0; i < bars.length; i++) {
+        const v = values[i];
+        if (v === undefined || !isFinite(v)) continue;
+        const date = bars[i].time.slice(0, 10);
+        byDate.set(date, { time: date, value: v });
+      }
+      return Array.from(byDate.values()).sort((a, b) => (a.time < b.time ? -1 : 1));
+    };
+
+    for (const o of overlays) {
+      const s = chart.addSeries(LineSeries, {
+        color: o.color,
+        lineWidth: o.lineWidth ?? 1,
+        lineStyle: o.dashed ? LineStyle.Dashed : LineStyle.Solid,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+      });
+      s.setData(toLineData(o.values));
+      indicatorSeriesRef.current.push(s as ISeriesApi<keyof SeriesOptionsMap>);
+    }
+
+    panes.forEach((pane, i) => {
+      const paneIndex = i + 1; // pane 0 is the price pane
+      if (pane.histogram && pane.lines[0]) {
+        const s = chart.addSeries(HistogramSeries, {
+          color: pane.lines[0].color,
+          priceLineVisible: false,
+          lastValueVisible: false,
+        }, paneIndex);
+        // Color volume bars by candle direction
+        const data = toLineData(pane.lines[0].values).map((d) => {
+          const bar = bars.find((b) => b.time.slice(0, 10) === d.time);
+          const up = bar ? bar.close >= bar.open : true;
+          return { ...d, color: up ? '#26a64155' : '#f8514955' };
+        });
+        s.setData(data);
+        indicatorSeriesRef.current.push(s as ISeriesApi<keyof SeriesOptionsMap>);
+      } else {
+        let first: ISeriesApi<'Line'> | null = null;
+        for (const line of pane.lines) {
+          const s = chart.addSeries(LineSeries, {
+            color: line.color,
+            lineWidth: 1,
+            priceLineVisible: false,
+            lastValueVisible: true,
+            crosshairMarkerVisible: false,
+          }, paneIndex);
+          s.setData(toLineData(line.values));
+          if (!first) first = s;
+          indicatorSeriesRef.current.push(s as ISeriesApi<keyof SeriesOptionsMap>);
+        }
+        for (const ref of pane.refLines ?? []) {
+          first?.createPriceLine({
+            price: ref.value,
+            color: ref.color ?? '#8b949e',
+            lineWidth: 1,
+            lineStyle: LineStyle.Dashed,
+            axisLabelVisible: false,
+            title: '',
+          });
+        }
+      }
+      chart.panes()[paneIndex]?.setHeight(90);
+    });
+  }, [overlays, panes, bars]);
 
   // Price lines for the current trade idea (entry / stop / target)
   useEffect(() => {

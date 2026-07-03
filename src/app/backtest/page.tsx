@@ -14,6 +14,8 @@ import SymbolTypeahead from '@/components/primitives/SymbolTypeahead';
 import type { BacktestResult } from '@/core/backtest/engine';
 import type { Bar, TradeIdea } from '@/core/types';
 import { toWeekly } from '@/core/data/resample';
+import { compute as computeIndicator } from '@/core/indicators/registry';
+import type { OverlayLine, IndicatorPane } from '@/components/charts/PriceChart';
 
 // Charts must be client-side only (no SSR)
 const PriceChart       = dynamic(() => import('@/components/charts/PriceChart'), { ssr: false });
@@ -29,6 +31,75 @@ type BacktestResponse = BacktestResult & {
   currentIdea: TradeIdea | null;
   projection:  ExitProjectionData | null;
 };
+
+// ---------------------------------------------------------------------------
+// On-chart indicators
+// ---------------------------------------------------------------------------
+
+type IndicatorToggle = 'BB' | 'SMA20' | 'SMA50' | 'RSI' | 'STOCH' | 'VOL';
+const ALL_TOGGLES: IndicatorToggle[] = ['BB', 'SMA20', 'SMA50', 'RSI', 'STOCH', 'VOL'];
+
+// Each live strategy's trigger indicator - selecting the strategy auto-enables
+// the set that makes its signals explainable on the chart. Params match the
+// strategies' defaults (bollinger 20/2, RSI 14, stoch 14/3/3).
+const STRATEGY_TOGGLES: Record<string, IndicatorToggle[]> = {
+  'bollinger-reversion': ['BB', 'VOL'],
+  'rsi-reversion':       ['RSI', 'VOL'],
+  'stoch-reversal':      ['STOCH', 'VOL'],
+};
+
+function buildIndicators(bars: Bar[], active: Set<IndicatorToggle>): {
+  overlays: OverlayLine[];
+  panes: IndicatorPane[];
+} {
+  const overlays: OverlayLine[] = [];
+  const panes: IndicatorPane[] = [];
+  if (bars.length < 2) return { overlays, panes };
+
+  const asRecord = (v: ReturnType<typeof computeIndicator>) => v as Record<string, number[]>;
+  const asArray  = (v: ReturnType<typeof computeIndicator>) => v as number[];
+
+  if (active.has('BB')) {
+    const bb = asRecord(computeIndicator('bbands', bars, { period: 20, stddev: 2 }));
+    overlays.push(
+      { id: 'bb-upper',  color: '#58a6ff', values: bb.upper },
+      { id: 'bb-middle', color: '#58a6ff', values: bb.middle, dashed: true },
+      { id: 'bb-lower',  color: '#58a6ff', values: bb.lower },
+    );
+  }
+  if (active.has('SMA20')) {
+    overlays.push({ id: 'sma20', color: '#e3b341', values: asArray(computeIndicator('sma', bars, { period: 20 })) });
+  }
+  if (active.has('SMA50')) {
+    overlays.push({ id: 'sma50', color: '#bc8cff', values: asArray(computeIndicator('sma', bars, { period: 50 })) });
+  }
+  if (active.has('RSI')) {
+    panes.push({
+      id: 'rsi',
+      lines: [{ id: 'rsi', color: '#58a6ff', values: asArray(computeIndicator('rsi', bars, { period: 14 })) }],
+      refLines: [{ value: 30, color: '#26a641' }, { value: 50, color: '#8b949e' }, { value: 70, color: '#f85149' }],
+    });
+  }
+  if (active.has('STOCH')) {
+    const st = asRecord(computeIndicator('stoch', bars, { kperiod: 14, kslow: 3, dperiod: 3 }));
+    panes.push({
+      id: 'stoch',
+      lines: [
+        { id: 'k', color: '#58a6ff', values: st.k },
+        { id: 'd', color: '#e3b341', values: st.d },
+      ],
+      refLines: [{ value: 20, color: '#26a641' }, { value: 80, color: '#f85149' }],
+    });
+  }
+  if (active.has('VOL')) {
+    panes.push({
+      id: 'volume',
+      lines: [{ id: 'vol', color: '#8b949e', values: bars.map((b) => b.volume) }],
+      histogram: true,
+    });
+  }
+  return { overlays, panes };
+}
 
 // ---------------------------------------------------------------------------
 // Error message classifier
@@ -69,6 +140,26 @@ function BacktestInner() {
   const [busy,       setBusy]       = useState(false);
   const [chartTf,    setChartTf]    = useState<'1d' | '1w'>('1d');
   const [rawBars,    setRawBars]    = useState<Bar[]>([]);
+  const [indToggles, setIndToggles] = useState<Set<IndicatorToggle>>(new Set(['VOL']));
+
+  // Selecting a strategy auto-enables its trigger indicator set
+  useEffect(() => {
+    const preset = STRATEGY_TOGGLES[strategyId];
+    if (preset) setIndToggles(new Set(preset));
+  }, [strategyId]);
+
+  const { overlays, panes } = useMemo(
+    () => buildIndicators(bars, indToggles),
+    [bars, indToggles],
+  );
+
+  function toggleIndicator(t: IndicatorToggle) {
+    setIndToggles((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t); else next.add(t);
+      return next;
+    });
+  }
 
   const strategyNames = useMemo(
     () => Object.fromEntries(strategies.map((s) => [s.id, s.name])),
@@ -228,6 +319,26 @@ function BacktestInner() {
                 </button>
               ))}
             </div>
+            <div className="flex items-center gap-1 shrink-0" title="on-chart indicators - strategy selection presets its trigger set">
+              {ALL_TOGGLES.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => toggleIndicator(t)}
+                  style={{
+                    background:   indToggles.has(t) ? 'var(--bg-panel-header)' : 'var(--bg-panel)',
+                    border:       `1px solid ${indToggles.has(t) ? 'var(--color-accent)' : 'var(--border)'}`,
+                    color:        indToggles.has(t) ? 'var(--color-accent)' : 'var(--text-muted)',
+                    fontFamily:   'var(--font-mono)',
+                    fontSize:     'var(--fs-xs)',
+                    padding:      '2px 6px',
+                    cursor:       'pointer',
+                  }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
             <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', flexShrink: 0 }}>{status}</span>
           </form>
         }
@@ -260,6 +371,8 @@ function BacktestInner() {
                 entryPrice={result.currentIdea?.entryPrice}
                 stopPrice={result.currentIdea?.stopPrice}
                 targetPrice={result.currentIdea?.targetPrice}
+                overlays={overlays}
+                panes={panes}
               />
             ) : (
               <div style={{ padding: 24, color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
