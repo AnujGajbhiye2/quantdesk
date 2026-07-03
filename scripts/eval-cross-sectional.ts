@@ -18,6 +18,13 @@
  *   REBALANCE_DAYS=21     - trading days between rebalances (~monthly)
  *   LOOKBACK=252          - momentum lookback bars (~12 months)
  *   SKIP=21               - bars excluded from the end of the lookback (~1 month)
+ *   WINDOWS_SPEC          - explicit regime windows instead of the TRAIN_FRAC
+ *                           split, e.g. "2016-01-01:2019-12-31,2020-01-01:2021-12-31".
+ *                           Each window is an independent full-portfolio run
+ *                           (bars load in full, so lookback warmup before each
+ *                           window start is automatic). Used for the rotation-book
+ *                           go-live gate (IMPROVEMENT_PLAN.md WS3): OOS Sharpe > 1
+ *                           in >= 2 windows, at least one a drawdown window.
  *
  * ============================================================================
  * SURVIVORSHIP BIAS: the SP500 universe below is sourced from a PRESENT-DAY
@@ -52,6 +59,8 @@ const TOP_N           = Number(process.env.TOP_N           ?? 20);
 const REBALANCE_DAYS  = Number(process.env.REBALANCE_DAYS  ?? 21);
 const LOOKBACK        = Number(process.env.LOOKBACK        ?? 252);
 const SKIP            = Number(process.env.SKIP            ?? 21);
+
+const WINDOWS_SPEC = process.env.WINDOWS_SPEC; // "from:to,from:to,..."
 
 const UNIVERSE_FILE = join(process.cwd(), 'scripts/universe/sp500.json');
 const DB_PATH        = join(process.cwd(), 'data/quantdesk.db');
@@ -152,6 +161,49 @@ const runParams = {
     ? { currentMembers: symbols, changes: membershipChanges }
     : undefined,
 };
+
+// ---------------------------------------------------------------------------
+// WINDOWS_SPEC mode: explicit regime windows, each an independent run.
+// Reports per-window metrics and exits - no IS/OOS split.
+// ---------------------------------------------------------------------------
+
+if (WINDOWS_SPEC) {
+  const windows = WINDOWS_SPEC.split(',').map((w) => {
+    const [from, to] = w.trim().split(':');
+    if (!from || !to || from >= to) {
+      console.error(`Bad WINDOWS_SPEC entry '${w}' - expected from:to with from < to.`);
+      process.exit(1);
+    }
+    return { from, to };
+  });
+
+  const HH = '─'.repeat(112);
+  console.log(HH);
+  console.log(
+    'Window'.padEnd(26) +
+    'Sharpe'.padStart(9) + ' CAGR%'.padStart(9) + ' MaxDD%'.padStart(9) +
+    ' Trades'.padStart(9) + ' TotRet%'.padStart(10),
+  );
+  console.log(HH);
+  let passCount = 0;
+  for (const w of windows) {
+    const r = runCrossSectional({ ...runParams, activeFrom: w.from, activeTo: w.to });
+    const pass = r.metrics.sharpe > 1;
+    if (pass) passCount++;
+    console.log(
+      `${w.from}..${w.to}`.padEnd(26) +
+      fmt(r.metrics.sharpe) + fmt(r.metrics.cagr) + fmt(r.metrics.maxDrawdownPct) +
+      String(r.metrics.numTrades).padStart(9) + fmt(r.metrics.totalReturnPct).padStart(10) +
+      (pass ? '  PASS(>1)' : ''),
+    );
+  }
+  console.log(HH);
+  console.log(`\nWindows with Sharpe > 1: ${passCount}/${windows.length}`);
+  console.log('Gate (IMPROVEMENT_PLAN.md WS3): >= 2 windows over 1, at least one a');
+  console.log('drawdown window (2020 or 2022), PIT active. Assess against the rows above.');
+  db.close();
+  process.exit(0);
+}
 
 // ---------------------------------------------------------------------------
 // IS run: full range up to the split date

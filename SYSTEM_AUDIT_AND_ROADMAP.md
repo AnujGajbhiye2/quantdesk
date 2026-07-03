@@ -409,6 +409,21 @@ Goal: promote the strongest edge in the repo (1.44 OOS Sharpe) from research to 
 paper sleeve, after killing its known biases. Highest expected-value trading change in
 this roadmap.
 
+**Status update (2026-07-03): go-live gate evaluated - FAILED.** `WINDOWS_SPEC`
+regime windows added to `scripts/eval-cross-sectional.ts`; run with PIT active
+(762 membership events) on the full prod data snapshot, explicit windows
+2016-19 / 2020-21 / 2022 / 2023-26. Sharpe per window: 0.63 / 0.44 / 0.17 /
+0.99 - ZERO windows over the gate's Sharpe > 1 bar (gate: >= 2 windows over 1
+incl. one drawdown window). The earlier 1.15 "OOS" Sharpe was an artifact of
+the TRAIN_FRAC split: its OOS windows all landed inside the 2023-26 bull run.
+Variants tried, none clear the gate: TOP_N=10 (0.64/0.52/0.30/1.01, best),
+TOP_N=50 (worse), REBALANCE_DAYS=42 (no help). What survives honestly: positive
+total return in every window including +2.2% in 2022 while the index fell ~19%,
+so the relative edge is real - but absolute Sharpe is far below the bar and
+max drawdowns run 22-37%. Per the gate's own rule the rotation book must not
+go live; whether to build it dry-run-only or shelve Phase 4 is an open user
+decision recorded in IMPROVEMENT_PLAN.md WS3.
+
 - **Extend history pre-2020** (Yahoo daily data is free back decades) so OOS windows
   cover at least one bear market (2015-2016 draw, 2018 Q4, 2020 crash, 2022 bear).
 - **Apply PIT membership** from Phase 1 to the cross-sectional universe at each

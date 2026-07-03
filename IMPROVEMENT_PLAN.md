@@ -428,10 +428,21 @@ strategy recorded as a research note; STOP honored before any live change.
 
 ## WS3 - Momentum rotation book (live paper sleeve)
 
-Goal: promote the strongest edge in the repo (cross-sectional 12-1 momentum, OOS
-Sharpe 1.15 after PIT correction) from research to a live paper sleeve: monthly
-top-20 equal-weight rebalance, its own budget bucket, Telegram digests. Complementary
-by construction to the short-hold mean-reversion book.
+**Premise update (2026-07-03): the go-live gate (3.7) was run FIRST and FAILED -
+0/4 regime windows over Sharpe 1 with PIT active (0.63 / 0.44 / 0.17 / 0.99 for
+2016-19 / 2020-21 / 2022 / 2023-26). The prior "1.15 OOS Sharpe" was a
+TRAIN_FRAC-split artifact (all OOS windows in the 2023-26 bull). Variants
+(TOP_N=10/50, bimonthly rebalance) do not clear the bar. Per the gate rule the
+sleeve must NOT trade live. Open user decision: (a) build it dry-run-only as
+designed below, (b) shelve WS3 and proceed to WS4/WS5, or (c) research
+vol-scaled momentum variants first. Evidence in SYSTEM_AUDIT_AND_ROADMAP.md
+Phase 4 status update. Note for any future live enablement: prod must run
+`npm run build-pit-membership` (its DB lacked the table - discovered here).**
+
+Goal (as originally scoped): promote cross-sectional 12-1 momentum from research
+to a live paper sleeve: monthly top-20 equal-weight rebalance, its own budget
+bucket, Telegram digests. Complementary by construction to the short-hold
+mean-reversion book.
 
 Cross-cutting safety property: every change in this workstream defaults to sleeve
 `'mr'`, so existing live behavior is bit-identical until the first rotation trade
