@@ -1,15 +1,8 @@
 import type { Strategy } from './Strategy';
 import { validateStrategy } from './validate';
 import { RSIReversionStrategy }      from './examples/rsi-reversion';
-import { MACrossoverStrategy }        from './examples/ma-crossover';
-import { MACDMomentumStrategy }       from './examples/macd-momentum';
 import { BollingerReversionStrategy } from './examples/bollinger-reversion';
-import { DonchianBreakoutStrategy }   from './examples/donchian-breakout';
 import { StochReversalStrategy }      from './examples/stoch-reversal';
-import { Rsi2PullbackStrategy }       from './examples/rsi2-pullback';
-import { DownStreakStrategy }         from './examples/down-streak';
-import { EmaPullbackStrategy }        from './examples/ema-pullback';
-import { Ma44SupportStrategy }        from './examples/ma44-support';
 
 /**
  * Strategy registry.
@@ -27,22 +20,21 @@ import { Ma44SupportStrategy }        from './examples/ma44-support';
 /**
  * Live-eligible strategy IDs.
  *
- * Only these three strategies run on the live intraday scan and auto-trade path.
- * All other registered strategies are available for backtesting and UI research
- * but are excluded from live signal generation.
+ * Only these three strategies are registered at all. They are also the only
+ * ones that run on the live intraday scan and auto-trade path - the registry
+ * and the live path are identical (no separate research-only tier).
  *
- * Registered non-live strategies are not walk-forward validated for live paper
- * trading - do not add to this set without walk-forward validation.
- *
- * BINNED strategies live in strategy/graveyard/ and are NOT registered at all
- * (they no longer appear in backtest or research UI):
- *   roc-momentum  - BROKEN: zero trades generated across entire SP500 OOS run.
- *                   Entry threshold too aggressive; never triggers in normal conditions.
- *   atr-trend     - BROKEN: negative Sharpe in OOS walk-forward (-0.4 to -0.8).
- *                   Systematic underperformance; not suitable for capital allocation.
- * Both re-confirmed broken in the Phase 5 roster re-evaluation (Sharpe 0.00 and
- * -0.25). scripts/eval-walkforward.ts still imports them from the graveyard so
- * the evidence stays reproducible.
+ * BINNED strategies live in strategy/graveyard/ and are NOT registered
+ * (they no longer appear in backtest, compare, or research UI):
+ *   roc-momentum      - BROKEN: zero trades generated across entire SP500 OOS run.
+ *   atr-trend         - BROKEN: negative OOS Sharpe (-0.4 to -0.8).
+ *   ma-crossover, macd-momentum, donchian-breakout, rsi2-pullback, down-streak,
+ *   ema-pullback, ma44-support - Phase 5 roster re-evaluation (SYSTEM_AUDIT_AND_ROADMAP.md):
+ *   every candidate underperformed the live trio on walk-forward OOS Sharpe
+ *   despite "better" mechanics (real stops/targets/time exits). Not broken,
+ *   just never proved better than what's live - moved out of the live app
+ *   surface, kept for eval-walkforward.ts / eval-cost-sensitivity.ts so the
+ *   rejection evidence stays reproducible.
  */
 const LIVE_STRATEGY_IDS = new Set<string>([
   'bollinger-reversion',
@@ -89,12 +81,5 @@ export function listLive(): { id: string; name: string; description: string; tie
 
 // Seed built-in strategies
 register(new RSIReversionStrategy());
-register(new MACrossoverStrategy());
-register(new MACDMomentumStrategy());
 register(new BollingerReversionStrategy());
-register(new DonchianBreakoutStrategy());
 register(new StochReversalStrategy());
-register(new Rsi2PullbackStrategy());
-register(new DownStreakStrategy());
-register(new EmaPullbackStrategy());
-register(new Ma44SupportStrategy());

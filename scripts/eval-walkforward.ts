@@ -24,19 +24,19 @@ import type { Strategy } from '@/core/strategy/Strategy';
 
 // Import strategies directly - bypasses registry validation overhead
 import { RSIReversionStrategy }      from '@/core/strategy/examples/rsi-reversion';
-import { MACrossoverStrategy }        from '@/core/strategy/examples/ma-crossover';
-import { MACDMomentumStrategy }       from '@/core/strategy/examples/macd-momentum';
 import { BollingerReversionStrategy } from '@/core/strategy/examples/bollinger-reversion';
-import { DonchianBreakoutStrategy }   from '@/core/strategy/examples/donchian-breakout';
+import { StochReversalStrategy }      from '@/core/strategy/examples/stoch-reversal';
 // Binned strategies (unregistered, kept in graveyard/) stay in this eval so
 // their rejection evidence remains reproducible.
 import { RocMomentumStrategy }        from '@/core/strategy/graveyard/roc-momentum';
 import { AtrTrendStrategy }           from '@/core/strategy/graveyard/atr-trend';
-import { StochReversalStrategy }      from '@/core/strategy/examples/stoch-reversal';
-import { Rsi2PullbackStrategy }       from '@/core/strategy/examples/rsi2-pullback';
-import { DownStreakStrategy }         from '@/core/strategy/examples/down-streak';
-import { EmaPullbackStrategy }        from '@/core/strategy/examples/ema-pullback';
-import { Ma44SupportStrategy }        from '@/core/strategy/examples/ma44-support';
+import { MACrossoverStrategy }        from '@/core/strategy/graveyard/ma-crossover';
+import { MACDMomentumStrategy }       from '@/core/strategy/graveyard/macd-momentum';
+import { DonchianBreakoutStrategy }   from '@/core/strategy/graveyard/donchian-breakout';
+import { Rsi2PullbackStrategy }       from '@/core/strategy/graveyard/rsi2-pullback';
+import { DownStreakStrategy }         from '@/core/strategy/graveyard/down-streak';
+import { EmaPullbackStrategy }        from '@/core/strategy/graveyard/ema-pullback';
+import { Ma44SupportStrategy }        from '@/core/strategy/graveyard/ma44-support';
 
 // ---------------------------------------------------------------------------
 // Config

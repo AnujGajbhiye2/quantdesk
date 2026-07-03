@@ -13,10 +13,10 @@ import { readFileSync } from 'node:fs';
 
 import type { Bar } from '@/core/types';
 import { runWalkForward } from '@/core/backtest/walkforward';
-import { Rsi2PullbackStrategy } from '@/core/strategy/examples/rsi2-pullback';
-import { DownStreakStrategy }   from '@/core/strategy/examples/down-streak';
-import { EmaPullbackStrategy }  from '@/core/strategy/examples/ema-pullback';
-import { Ma44SupportStrategy }  from '@/core/strategy/examples/ma44-support';
+import { Rsi2PullbackStrategy } from '@/core/strategy/graveyard/rsi2-pullback';
+import { DownStreakStrategy }   from '@/core/strategy/graveyard/down-streak';
+import { EmaPullbackStrategy }  from '@/core/strategy/graveyard/ema-pullback';
+import { Ma44SupportStrategy }  from '@/core/strategy/graveyard/ma44-support';
 
 const DB_PATH = join(process.cwd(), 'data/quantdesk.db');
 const db = new Database(DB_PATH, { readonly: true });

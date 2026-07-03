@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { validateStrategy, makeSyntheticBars } from './validate';
 import type { Strategy, StrategyContext, StrategyDecision } from './Strategy';
 import { RSIReversionStrategy  } from './examples/rsi-reversion';
-import { MACrossoverStrategy   } from './examples/ma-crossover';
-import { MACDMomentumStrategy  } from './examples/macd-momentum';
+import { BollingerReversionStrategy } from './examples/bollinger-reversion';
+import { StochReversalStrategy } from './examples/stoch-reversal';
 
 // ---------------------------------------------------------------------------
 // Helpers for test strategies
@@ -62,14 +62,14 @@ describe('validateStrategy - built-ins', () => {
     expect(result.ok).toBe(true);
   });
 
-  it('ma-crossover passes', () => {
-    const result = validateStrategy(new MACrossoverStrategy());
+  it('bollinger-reversion passes', () => {
+    const result = validateStrategy(new BollingerReversionStrategy());
     expect(result.errors).toEqual([]);
     expect(result.ok).toBe(true);
   });
 
-  it('macd-momentum passes', () => {
-    const result = validateStrategy(new MACDMomentumStrategy());
+  it('stoch-reversal passes', () => {
+    const result = validateStrategy(new StochReversalStrategy());
     expect(result.errors).toEqual([]);
     expect(result.ok).toBe(true);
   });
