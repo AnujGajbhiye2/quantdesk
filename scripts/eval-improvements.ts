@@ -39,7 +39,7 @@ import { StochReversalStrategy }      from '@/core/strategy/examples/stoch-rever
 // Config
 // ---------------------------------------------------------------------------
 
-const FEATURE      = (process.env.FEATURE ?? 'none') as 'none' | 'trailing' | 'gap' | 'dynsize' | 'partial' | 'ratchet' | 'all';
+const FEATURE      = (process.env.FEATURE ?? 'none') as 'none' | 'trailing' | 'gap' | 'dynsize' | 'partial' | 'ratchet' | 'both' | 'all';
 const STOP_PCT     = Number(process.env.STOP_PCT    ?? 0.05);
 const TARGET_PCT   = Number(process.env.TARGET_PCT  ?? 0.10);
 const TRAIL_ACT    = Number(process.env.TRAIL_ACT   ?? 0.03);
@@ -74,7 +74,9 @@ interface EngineOverrides {
 
 function buildEngineOverrides(feature: typeof FEATURE): EngineOverrides {
   const cfg: EngineOverrides = {};
-  if (feature === 'trailing' || feature === 'all') {
+  // 'both' = trailing + ratchet together - the combination the live book runs
+  // when TRAILING_STOP_ENABLED=1 and TARGET_RATCHET_ENABLED=1.
+  if (feature === 'trailing' || feature === 'both' || feature === 'all') {
     cfg.trailingStopActivationPct = TRAIL_ACT;
     cfg.trailingStopDistancePct   = TRAIL_DIST;
   }
@@ -89,7 +91,7 @@ function buildEngineOverrides(feature: typeof FEATURE): EngineOverrides {
     cfg.partialExitFraction    = PARTIAL_FRAC;
     cfg.partialExitAtTargetPct = PARTIAL_AT;
   }
-  if (feature === 'ratchet' || feature === 'all') {
+  if (feature === 'ratchet' || feature === 'both' || feature === 'all') {
     cfg.targetRatchetExtensionR    = RATCHET_R;
     cfg.targetRatchetMaxExtensions = RATCHET_MAX;
   }
@@ -168,8 +170,10 @@ const symbols = getSymbolsFromFile(SP500_FILE).filter((sym) => {
 
 console.log(`\n========== eval-improvements: FEATURE=${FEATURE} ==========`);
 console.log(`stopPct=${STOP_PCT*100}%  targetPct=${TARGET_PCT*100}%`);
-if (FEATURE === 'trailing' || FEATURE === 'all')
+if (FEATURE === 'trailing' || FEATURE === 'both' || FEATURE === 'all')
   console.log(`  trailing: activation=${TRAIL_ACT*100}%  distance=${TRAIL_DIST*100}%`);
+if (FEATURE === 'ratchet' || FEATURE === 'both' || FEATURE === 'all')
+  console.log(`  ratchet: extensionR=${RATCHET_R}  maxExtensions=${RATCHET_MAX}`);
 if (FEATURE === 'gap' || FEATURE === 'all')
   console.log(`  gap: maxSlip=${MAX_SLIP*100}%  gapDown=${GAP_DN*100}%`);
 if (FEATURE === 'dynsize' || FEATURE === 'all')

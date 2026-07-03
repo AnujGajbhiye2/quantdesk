@@ -335,6 +335,27 @@ re-run once that re-ingest happens):
   ratchet together, and tuning `extensionR`/`maxExtensions` beyond the 1/3 defaults -
   worth a follow-up sweep before deciding on live parameters.
 
+**Round 3 evidence (2026-07-03, post-Turso-migration pass)** - trailing + ratchet
+COMBINED, the open follow-up from Round 1:
+
+- `scripts/eval-improvements.ts` gained `FEATURE=both` (trailing + ratchet in one
+  run - the exact combination the live book executes with both env flags on).
+  SP500 walk-forward, same costs/windows as Round 1. OOS Sharpe per strategy
+  (none / trailing / ratchet / both): rsi-reversion 0.39 / 0.47 / 0.40 / **0.50**;
+  bollinger-reversion 0.38 / 0.47 / 0.38 / **0.47**; stoch-reversal
+  0.37 / 0.41 / 0.41 / **0.44**. Combined is best-or-equal for all three, with
+  lower OOS drawdown than baseline everywhere (e.g. rsi 14.7% -> 11.1%). The
+  features compose; bollinger's ratchet indifference (its signal exit fires
+  before the fixed target) reproduces exactly as Round 1 predicted.
+- Ratchet parameter sweep under `FEATURE=both` (extensionR x maxExtensions,
+  {0.5, 1, 1.5} x {2, 3, 5}): OOS Sharpe FLAT across the entire grid (rsi 0.50,
+  bollinger 0.47, stoch 0.43-0.44 in every cell). With trailing on, the trailing
+  exit usually fires before the ratcheted target - ratchet params are a plateau,
+  no tuning needed. Keep defaults (extensionR=1, maxExtensions=3).
+- Prod env verified during the migration: `TRAILING_STOP_ENABLED=1` already live;
+  `TARGET_RATCHET_ENABLED` not set on prod. **Recommendation: flip
+  `TARGET_RATCHET_ENABLED=1` on prod at defaults** - user's call, evidence above.
+
 **Round 2 evidence** (continuing this pass):
 
 - **Realized-vol regime filter: built, evaluated, REJECTED.** Added a free VIX-proxy
