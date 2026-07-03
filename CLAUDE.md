@@ -59,15 +59,17 @@ To verify a phase is **done**:
   (init inside `useEffect`). Markers use `createSeriesMarkers`.
 - Indicators: `@ixjb94/indicators` (pure TS, zero-dep). Do not pull anything requiring the
   native `canvas` dependency.
-- Database: Turso (libSQL) via the `libsql` npm package's synchronous, better-sqlite3-
+- Database: plain local SQLite via the `libsql` npm package's synchronous, better-sqlite3-
   compatible API (`import Database from 'libsql'` - never `@libsql/client` or
-  `libsql/promise`, both async). One shared remote DB for local dev + prod EC2, connected
-  in embedded-replica mode (`TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN`). `DB_PATH` now
-  names the local replica cache file, not the source of truth — still gitignored, safe to
-  delete. Unset `TURSO_DATABASE_URL` falls back to a plain standalone local file. Local dev
-  should set `LOCAL_DEV_MODE=1` (see `.env.local.example`) to disable all crons against the
-  shared DB — this does not block manual UI/API actions. Never hardcode API keys — document
-  each in `.env.local.example`.
+  `libsql/promise`, both async). Turso was decommissioned 2026-07-03 (read-quota blowup
+  from embedded-replica syncs - see `MIGRATION_OFF_TURSO.md`); the embedded-replica branch
+  in `core/db/client.ts` still exists but nothing should set `TURSO_DATABASE_URL` anymore.
+  Prod EC2's `data/quantdesk.db` is the source of truth (single writer - all crons run
+  there); the laptop pulls snapshots over SSH with `npm run pull-prod-db` - the pulled
+  copy doubles as the offsite backup. Local dev keeps `LOCAL_DEV_MODE=1`
+  (disables cron registration) and works on the pulled snapshot - manual local UI/API
+  actions now write only to the local copy, never to prod. Never hardcode API keys —
+  document each in `.env.local.example`.
 
 ## Definition of done for any phase
 `npm run build` passes, the phase's specified Vitest tests pass, and the spec's Definition
