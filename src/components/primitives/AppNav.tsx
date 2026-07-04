@@ -10,6 +10,7 @@ const BASE_LINKS = [
   { href: '/compare',            label: 'COMPARE' },
   { href: '/paper',              label: 'PAPER' },
   { href: '/journal',            label: 'JOURNAL' },
+  { href: '/reconcile',          label: 'RECON' },
   { href: '/dashboard/session',  label: 'SESSION' },
   { href: '/settings',           label: 'SETTINGS' },
 ];

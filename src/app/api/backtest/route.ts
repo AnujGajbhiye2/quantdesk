@@ -10,6 +10,7 @@ import { getEdgeStats } from '@/core/db/edge';
 import { GLOBAL_SCOPE } from '@/core/edge/types';
 import { medianWinHoldBars, projectExitRange } from '@/core/edge/projection';
 import { BARS_PER_YEAR } from '@/core/backtest/metrics';
+import { insertBacktestRun, getBacktestRuns } from '@/core/db/backtest-runs';
 import type { TradeIdea, Timeframe } from '@/core/types';
 
 /**
@@ -176,9 +177,38 @@ export async function POST(request: Request) {
         }
       : { symbol: BENCHMARK_SYMBOL, totalReturnPct: null };
 
+    // Persist the run (params + metrics) for the history list - never let a
+    // save failure break the response the user is waiting on.
+    try {
+      insertBacktestRun({
+        strategyId: body.strategyId,
+        symbol:     body.symbol,
+        timeframe,
+        params:     parsedParams as Record<string, unknown>,
+        metrics:    result.metrics,
+      });
+    } catch (err) {
+      console.error('[POST /api/backtest] failed to save run', err);
+    }
+
     return NextResponse.json({ ...result, currentIdea, projection, benchmark });
   } catch (err) {
     console.error('[POST /api/backtest]', err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Unknown error' },
+      { status: 500 },
+    );
+  }
+}
+
+/** GET /api/backtest?runs=50 - saved run history, newest first. */
+export async function GET(request: Request) {
+  try {
+    const url = new URL(request.url);
+    const limit = Math.min(Number(url.searchParams.get('runs') ?? '50'), 200);
+    return NextResponse.json({ runs: getBacktestRuns(limit) });
+  } catch (err) {
+    console.error('[GET /api/backtest]', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 },

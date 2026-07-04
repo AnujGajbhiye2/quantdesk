@@ -32,6 +32,15 @@ type BacktestResponse = BacktestResult & {
   projection:  ExitProjectionData | null;
 };
 
+interface SavedRun {
+  id:         string;
+  createdAt:  string;
+  strategyId: string;
+  symbol:     string;
+  timeframe:  string;
+  metrics:    { totalReturnPct: number; sharpe: number; maxDrawdownPct: number; numTrades: number };
+}
+
 // ---------------------------------------------------------------------------
 // On-chart indicators
 // ---------------------------------------------------------------------------
@@ -138,8 +147,18 @@ function BacktestInner() {
   const [bars,       setBars]       = useState<Bar[]>([]);
   const [status,     setStatus]     = useState('');
   const [busy,       setBusy]       = useState(false);
-  const [chartTf,    setChartTf]    = useState<'1d' | '1w'>('1d');
+  const [chartTf,    setChartTf]    = useState<'15m' | '1d' | '1w'>('1d');
   const [rawBars,    setRawBars]    = useState<Bar[]>([]);
+  const [bars15m,    setBars15m]    = useState<Bar[] | null>(null); // lazy-fetched on first 15m toggle
+  const [runs,       setRuns]       = useState<SavedRun[]>([]);
+
+  const loadRuns = () => {
+    fetch('/api/backtest?runs=30')
+      .then((r) => r.json())
+      .then((d: { runs?: SavedRun[] }) => setRuns(d.runs ?? []))
+      .catch(() => { /* history is best-effort */ });
+  };
+  useEffect(loadRuns, []);
   const [indToggles, setIndToggles] = useState<Set<IndicatorToggle>>(new Set(['VOL']));
 
   // Selecting a strategy auto-enables its trigger indicator set
@@ -192,9 +211,23 @@ function BacktestInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [strategyId]);
 
-  // Re-resample when timeframe toggle changes
+  // Re-resample / re-fetch when timeframe toggle changes. 15m bars exist only
+  // for the auto-trade universe and are lazy-fetched once per symbol.
   useEffect(() => {
     if (rawBars.length === 0) return;
+    if (chartTf === '15m') {
+      if (bars15m) { setBars(bars15m); return; }
+      fetch(`/api/bars?symbol=${encodeURIComponent(symbol)}&timeframe=15m`)
+        .then((r) => r.json())
+        .then((d: { bars: Bar[] }) => {
+          const b = d.bars ?? [];
+          setBars15m(b);
+          setBars(b.length > 0 ? b : rawBars);
+          if (b.length === 0) setStatus('no 15m bars stored for this symbol - showing daily');
+        })
+        .catch(() => setBars(rawBars));
+      return;
+    }
     setBars(chartTf === '1w' ? toWeekly(rawBars) : rawBars);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chartTf]);
@@ -225,9 +258,11 @@ function BacktestInner() {
       const bData = await bRes.json() as { bars: Bar[] };
       const daily = bData.bars ?? [];
       setRawBars(daily);
+      setBars15m(null); // new symbol - stale 15m cache
       setBars(chartTf === '1w' ? toWeekly(daily) : daily);
 
       setStatus(`${data.trades.length} trades | return ${data.metrics.totalReturnPct.toFixed(2)}%`);
+      loadRuns(); // pick up the just-saved run in the history list
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setStatus(classifyBacktestError(msg));
@@ -299,7 +334,7 @@ function BacktestInner() {
               </a>
             )}
             <div className="flex items-center gap-1 shrink-0">
-              {(['1d', '1w'] as const).map((tf) => (
+              {(['15m', '1d', '1w'] as const).map((tf) => (
                 <button
                   key={tf}
                   type="button"
@@ -423,6 +458,49 @@ function BacktestInner() {
             <div className="col-span-12" style={{ background: 'var(--bg-panel)' }}>
               <MonthlyReturnsHeatmap equityCurve={result.equityCurve} />
             </div>
+          </div>
+        )}
+
+        {/* Saved run history - params + metrics snapshots, recallable (WS4.5) */}
+        {runs.length > 0 && (
+          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em', marginBottom: 8 }}>
+              [ RUN HISTORY - click to re-run ]
+            </div>
+            <table style={{ width: '100%', fontSize: 'var(--fs-xs)', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ color: 'var(--text-muted)', textAlign: 'left' }}>
+                  <th style={{ padding: '2px 8px' }}>WHEN</th>
+                  <th style={{ padding: '2px 8px' }}>STRATEGY</th>
+                  <th style={{ padding: '2px 8px' }}>SYMBOL</th>
+                  <th style={{ padding: '2px 8px', textAlign: 'right' }}>RET%</th>
+                  <th style={{ padding: '2px 8px', textAlign: 'right' }}>SHARPE</th>
+                  <th style={{ padding: '2px 8px', textAlign: 'right' }}>MAXDD%</th>
+                  <th style={{ padding: '2px 8px', textAlign: 'right' }}>TRADES</th>
+                </tr>
+              </thead>
+              <tbody>
+                {runs.map((r) => (
+                  <tr
+                    key={r.id}
+                    onClick={() => { setSymbol(r.symbol); setStrategyId(r.strategyId); void runBacktest(r.symbol, r.strategyId); }}
+                    style={{ cursor: 'pointer', borderTop: '1px solid var(--border)' }}
+                  >
+                    <td style={{ padding: '3px 8px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      {r.createdAt.slice(0, 16).replace('T', ' ')}
+                    </td>
+                    <td style={{ padding: '3px 8px' }}>{strategyNames[r.strategyId] ?? r.strategyId}</td>
+                    <td style={{ padding: '3px 8px', color: 'var(--color-accent)' }}>{r.symbol}</td>
+                    <td style={{ padding: '3px 8px', textAlign: 'right', color: r.metrics.totalReturnPct >= 0 ? '#26a641' : '#f85149' }}>
+                      {r.metrics.totalReturnPct.toFixed(1)}
+                    </td>
+                    <td style={{ padding: '3px 8px', textAlign: 'right' }}>{r.metrics.sharpe.toFixed(2)}</td>
+                    <td style={{ padding: '3px 8px', textAlign: 'right' }}>{r.metrics.maxDrawdownPct.toFixed(1)}</td>
+                    <td style={{ padding: '3px 8px', textAlign: 'right' }}>{r.metrics.numTrades}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

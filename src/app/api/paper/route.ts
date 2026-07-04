@@ -19,6 +19,7 @@ import { buildTradeBook } from '@/core/paper/tradebook';
 import { withEstHold } from '@/core/paper/hold';
 import { accountSummary } from '@/core/paper/summary';
 import { computeEquityHistory } from '@/core/paper/account';
+import { buildReconcileReport } from '@/core/paper/reconcile';
 import { buildPerformanceMetrics } from '@/core/paper/perf';
 import { setStartingBalance } from '@/core/db/account';
 import { getPaperTrades } from '@/core/db/paper';
@@ -174,6 +175,10 @@ export async function POST(request: Request) {
 
       case 'equity-history': {
         return NextResponse.json({ history: computeEquityHistory() });
+      }
+
+      case 'reconcile': {
+        return NextResponse.json({ report: buildReconcileReport() });
       }
 
       case 'performance': {

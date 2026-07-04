@@ -218,3 +218,16 @@ CREATE TABLE IF NOT EXISTS index_membership_changes (
   UNIQUE(index_name, effective_date, symbol, action)
 );
 CREATE INDEX IF NOT EXISTS idx_membership_changes_index ON index_membership_changes(index_name, effective_date);
+
+-- Saved backtest runs (IMPROVEMENT_PLAN.md WS4.5): params + metrics snapshot
+-- per run so before/after comparisons survive page reloads. Append-only.
+CREATE TABLE IF NOT EXISTS backtest_runs (
+  id          TEXT PRIMARY KEY,
+  created_at  TEXT NOT NULL,             -- ISO timestamp
+  strategy_id TEXT NOT NULL,
+  symbol      TEXT NOT NULL,
+  timeframe   TEXT NOT NULL DEFAULT '1d',
+  params      TEXT NOT NULL,             -- JSON: resolved strategy params
+  metrics     TEXT NOT NULL              -- JSON: BacktestMetrics
+);
+CREATE INDEX IF NOT EXISTS idx_backtest_runs_created ON backtest_runs(created_at);

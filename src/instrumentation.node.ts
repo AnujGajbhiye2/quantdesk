@@ -283,4 +283,25 @@ export async function register() {
     },
     { timezone },
   );
+
+  // Monthly report - first day of each month, 08:00 Dublin, covering the
+  // previous calendar month (IMPROVEMENT_PLAN.md WS5). Telegram + console.
+  const monthlyReportCron = process.env.MONTHLY_REPORT_CRON ?? '0 8 1 * *';
+  cron.schedule(
+    monthlyReportCron,
+    async () => {
+      try {
+        const { buildMonthlyReport } = await import('@/core/paper/monthly-report');
+        const { sendTelegram, telegramConfigured } = await import('@/core/notify/telegram');
+        const report = buildMonthlyReport();
+        console.log('[monthly-report]\n' + report.replace(/<[^>]+>/g, ''));
+        if (telegramConfigured()) {
+          await sendTelegram(report, { parseMode: 'HTML' });
+        }
+      } catch (err) {
+        console.error('[monthly-report] failed:', err);
+      }
+    },
+    { timezone },
+  );
 }

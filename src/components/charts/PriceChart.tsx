@@ -15,6 +15,8 @@ import {
   type SeriesOptionsMap,
   type ISeriesMarkersPluginApi,
   type IPriceLine,
+  type Time,
+  type UTCTimestamp,
 } from 'lightweight-charts';
 import type { Bar } from '@/core/types';
 import type { TradeRecord } from '@/core/backtest/engine';
@@ -63,12 +65,24 @@ interface Props {
 // ---------------------------------------------------------------------------
 
 type CandleData = {
-  time: string;
+  time: Time;
   open: number;
   high: number;
   low:  number;
   close: number;
 };
+
+/**
+ * Bar time -> chart time. Daily bars keep their YYYY-MM-DD string; intraday
+ * bars (full ISO timestamps) become UTC epoch seconds so multiple bars per
+ * day chart correctly instead of collapsing onto one date.
+ */
+function makeTimeMapper(bars: Bar[]): (t: string) => Time {
+  const intraday = bars.some((b) => b.time.length > 10);
+  return intraday
+    ? (t) => Math.floor(new Date(t).getTime() / 1000) as UTCTimestamp
+    : (t) => t.slice(0, 10);
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -96,8 +110,8 @@ export default function PriceChart({
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef     = useRef<IChartApi | null>(null);
-  const candlesRef   = useRef<ISeriesApi<keyof SeriesOptionsMap, string> | null>(null);
-  const markersRef   = useRef<ISeriesMarkersPluginApi<string> | null>(null);
+  const candlesRef   = useRef<ISeriesApi<keyof SeriesOptionsMap> | null>(null);
+  const markersRef   = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
   const priceLinesRef = useRef<IPriceLine[]>([]);
   const indicatorSeriesRef = useRef<ISeriesApi<keyof SeriesOptionsMap>[]>([]);
 
@@ -138,7 +152,7 @@ export default function PriceChart({
 
     chartRef.current   = chart;
     // Cast to the wider generic so createSeriesMarkers accepts it
-    candlesRef.current = candleSeries as ISeriesApi<keyof SeriesOptionsMap, string>;
+    candlesRef.current = candleSeries as ISeriesApi<keyof SeriesOptionsMap>;
     // One markers primitive for the chart's lifetime - data set via setMarkers
     markersRef.current = createSeriesMarkers(candlesRef.current, []);
 
@@ -164,13 +178,15 @@ export default function PriceChart({
     const chart   = chartRef.current;
     if (!candles || !chart) return;
 
-    // Deduplicate by date: multiple bars with same date (e.g. daily + intraday
-    // both stored in DB) would cause lightweight-charts to throw on duplicate time.
-    // Keep the last bar per date so the closing price wins.
-    const dateMap = new Map<string, CandleData>();
+    // Deduplicate by chart time: duplicate keys (e.g. two rows for one daily
+    // date) would cause lightweight-charts to throw. Keep the last bar per
+    // key so the closing price wins. Intraday bars map to epoch seconds and
+    // never collapse.
+    const toTime = makeTimeMapper(bars);
+    const dateMap = new Map<Time, CandleData>();
     for (const b of bars) {
-      const date = b.time.slice(0, 10);
-      dateMap.set(date, { time: date as CandleData['time'], open: b.open, high: b.high, low: b.low, close: b.close });
+      const t = toTime(b.time);
+      dateMap.set(t, { time: t, open: b.open, high: b.high, low: b.low, close: b.close });
     }
     const candleData = Array.from(dateMap.values()).sort((a, b) => (a.time < b.time ? -1 : 1));
     candles.setData(candleData);
@@ -178,7 +194,7 @@ export default function PriceChart({
     // Entry/exit markers - update in place, never re-create the primitive
     {
       type Marker = {
-        time:     string;
+        time:     Time;
         position: 'belowBar' | 'aboveBar';
         color:    string;
         shape:    'arrowUp' | 'arrowDown' | 'circle';
@@ -186,14 +202,14 @@ export default function PriceChart({
       };
       const markers: Marker[] = trades.flatMap((t): Marker[] => [
         {
-          time:     t.entryTime.slice(0, 10),
+          time:     toTime(t.entryTime),
           position: t.side === 'long' ? 'belowBar' : 'aboveBar',
           color:    t.side === 'long' ? '#26a641' : '#f85149',
           shape:    t.side === 'long' ? 'arrowUp' : 'arrowDown',
           text:     `${t.side === 'long' ? 'L' : 'S'} ${t.entryReason ?? ''}`.trim(),
         },
         {
-          time:     t.exitTime.slice(0, 10),
+          time:     toTime(t.exitTime),
           position: t.side === 'long' ? 'aboveBar' : 'belowBar',
           color:    '#e3b341',
           shape:    'circle',
@@ -218,17 +234,18 @@ export default function PriceChart({
     }
     indicatorSeriesRef.current = [];
 
-    // Aligned values -> line data keyed by bar date; NaN warm-up values and
-    // duplicate dates (daily + intraday rows) are skipped, mirroring candles.
+    // Aligned values -> line data keyed by chart time; NaN warm-up values and
+    // duplicate keys are skipped, mirroring candles.
+    const toTime = makeTimeMapper(bars);
     const toLineData = (values: number[]) => {
-      const byDate = new Map<string, { time: string; value: number }>();
+      const byTime = new Map<Time, { time: Time; value: number }>();
       for (let i = 0; i < bars.length; i++) {
         const v = values[i];
         if (v === undefined || !isFinite(v)) continue;
-        const date = bars[i].time.slice(0, 10);
-        byDate.set(date, { time: date, value: v });
+        const t = toTime(bars[i].time);
+        byTime.set(t, { time: t, value: v });
       }
-      return Array.from(byDate.values()).sort((a, b) => (a.time < b.time ? -1 : 1));
+      return Array.from(byTime.values()).sort((a, b) => (a.time < b.time ? -1 : 1));
     };
 
     for (const o of overlays) {
@@ -252,13 +269,18 @@ export default function PriceChart({
           priceLineVisible: false,
           lastValueVisible: false,
         }, paneIndex);
-        // Color volume bars by candle direction
-        const data = toLineData(pane.lines[0].values).map((d) => {
-          const bar = bars.find((b) => b.time.slice(0, 10) === d.time);
-          const up = bar ? bar.close >= bar.open : true;
-          return { ...d, color: up ? '#26a64155' : '#f8514955' };
-        });
-        s.setData(data);
+        // Color volume bars by candle direction - build directly from bars so
+        // the up/down lookup works for both daily and intraday time keys.
+        const values = pane.lines[0].values;
+        const byTime = new Map<Time, { time: Time; value: number; color: string }>();
+        for (let i = 0; i < bars.length; i++) {
+          const v = values[i];
+          if (v === undefined || !isFinite(v)) continue;
+          const t = toTime(bars[i].time);
+          const up = bars[i].close >= bars[i].open;
+          byTime.set(t, { time: t, value: v, color: up ? '#26a64155' : '#f8514955' });
+        }
+        s.setData(Array.from(byTime.values()).sort((a, b) => (a.time < b.time ? -1 : 1)));
         indicatorSeriesRef.current.push(s as ISeriesApi<keyof SeriesOptionsMap>);
       } else {
         let first: ISeriesApi<'Line'> | null = null;

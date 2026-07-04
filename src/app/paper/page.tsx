@@ -19,6 +19,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { fmtDate } from '@/core/format/date';
 import EquityCurveChart from '@/components/charts/EquityCurveChart';
 import type { PerfMetrics } from '@/core/paper/perf';
+import { isUsMarketOpen } from '@/core/market/hours';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -638,6 +639,18 @@ export default function PaperPage() {
   }, []);
 
   useEffect(() => { void loadData(); }, [loadData]);
+
+  // Auto-poll marks during US market hours so positions self-update instead
+  // of requiring manual REFRESH. 60s cadence, skipped when the tab is hidden
+  // or the market is closed (isUsMarketOpen is pure date logic, client-safe).
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      if (!isUsMarketOpen()) return;
+      void loadData();
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [loadData]);
 
   const handleOpened = useCallback((_trade: PaperTrade) => {
     void loadData();
