@@ -943,7 +943,7 @@ export default function PaperPage() {
             <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em' }}>
               [ TRADES ({visibleTrades.length}{statusFilter !== 'all' ? ` ${statusFilter}` : ''}) ]
             </span>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               {/* Display currency selector - persisted app-wide via SettingsProvider */}
               <select
                 value={displayCur}
@@ -957,6 +957,8 @@ export default function PaperPage() {
                   fontSize:    'var(--fs-xs)',
                   padding:     '1px 4px',
                   cursor:      'pointer',
+                  maxWidth:    '100%',
+                  minWidth:    0,
                 }}
               >
                 {(['USD', 'EUR', 'GBP', 'INR', 'CHF', 'SEK', 'NOK', 'DKK', 'PLN'] as const).map((c) => (
@@ -979,6 +981,8 @@ export default function PaperPage() {
                   fontSize:    'var(--fs-xs)',
                   padding:     '1px 4px',
                   cursor:      'pointer',
+                  maxWidth:    '100%',
+                  minWidth:    0,
                 }}
               >
                 <option value="all">all</option>

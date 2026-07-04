@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { PaperTrade } from '@/core/types';
+import { fetchErrorMessage } from '@/core/format/apiError';
 
 interface Props {
   onOpened: (trade: PaperTrade) => void;
@@ -80,7 +81,7 @@ export default function NewPaperTrade({ onOpened }: Props) {
           targetPrice: targetNum,
         }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error(await fetchErrorMessage(res));
       const data = await res.json() as { trade: PaperTrade; orderType: string };
       const verb = data.orderType === 'limit' ? `pending @ ${entryNum}` : 'opened';
       setStatus(`${verb}: ${side.toUpperCase()} ${symbol.toUpperCase()} x${qtyNum}`);

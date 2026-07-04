@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SymbolMeta } from '@/core/types';
+import { fetchErrorMessage } from '@/core/format/apiError';
 
 interface LocalSymbol {
   symbol: string;
@@ -116,7 +117,7 @@ export default function GoToSymbolOverlay({ allSymbols, onClose }: Props) {
           }],
         }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error(await fetchErrorMessage(res));
       router.push(`/backtest?symbol=${item.symbol}`);
       onClose();
     } catch (err) {

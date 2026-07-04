@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Sparkline from '@/components/primitives/Sparkline';
 import { fmtMoney } from '@/core/format/currency';
 import type { MarketRow } from '@/core/market/snapshot';
+import { fetchErrorMessage } from '@/core/format/apiError';
 
 export interface PlaceholderSymbol {
   symbol:     string;
@@ -209,7 +210,7 @@ function ScanResultsPanel({ rows, selected, placeholders = [], onIngestDone, sor
           }],
         }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error(await fetchErrorMessage(res));
       onIngestDone?.();
     } catch (err) {
       setIngestError(err instanceof Error ? err.message : 'ingest failed');

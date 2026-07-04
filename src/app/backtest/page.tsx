@@ -297,6 +297,8 @@ function BacktestInner() {
             fontFamily: 'var(--font-mono)',
             fontSize: 'var(--fs-xs)',
             padding: '3px 8px',
+            maxWidth: '100%',
+            minWidth: 0,
           }}
         >
           {strategies.map((s) => (

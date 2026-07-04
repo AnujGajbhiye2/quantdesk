@@ -5,6 +5,7 @@ import type { MarketRow } from '@/core/market/snapshot';
 import type { EdgeSummary } from '@/core/edge/context';
 import type { EnrichedTradeIdea } from '@/core/signals/gate';
 import type { Signal } from '@/core/types';
+import { fetchErrorMessage } from '@/core/format/apiError';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -88,7 +89,7 @@ const CommandBar = forwardRef<CommandBarHandle, CommandBarProps>(function Comman
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({ strategyId, symbols }),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw new Error(await fetchErrorMessage(res));
         const data = await res.json() as {
           signals:    Signal[];
           ideas?:     EnrichedTradeIdea[];

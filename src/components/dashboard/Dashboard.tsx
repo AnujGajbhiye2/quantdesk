@@ -32,6 +32,7 @@ import type { EnrichedTradeIdea } from "@/core/signals/gate";
 import type { PaperTrade, Signal, TradeIdea, SymbolMeta } from "@/core/types";
 import { marketOf, ALL_MARKETS, type Market } from "@/core/market/markets";
 import AppHeader from "@/components/primitives/AppHeader";
+import { fetchErrorMessage } from "@/core/format/apiError";
 
 interface QuoteRow {
   symbol: string;
@@ -321,7 +322,7 @@ export default function Dashboard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error(await fetchErrorMessage(res));
       const data = (await res.json()) as {
         consensus: ConsensusSignal[];
         signals: Signal[];
@@ -602,7 +603,7 @@ export default function Dashboard({
           },
         }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error(await fetchErrorMessage(res));
       // Refresh trades list
       const tRes = await fetch("/api/paper", {
         method: "POST",
@@ -725,7 +726,7 @@ export default function Dashboard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ strategyId: scanStratId }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error(await fetchErrorMessage(res));
       const data = (await res.json()) as {
         signals: Signal[];
         ideas: EnrichedTradeIdea[];
@@ -844,10 +845,11 @@ export default function Dashboard({
 
         {/* Strategy picker bar for signal dashboard */}
         <div
-          className="flex items-center gap-3 px-4 py-1 shrink-0"
+          className="flex items-center gap-3 px-4 py-1 shrink-0 flex-wrap"
           style={{
             background: "var(--bg-panel-header)",
             borderBottom: "1px solid var(--border)",
+            rowGap: 4,
           }}
         >
           <span
@@ -855,6 +857,7 @@ export default function Dashboard({
               color: "var(--text-muted)",
               fontSize: "var(--fs-xs)",
               letterSpacing: "0.06em",
+              flexShrink: 0,
             }}
           >
             SIGNAL SCAN:
@@ -868,7 +871,9 @@ export default function Dashboard({
               color: "var(--text-primary)",
               fontFamily: "var(--font-mono)",
               fontSize: "var(--fs-xs)",
-              padding: "1px 6px",
+              padding: "3px 6px",
+              maxWidth: "100%",
+              minWidth: 0,
             }}
           >
             {strategies.map((s) => (
@@ -886,8 +891,10 @@ export default function Dashboard({
               color: "var(--color-accent)",
               fontFamily: "var(--font-mono)",
               fontSize: "var(--fs-xs)",
-              padding: "1px 10px",
+              padding: "3px 10px",
               cursor: "pointer",
+              fontWeight: 700,
+              flexShrink: 0,
             }}
           >
             SCAN
@@ -898,20 +905,24 @@ export default function Dashboard({
             title="Run every strategy against every symbol [s]"
             style={{
               background: scanningAll ? "var(--bg-panel-header)" : "var(--bg-panel)",
-              border: "1px solid var(--color-accent)",
+              border: "1px solid var(--border)",
               color: "var(--color-accent)",
               fontFamily: "var(--font-mono)",
               fontSize: "var(--fs-xs)",
-              padding: "1px 10px",
+              padding: "3px 10px",
               cursor: scanningAll ? "wait" : "pointer",
               fontWeight: 700,
+              flexShrink: 0,
             }}
           >
             {scanningAll ? "SCANNING..." : "SCAN ALL [s]"}
           </button>
           {scanStatus && (
             <span
-              style={{ color: "var(--text-muted)", fontSize: "var(--fs-xs)" }}
+              style={{
+                color: scanStatus.startsWith("error") ? "var(--color-down)" : "var(--text-muted)",
+                fontSize: "var(--fs-xs)",
+              }}
             >
               {scanStatus}
             </span>
