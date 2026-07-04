@@ -5,6 +5,16 @@ extends `SYSTEM_AUDIT_AND_ROADMAP.md` Phases 3-7. It is written so an implementi
 session (Sonnet) needs zero design decisions - every step names files, functions,
 schemas, env vars, tests, and a Definition of Done.
 
+**Status (2026-07-04): WS0 DONE (combined eval accepted, ratchet flipped live on
+prod). WS1 DONE (registry env-driven, reconcile generalized, migrate-provider tool
+proven via alpaca dry-run; paid adapter deliberately not built until the provider
+is chosen). WS2 OPTIONAL/paused (live runs the daily path - see premise update).
+WS3 SHELVED (go-live gate failed 0/4 regime windows - see premise update). WS4
+DONE (on-chart indicators, USD equity curve + P&L calendar, 15m charts, /paper
+auto-polling, backtest run history; DOSSIER nav pre-existed). WS5 DONE (/reconcile
+drift + criteria page, monthly Telegram report cron, PROMOTION_CRITERIA.md).
+Separately: Turso decommissioned (MIGRATION_OFF_TURSO.md).**
+
 Status snapshot (2026-07-03): live paper book is stable - 12 trades, 6 closed at 100%
 win rate, +$221.98 realized, running unattended on the 15m auto-trade path with
 Telegram alerts. Roster is the validated trio: `bollinger-reversion`, `rsi-reversion`,
