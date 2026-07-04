@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DublinClock from '@/components/primitives/DublinClock';
 import AppHeader from '@/components/primitives/AppHeader';
 import { fmtDate } from '@/core/format/date';
-import SymbolTypeahead from '@/components/primitives/SymbolTypeahead';
 import InfoTip from '@/components/primitives/InfoTip';
 import { gloss, type GlossaryKey } from '@/core/glossary';
 import type { CompareRow } from '@/app/api/compare/route';
@@ -74,12 +73,15 @@ function ComparePageInner() {
     }
   }
 
-  // Auto-run when arriving with ?symbol=, else fall back to the last symbol searched
+  // Auto-run when arriving with ?symbol= (also re-fires when the shared
+  // research search box navigates here with a new one), else fall back to
+  // the last symbol searched.
+  const urlSymbolParam = searchParams.get('symbol');
   useEffect(() => {
-    const urlSym = searchParams.get('symbol') ?? getLastSymbol();
+    const urlSym = urlSymbolParam ?? getLastSymbol();
     if (urlSym) { setSymbol(urlSym); void runCompare(urlSym); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [urlSymbolParam]);
 
   const columns = useMemo<ColumnDef<CompareRow, unknown>[]>(() => [
     {
@@ -162,44 +164,38 @@ function ComparePageInner() {
 
   return (
     <div className="flex flex-col h-full" style={{ minHeight: '100vh' }}>
-      <AppHeader
-        center={
-          <form
-            onSubmit={(e) => { e.preventDefault(); void runCompare(); }}
-            className="flex items-center gap-3 flex-1"
-            style={{ minWidth: 0 }}
-          >
-            <SymbolTypeahead
-              value={symbol}
-              onChange={setSymbol}
-              onPick={(sym) => void runCompare(sym)}
-              autoFocus
-            />
-            <button
-              type="submit"
-              disabled={busy}
-              style={{
-                background: 'var(--bg-panel)',
-                border: '1px solid var(--color-accent)',
-                color: 'var(--color-accent)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 'var(--fs-xs)',
-                padding: '3px 12px',
-                cursor: busy ? 'wait' : 'pointer',
-                fontWeight: 700,
-              }}
-            >
-              {busy ? 'RUNNING...' : 'COMPARE'}
-            </button>
-            {status && (
-              <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {status}
-              </span>
-            )}
-          </form>
-        }
-        right={<><ResearchTabs symbol={symbol} /><DublinClock /></>}
-      />
+      <AppHeader right={<DublinClock />} />
+      <ResearchTabs symbol={symbol} />
+
+      {/* Page-specific toolbar: re-run + status, not global nav */}
+      <div
+        className="flex items-center gap-3 px-4 py-1 flex-wrap shrink-0"
+        style={{ background: 'var(--bg-panel)', borderBottom: '1px solid var(--border)' }}
+      >
+        {symbol && <span style={{ color: 'var(--color-accent)', fontSize: 'var(--fs-xs)', fontWeight: 700 }}>{symbol}</span>}
+        <button
+          type="button"
+          onClick={() => void runCompare()}
+          disabled={busy || !symbol}
+          style={{
+            background: 'var(--bg-panel)',
+            border: '1px solid var(--color-accent)',
+            color: 'var(--color-accent)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 'var(--fs-xs)',
+            padding: '3px 12px',
+            cursor: busy ? 'wait' : 'pointer',
+            fontWeight: 700,
+          }}
+        >
+          {busy ? 'RUNNING...' : 'RE-RUN'}
+        </button>
+        {status && (
+          <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {status}
+          </span>
+        )}
+      </div>
 
       {/* Explainer */}
       <div

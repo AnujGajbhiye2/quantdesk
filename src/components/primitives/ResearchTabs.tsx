@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import SymbolTypeahead from './SymbolTypeahead';
 
 const LAST_PATH_KEY   = 'qd-last-research-path';
 const LAST_SYMBOL_KEY = 'qd-last-symbol';
@@ -27,17 +28,37 @@ const TABS = [
   { match: '/reconcile', label: 'RECON',     href: () => '/reconcile' },
 ] as const;
 
-/** Sub-nav strip shared by the three research surfaces (backtest/compare/dossier) -
- *  they're one "RESEARCH" entry in the main nav, this switches between them
- *  while keeping whatever symbol is in view. Also records the current path so
- *  the main nav's RESEARCH link remembers where you left off. */
+/**
+ * One shared control bar for all four research surfaces
+ * (backtest/compare/dossier/recon) - they're one "RESEARCH" entry in the
+ * main nav; this row holds the tabs plus the single symbol search shared
+ * between them, so searching once carries the symbol to whichever tab you
+ * switch to next (recon has no per-symbol view, so the box hides there).
+ * Also records the current path so the main nav's RESEARCH link remembers
+ * where you left off.
+ */
 export default function ResearchTabs({ symbol }: { symbol: string }) {
   const pathname = usePathname();
+  const router   = useRouter();
+  const [input, setInput] = useState(symbol);
 
   useEffect(() => { saveLastResearchPath(pathname); }, [pathname]);
+  useEffect(() => { setInput(symbol); }, [symbol]);
+
+  const activeTab = TABS.find((t) => pathname.startsWith(t.match)) ?? TABS[0];
+  const showSearch = activeTab.match !== '/reconcile';
+
+  function pick(sym: string) {
+    saveLastSymbol(sym);
+    router.push(activeTab.href(sym));
+  }
 
   return (
-    <div className="flex items-center gap-1 shrink-0">
+    <div
+      className="flex items-center gap-2 px-4 py-1 shrink-0 flex-wrap"
+      style={{ background: 'var(--bg-panel-header)', borderBottom: '1px solid var(--border)' }}
+    >
+      <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.06em' }}>RESEARCH</span>
       {TABS.map((t) => {
         const active = pathname.startsWith(t.match);
         return (
@@ -59,6 +80,14 @@ export default function ResearchTabs({ symbol }: { symbol: string }) {
           </a>
         );
       })}
+      {showSearch && (
+        <SymbolTypeahead
+          value={input}
+          onChange={setInput}
+          onPick={pick}
+          width={120}
+        />
+      )}
     </div>
   );
 }

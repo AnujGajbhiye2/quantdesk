@@ -10,7 +10,6 @@ import TradesTable from '@/components/panels/TradesTable';
 import MonthlyReturnsHeatmap from '@/components/charts/MonthlyReturnsHeatmap';
 import ExitProjection, { type ExitProjectionData } from '@/components/trade/ExitProjection';
 import SignalTimeline from '@/components/charts/SignalTimeline';
-import SymbolTypeahead from '@/components/primitives/SymbolTypeahead';
 import type { BacktestResult } from '@/core/backtest/engine';
 import type { Bar, TradeIdea } from '@/core/types';
 import { toWeekly } from '@/core/data/resample';
@@ -202,15 +201,18 @@ function BacktestInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-run if symbol supplied in URL, else fall back to the last symbol searched
+  // Auto-run if symbol supplied in URL (also re-fires when the shared research
+  // search box navigates here with a new ?symbol=), else fall back to the last
+  // symbol searched.
+  const urlSymbolParam = searchParams.get('symbol');
   useEffect(() => {
-    const urlSym = searchParams.get('symbol') ?? getLastSymbol();
+    const urlSym = urlSymbolParam ?? getLastSymbol();
     if (urlSym && strategyId) {
       setSymbol(urlSym);
       runBacktest(urlSym, strategyId);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [strategyId]);
+  }, [strategyId, urlSymbolParam]);
 
   // Re-resample / re-fetch when timeframe toggle changes. 15m bars exist only
   // for the auto-trade universe and are lazy-fetched once per symbol.
@@ -275,112 +277,90 @@ function BacktestInner() {
 
   return (
     <div className="flex flex-col h-full" style={{ minHeight: '100vh' }}>
-      <AppHeader
-        center={
-          <form
-            onSubmit={(e) => { e.preventDefault(); void runBacktest(); }}
-            className="flex items-center gap-3 flex-1"
-            style={{ minWidth: 0 }}
-          >
-            <SymbolTypeahead
-              value={symbol}
-              onChange={setSymbol}
-              width={120}
-              autoFocus
-            />
-            <select
-              value={strategyId}
-              onChange={(e) => setStrategyId(e.target.value)}
-              style={{
-                background: 'var(--bg-panel)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-primary)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 'var(--fs-xs)',
-                padding: '3px 8px',
-              }}
-            >
-              {strategies.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
+      <AppHeader right={<DublinClock />} />
+      <ResearchTabs symbol={symbol} />
+
+      {/* Page-specific toolbar: strategy pick + chart controls, not global nav */}
+      <form
+        onSubmit={(e) => { e.preventDefault(); void runBacktest(); }}
+        className="flex items-center gap-3 px-4 py-1 flex-wrap shrink-0"
+        style={{ background: 'var(--bg-panel)', borderBottom: '1px solid var(--border)' }}
+      >
+        {symbol && <span style={{ color: 'var(--color-accent)', fontSize: 'var(--fs-xs)', fontWeight: 700 }}>{symbol}</span>}
+        <select
+          value={strategyId}
+          onChange={(e) => setStrategyId(e.target.value)}
+          style={{
+            background: 'var(--bg-panel)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 'var(--fs-xs)',
+            padding: '3px 8px',
+          }}
+        >
+          {strategies.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          disabled={busy}
+          style={{
+            background: 'var(--bg-panel-header)',
+            border: '1px solid var(--border)',
+            color: 'var(--color-accent)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 'var(--fs-xs)',
+            padding: '3px 12px',
+            cursor: 'pointer',
+          }}
+        >
+          {busy ? '...' : 'RUN'}
+        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          {(['15m', '1d', '1w'] as const).map((tf) => (
             <button
-              type="submit"
-              disabled={busy}
+              key={tf}
+              type="button"
+              onClick={() => setChartTf(tf)}
               style={{
-                background: 'var(--bg-panel-header)',
-                border: '1px solid var(--border)',
-                color: 'var(--color-accent)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 'var(--fs-xs)',
-                padding: '3px 12px',
-                cursor: 'pointer',
+                background:   chartTf === tf ? 'var(--color-accent)' : 'var(--bg-panel)',
+                border:       '1px solid var(--border)',
+                color:        chartTf === tf ? '#0a0e14' : 'var(--text-muted)',
+                fontFamily:   'var(--font-mono)',
+                fontSize:     'var(--fs-xs)',
+                padding:      '2px 8px',
+                cursor:       'pointer',
+                fontWeight:   chartTf === tf ? 700 : 400,
               }}
             >
-              {busy ? '...' : 'RUN'}
+              {tf.toUpperCase()}
             </button>
-            {symbol && (
-              <a
-                href={`/symbol/${encodeURIComponent(symbol)}`}
-                title="full decision dossier: bull/bear case, edge history, fundamentals, news"
-                style={{
-                  color: 'var(--color-accent)',
-                  fontSize: 'var(--fs-xs)',
-                  textDecoration: 'none',
-                  border: '1px solid var(--border)',
-                  padding: '3px 10px',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                DOSSIER
-              </a>
-            )}
-            <div className="flex items-center gap-1 shrink-0">
-              {(['15m', '1d', '1w'] as const).map((tf) => (
-                <button
-                  key={tf}
-                  type="button"
-                  onClick={() => setChartTf(tf)}
-                  style={{
-                    background:   chartTf === tf ? 'var(--color-accent)' : 'var(--bg-panel)',
-                    border:       '1px solid var(--border)',
-                    color:        chartTf === tf ? '#0a0e14' : 'var(--text-muted)',
-                    fontFamily:   'var(--font-mono)',
-                    fontSize:     'var(--fs-xs)',
-                    padding:      '2px 8px',
-                    cursor:       'pointer',
-                    fontWeight:   chartTf === tf ? 700 : 400,
-                  }}
-                >
-                  {tf.toUpperCase()}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-1 shrink-0" title="on-chart indicators - strategy selection presets its trigger set">
-              {ALL_TOGGLES.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => toggleIndicator(t)}
-                  style={{
-                    background:   indToggles.has(t) ? 'var(--bg-panel-header)' : 'var(--bg-panel)',
-                    border:       `1px solid ${indToggles.has(t) ? 'var(--color-accent)' : 'var(--border)'}`,
-                    color:        indToggles.has(t) ? 'var(--color-accent)' : 'var(--text-muted)',
-                    fontFamily:   'var(--font-mono)',
-                    fontSize:     'var(--fs-xs)',
-                    padding:      '2px 6px',
-                    cursor:       'pointer',
-                  }}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-            <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', flexShrink: 0 }}>{status}</span>
-          </form>
-        }
-        right={<><ResearchTabs symbol={symbol} /><DublinClock /></>}
-      />
+          ))}
+        </div>
+        <div className="flex items-center gap-1 shrink-0" title="on-chart indicators - strategy selection presets its trigger set">
+          {ALL_TOGGLES.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => toggleIndicator(t)}
+              style={{
+                background:   indToggles.has(t) ? 'var(--bg-panel-header)' : 'var(--bg-panel)',
+                border:       `1px solid ${indToggles.has(t) ? 'var(--color-accent)' : 'var(--border)'}`,
+                color:        indToggles.has(t) ? 'var(--color-accent)' : 'var(--text-muted)',
+                fontFamily:   'var(--font-mono)',
+                fontSize:     'var(--fs-xs)',
+                padding:      '2px 6px',
+                cursor:       'pointer',
+              }}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+        <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', flexShrink: 0 }}>{status}</span>
+      </form>
 
       {/* Body - page scrolls; chart row on top, result detail below */}
       <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>

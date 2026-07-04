@@ -49,8 +49,9 @@ export default function ReconcilePage() {
         center={<span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
           LIVE vs BACKTEST RECONCILIATION
         </span>}
-        right={<><ResearchTabs symbol="" /><DublinClock /></>}
+        right={<DublinClock />}
       />
+      <ResearchTabs symbol="" />
 
       <div className="flex-1 overflow-y-auto" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {error && <div style={{ color: '#f85149', fontSize: 'var(--fs-sm)' }}>{error}</div>}

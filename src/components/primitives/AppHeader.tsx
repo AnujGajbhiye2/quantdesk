@@ -15,11 +15,12 @@ interface AppHeaderProps {
 export default function AppHeader({ center, right, hint }: AppHeaderProps) {
   return (
     <div
-      className="flex items-center justify-between px-4 shrink-0 gap-3"
+      className="flex items-center justify-between px-4 shrink-0 gap-3 flex-wrap"
       style={{
         background:   'var(--bg-panel-header)',
         borderBottom: '1px solid var(--border)',
         minHeight:    40,
+        rowGap:       4,
       }}
     >
       {/* Left: brand + nav + hint */}
@@ -45,7 +46,7 @@ export default function AppHeader({ center, right, hint }: AppHeaderProps) {
 
       {/* Center: expanding content (forms, search bars) */}
       {center && (
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="flex items-center gap-3 flex-1 min-w-0 flex-wrap" style={{ rowGap: 4 }}>
           {center}
         </div>
       )}

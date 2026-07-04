@@ -1,11 +1,9 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { use, useEffect } from 'react';
 import useSWR from 'swr';
 import DublinClock from '@/components/primitives/DublinClock';
 import InfoTip from '@/components/primitives/InfoTip';
-import SymbolTypeahead from '@/components/primitives/SymbolTypeahead';
 import { fmtMoney } from '@/core/format/currency';
 import type { DossierResponse } from '@/app/api/dossier/route';
 import type { CaseFactor } from '@/core/dossier/case';
@@ -108,9 +106,6 @@ const fmtBig = (v: number | null) => {
 export default function SymbolDossierPage({ params }: { params: Promise<{ symbol: string }> }) {
   const { symbol: rawSymbol } = use(params);
   const symbol = decodeURIComponent(rawSymbol).toUpperCase();
-  const router = useRouter();
-  const [switchInput, setSwitchInput] = useState('');
-
   useEffect(() => { saveLastSymbol(symbol); }, [symbol]);
 
   const { data: dossier, error: swrError, isLoading } = useSWR<DossierResponse>(
@@ -137,17 +132,9 @@ export default function SymbolDossierPage({ params }: { params: Promise<{ symbol
             {dossier && <span style={{ marginLeft: 8 }}>{dossier.name}</span>}
           </>
         }
-        center={
-          <SymbolTypeahead
-            value={switchInput}
-            onChange={setSwitchInput}
-            onPick={(sym) => { router.push(`/symbol/${sym}`); setSwitchInput(''); }}
-            placeholder="switch symbol..."
-            width={180}
-          />
-        }
-        right={<><ResearchTabs symbol={symbol} /><DublinClock /></>}
+        right={<DublinClock />}
       />
+      <ResearchTabs symbol={symbol} />
 
       {error && (
         <div style={{ padding: 24, color: 'var(--color-down)', fontSize: 'var(--fs-sm)' }}>{error}</div>
