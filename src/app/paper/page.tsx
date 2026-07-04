@@ -872,7 +872,7 @@ export default function PaperPage() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: equityHistory ? '1fr 460px' : '1fr',
+              gridTemplateColumns: equityHistory ? '1fr 1fr' : '1fr',
               gap: '1px',
               background: 'var(--border)',
               borderBottom: '1px solid var(--border)',
@@ -893,8 +893,8 @@ export default function PaperPage() {
               </div>
             </div>
             {equityHistory && (
-              <div style={{ height: 260, overflow: 'auto', background: 'var(--bg-page)' }}>
-                <PnlCalendar dailyPnl={equityHistory.dailyPnl} months={3} />
+              <div style={{ height: 260, background: 'var(--bg-page)' }}>
+                <PnlCalendar dailyPnl={equityHistory.dailyPnl} />
               </div>
             )}
           </div>
