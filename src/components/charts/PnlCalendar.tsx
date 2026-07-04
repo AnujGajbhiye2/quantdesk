@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import Panel from '@/components/primitives/Panel';
 import type { DailyPnl } from '@/core/paper/account';
 
@@ -27,11 +27,13 @@ const navBtnStyle: CSSProperties = {
   cursor:       'pointer',
 };
 
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
 /**
  * Daily realized P&L calendar for the live paper account, one month at a
- * time with prev/next nav - the "did today make money" view every backtest
- * heatmap already has, but for real fills. Green = positive day, red =
- * negative, dim = no closed trades.
+ * time with prev/next nav. Same visual language as MonthlyReturnsHeatmap -
+ * intensity-scaled rgba background rather than flat blocks, so a -$400 day
+ * reads darker than a -$4 one instead of both just being "red".
  */
 export default function PnlCalendar({ dailyPnl }: Props) {
   const now = new Date();
@@ -40,9 +42,14 @@ export default function PnlCalendar({ dailyPnl }: Props) {
 
   const byDate = new Map(dailyPnl.map((d) => [d.date, d]));
   const ym = `${year}-${String(month + 1).padStart(2, '0')}`;
-  const total = dailyPnl
-    .filter((d) => d.date.slice(0, 7) === ym)
-    .reduce((s, d) => s + d.pnl, 0);
+
+  const { total, maxAbs } = useMemo(() => {
+    const inMonth = dailyPnl.filter((d) => d.date.slice(0, 7) === ym);
+    return {
+      total: inMonth.reduce((s, d) => s + d.pnl, 0),
+      maxAbs: inMonth.reduce((m, d) => Math.max(m, Math.abs(d.pnl)), 0),
+    };
+  }, [dailyPnl, ym]);
 
   function shift(delta: number) {
     let m = month + delta;
@@ -59,14 +66,15 @@ export default function PnlCalendar({ dailyPnl }: Props) {
     ...Array.from({ length: startDow }, () => null),
     ...Array.from({ length: numDays }, (_, i) => i + 1),
   ];
+  const today = todayISO();
 
   return (
     <Panel
       title="DAILY P&L"
       className="h-full"
-      info="Realized P&L per calendar day from closed paper trades. Green made money, red lost, dim no exits."
+      info="Realized P&L per calendar day from closed paper trades. Shading intensity scales with the size of the day's P&L within this month; dim = no closed trades."
     >
-      <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 8, height: '100%' }}>
+      <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6, height: '100%' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button type="button" onClick={() => shift(-1)} style={navBtnStyle}>{'<'}</button>
           <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-primary)' }}>
@@ -75,40 +83,45 @@ export default function PnlCalendar({ dailyPnl }: Props) {
           <button type="button" onClick={() => shift(1)} style={navBtnStyle}>{'>'}</button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
-          {WEEKDAYS.map((w, i) => (
-            <div key={i} style={{ textAlign: 'center', fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
-              {w}
-            </div>
-          ))}
-          {cells.map((day, i) => {
-            if (day == null) return <div key={`empty-${i}`} />;
-            const date = `${ym}-${String(day).padStart(2, '0')}`;
-            const d = byDate.get(date);
-            const bg = !d
-              ? 'var(--bg-panel-header)'
-              : d.pnl >= 0 ? '#26a641' : '#f85149';
-            return (
-              <div
-                key={date}
-                title={d ? `${date}: ${d.pnl >= 0 ? '+' : ''}$${d.pnl.toFixed(2)} (${d.trades} trade${d.trades === 1 ? '' : 's'})` : date}
-                style={{
-                  aspectRatio: '1',
-                  background: bg,
-                  opacity: d ? 0.9 : 0.35,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 'var(--fs-xs)',
-                  color: d ? '#0a0e14' : 'var(--text-muted)',
-                  fontFamily: 'var(--font-mono)',
-                }}
-              >
-                {day}
-              </div>
-            );
-          })}
-        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-xs)', tableLayout: 'fixed' }}>
+          <thead>
+            <tr style={{ color: 'var(--text-muted)' }}>
+              {WEEKDAYS.map((w, i) => (
+                <th key={i} style={{ padding: '2px 0', fontWeight: 400 }}>{w}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: Math.ceil(cells.length / 7) }, (_, row) => (
+              <tr key={row}>
+                {cells.slice(row * 7, row * 7 + 7).map((day, ci) => {
+                  if (day == null) return <td key={`e${ci}`} style={{ padding: 2 }} />;
+                  const date = `${ym}-${String(day).padStart(2, '0')}`;
+                  const d = byDate.get(date);
+                  const intensity = d && maxAbs > 0 ? Math.abs(d.pnl) / maxAbs : 0;
+                  const base = d && d.pnl >= 0 ? '38, 166, 65' : '248, 81, 73';
+                  return (
+                    <td
+                      key={date}
+                      title={d ? `${date}: ${d.pnl >= 0 ? '+' : ''}$${d.pnl.toFixed(2)} (${d.trades} trade${d.trades === 1 ? '' : 's'})` : date}
+                      style={{
+                        padding: '4px 0',
+                        textAlign: 'center',
+                        fontVariantNumeric: 'tabular-nums',
+                        background: d ? `rgba(${base}, ${(0.12 + 0.55 * intensity).toFixed(2)})` : 'var(--bg-panel-header)',
+                        color: 'var(--text-primary)',
+                        border: date === today ? '1px dotted var(--color-accent)' : '1px solid var(--bg-panel)',
+                        opacity: d ? 1 : 0.5,
+                      }}
+                    >
+                      {day}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
         <div
           style={{

@@ -878,7 +878,7 @@ export default function PaperPage() {
               borderBottom: '1px solid var(--border)',
             }}
           >
-            <div style={{ padding: '12px 16px', height: 260, background: 'var(--bg-page)' }}>
+            <div style={{ padding: '12px 16px', height: 260, minWidth: 0, background: 'var(--bg-page)' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em', marginBottom: 8 }}>
                 [ ACCOUNT EQUITY CURVE {equityHistory ? '(USD, realized)' : '(notional)'} ]
               </div>
@@ -893,7 +893,7 @@ export default function PaperPage() {
               </div>
             </div>
             {equityHistory && (
-              <div style={{ height: 260, background: 'var(--bg-page)' }}>
+              <div style={{ height: 260, minWidth: 0, background: 'var(--bg-page)' }}>
                 <PnlCalendar dailyPnl={equityHistory.dailyPnl} />
               </div>
             )}
