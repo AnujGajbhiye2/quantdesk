@@ -58,6 +58,8 @@ interface Props {
   /** Indicator panes below the price pane, aligned to `bars`. */
   panes?:      IndicatorPane[];
   className?:  string;
+  /** localStorage key to persist/restore the visible zoom range across visits. Omit to disable. */
+  zoomStorageKey?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -107,6 +109,7 @@ export default function PriceChart({
   overlays = [],
   panes = [],
   className,
+  zoomStorageKey,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef     = useRef<IChartApi | null>(null);
@@ -114,6 +117,9 @@ export default function PriceChart({
   const markersRef   = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
   const priceLinesRef = useRef<IPriceLine[]>([]);
   const indicatorSeriesRef = useRef<ISeriesApi<keyof SeriesOptionsMap>[]>([]);
+  const zoomKeyRef    = useRef(zoomStorageKey);
+  zoomKeyRef.current  = zoomStorageKey;
+  const restoredZoomRef = useRef(false);
 
   // Create chart on mount
   useEffect(() => {
@@ -161,7 +167,20 @@ export default function PriceChart({
     });
     ro.observe(el);
 
+    // Persist zoom (visible logical range) across visits - debounced so we
+    // don't hammer localStorage while the user is actively panning/scrolling.
+    let saveTimer: ReturnType<typeof setTimeout> | undefined;
+    chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+      const key = zoomKeyRef.current;
+      if (!key || !range) return;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        try { localStorage.setItem(key, JSON.stringify(range)); } catch { /* ignore */ }
+      }, 300);
+    });
+
     return () => {
+      clearTimeout(saveTimer);
       ro.disconnect();
       chart.remove();
       chartRef.current    = null;
@@ -219,7 +238,21 @@ export default function PriceChart({
       markersRef.current?.setMarkers(markers);
     }
 
-    chart.timeScale().fitContent();
+    // Restore the last-saved zoom once per mount; fitContent otherwise (first
+    // load with no saved range, or later data changes within the same visit).
+    let restored = false;
+    const key = zoomKeyRef.current;
+    if (key && !restoredZoomRef.current) {
+      try {
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          chart.timeScale().setVisibleLogicalRange(JSON.parse(saved));
+          restored = true;
+        }
+      } catch { /* ignore */ }
+      restoredZoomRef.current = true;
+    }
+    if (!restored) chart.timeScale().fitContent();
   }, [bars, trades]);
 
   // Indicator overlays (price pane) + indicator panes below.

@@ -11,6 +11,7 @@ import { gloss, type GlossaryKey } from '@/core/glossary';
 import type { CompareRow } from '@/app/api/compare/route';
 import { DataTable } from '@/components/table/DataTable';
 import type { ColumnDef } from '@tanstack/react-table';
+import ResearchTabs, { saveLastSymbol, getLastSymbol } from '@/components/primitives/ResearchTabs';
 
 type GlossCol = { label: string; title: string; glossKey?: GlossaryKey };
 
@@ -65,6 +66,7 @@ function ComparePageInner() {
       setRange(data.range ?? null);
       setBenchmark(data.benchmark ?? null);
       setStatus(`${(data.rows ?? []).length} strategies compared in ${data.durationMs}ms`);
+      saveLastSymbol(s);
     } catch (err) {
       setStatus(`error: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -72,10 +74,10 @@ function ComparePageInner() {
     }
   }
 
-  // Auto-run when arriving with ?symbol=
+  // Auto-run when arriving with ?symbol=, else fall back to the last symbol searched
   useEffect(() => {
-    const urlSym = searchParams.get('symbol');
-    if (urlSym) void runCompare(urlSym);
+    const urlSym = searchParams.get('symbol') ?? getLastSymbol();
+    if (urlSym) { setSymbol(urlSym); void runCompare(urlSym); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -196,7 +198,7 @@ function ComparePageInner() {
             )}
           </form>
         }
-        right={<DublinClock />}
+        right={<><ResearchTabs symbol={symbol} /><DublinClock /></>}
       />
 
       {/* Explainer */}

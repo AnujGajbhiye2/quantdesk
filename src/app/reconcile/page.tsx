@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import AppHeader from '@/components/primitives/AppHeader';
 import DublinClock from '@/components/primitives/DublinClock';
 import Panel from '@/components/primitives/Panel';
+import ResearchTabs from '@/components/primitives/ResearchTabs';
 import type { ReconcileReport } from '@/core/paper/reconcile';
 
 /**
@@ -48,7 +49,7 @@ export default function ReconcilePage() {
         center={<span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
           LIVE vs BACKTEST RECONCILIATION
         </span>}
-        right={<DublinClock />}
+        right={<><ResearchTabs symbol="" /><DublinClock /></>}
       />
 
       <div className="flex-1 overflow-y-auto" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import DublinClock from '@/components/primitives/DublinClock';
@@ -14,6 +14,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import type { EdgeStats } from '@/core/edge/types';
 import AppHeader from '@/components/primitives/AppHeader';
 import { fmtDate } from '@/core/format/date';
+import ResearchTabs, { saveLastSymbol } from '@/components/primitives/ResearchTabs';
 
 /**
  * Decision dossier: the four "analyst desks" (technical, edge and history,
@@ -110,6 +111,8 @@ export default function SymbolDossierPage({ params }: { params: Promise<{ symbol
   const router = useRouter();
   const [switchInput, setSwitchInput] = useState('');
 
+  useEffect(() => { saveLastSymbol(symbol); }, [symbol]);
+
   const { data: dossier, error: swrError, isLoading } = useSWR<DossierResponse>(
     `/api/dossier?symbol=${encodeURIComponent(symbol)}`,
   );
@@ -143,17 +146,7 @@ export default function SymbolDossierPage({ params }: { params: Promise<{ symbol
             width={180}
           />
         }
-        right={
-          <>
-            <a href={`/backtest?symbol=${symbol}`} style={{ color: 'var(--color-accent)', fontSize: 'var(--fs-xs)', textDecoration: 'none', border: '1px solid var(--border)', padding: '1px 8px' }}>
-              BACKTEST
-            </a>
-            <a href={`/compare?symbol=${symbol}`} style={{ color: 'var(--color-accent)', fontSize: 'var(--fs-xs)', textDecoration: 'none', border: '1px solid var(--border)', padding: '1px 8px' }}>
-              COMPARE
-            </a>
-            <DublinClock />
-          </>
-        }
+        right={<><ResearchTabs symbol={symbol} /><DublinClock /></>}
       />
 
       {error && (

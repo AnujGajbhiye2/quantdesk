@@ -3,20 +3,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useIsMobile } from './useIsMobile';
+import { getLastResearchPath } from './ResearchTabs';
 
 const BASE_LINKS = [
   { href: '/',                   label: 'DASH' },
-  { href: '/backtest',           label: 'BACKTEST' },
-  { href: '/compare',            label: 'COMPARE' },
   { href: '/paper',              label: 'PAPER' },
   { href: '/journal',            label: 'JOURNAL' },
-  { href: '/reconcile',          label: 'RECON' },
   { href: '/dashboard/session',  label: 'SESSION' },
   { href: '/settings',           label: 'SETTINGS' },
 ];
 
 /** Sensible always-available fallback when no symbol is in context (e.g. landing on DASH). */
 const DEFAULT_DOSSIER_SYMBOL = 'AAPL';
+
+/** BACKTEST/COMPARE/DOSSIER/RECON used to be four separate links; they're one
+ *  RESEARCH entry now (ResearchTabs switches between them on the page
+ *  itself), pointing at whichever of the four was last visited. */
+const RESEARCH_PREFIXES = ['/backtest', '/compare', '/symbol/', '/reconcile'];
 
 export default function AppNav() {
   const pathname  = usePathname();
@@ -32,16 +35,22 @@ export default function AppNav() {
   // useSearchParams() - that hook requires a Suspense boundary around every
   // page AppNav renders in, which this shared layout component doesn't have.
   const [contextSymbol, setContextSymbol] = useState<string | null>(null);
+  const [currentSearch, setCurrentSearch] = useState('');
+  const [lastResearchPath, setLastResearchPath] = useState<string | null>(null);
   useEffect(() => {
     setContextSymbol(new URLSearchParams(window.location.search).get('symbol'));
+    setCurrentSearch(window.location.search);
+    setLastResearchPath(getLastResearchPath());
   }, [pathname]);
-  const dossierHref    = pathname.startsWith('/symbol/')
-    ? pathname
-    : `/symbol/${(contextSymbol ?? DEFAULT_DOSSIER_SYMBOL).toUpperCase()}`;
+
+  const researchHref = RESEARCH_PREFIXES.some((p) => pathname.startsWith(p))
+    ? pathname + currentSearch
+    : lastResearchPath ?? `/symbol/${(contextSymbol ?? DEFAULT_DOSSIER_SYMBOL).toUpperCase()}`;
+
   const LINKS = [
-    ...BASE_LINKS.slice(0, 4),
-    { href: dossierHref, label: 'DOSSIER', matchPrefix: '/symbol/' },
-    ...BASE_LINKS.slice(4),
+    ...BASE_LINKS.slice(0, 1),
+    { href: researchHref, label: 'RESEARCH', matchPrefix: '__research__' },
+    ...BASE_LINKS.slice(1),
   ];
 
   useEffect(() => {
@@ -55,30 +64,31 @@ export default function AppNav() {
     return () => document.removeEventListener('mousedown', onOutside);
   }, [open]);
 
-  function isActive(href: string) {
-    return href === '/' ? pathname === '/' : pathname.startsWith(href);
+  function isActive(link: { href: string; matchPrefix?: string }) {
+    if (link.matchPrefix === '__research__') return RESEARCH_PREFIXES.some((p) => pathname.startsWith(p));
+    return link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
   }
 
   if (!isMobile) {
     return (
       <nav className="flex gap-6" style={{ fontSize: 'var(--fs-sm)' }}>
-        {LINKS.map(({ href, label }) => (
+        {LINKS.map((link) => (
           <a
-            key={href}
-            href={href}
+            key={link.href}
+            href={link.href}
             style={{
-              color:          isActive(href) ? 'var(--color-accent)' : 'var(--text-muted)',
+              color:          isActive(link) ? 'var(--color-accent)' : 'var(--text-muted)',
               textDecoration: 'none',
             }}
           >
-            {label}
+            {link.label}
           </a>
         ))}
       </nav>
     );
   }
 
-  const activeLink = LINKS.find(({ href }) => isActive(href));
+  const activeLink = LINKS.find((link) => isActive(link));
 
   return (
     <div ref={menuRef} style={{ position: 'relative' }}>
@@ -120,21 +130,21 @@ export default function AppNav() {
             flexDirection: 'column',
           }}
         >
-          {LINKS.map(({ href, label }) => (
+          {LINKS.map((link) => (
             <a
-              key={href}
-              href={href}
+              key={link.href}
+              href={link.href}
               onClick={() => setOpen(false)}
               style={{
-                color:          isActive(href) ? 'var(--color-accent)' : 'var(--text-muted)',
+                color:          isActive(link) ? 'var(--color-accent)' : 'var(--text-muted)',
                 textDecoration: 'none',
                 padding:        '8px 14px',
                 fontSize:       'var(--fs-sm)',
                 borderBottom:   '1px solid var(--border)',
-                fontWeight:     isActive(href) ? 700 : 400,
+                fontWeight:     isActive(link) ? 700 : 400,
               }}
             >
-              {label}
+              {link.label}
             </a>
           ))}
         </div>

@@ -16,6 +16,7 @@ import type { Bar, TradeIdea } from '@/core/types';
 import { toWeekly } from '@/core/data/resample';
 import { compute as computeIndicator } from '@/core/indicators/registry';
 import type { OverlayLine, IndicatorPane } from '@/components/charts/PriceChart';
+import ResearchTabs, { saveLastSymbol, getLastSymbol } from '@/components/primitives/ResearchTabs';
 
 // Charts must be client-side only (no SSR)
 const PriceChart       = dynamic(() => import('@/components/charts/PriceChart'), { ssr: false });
@@ -201,9 +202,9 @@ function BacktestInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-run if symbol supplied in URL
+  // Auto-run if symbol supplied in URL, else fall back to the last symbol searched
   useEffect(() => {
-    const urlSym = searchParams.get('symbol');
+    const urlSym = searchParams.get('symbol') ?? getLastSymbol();
     if (urlSym && strategyId) {
       setSymbol(urlSym);
       runBacktest(urlSym, strategyId);
@@ -262,6 +263,7 @@ function BacktestInner() {
       setBars(chartTf === '1w' ? toWeekly(daily) : daily);
 
       setStatus(`${data.trades.length} trades | return ${data.metrics.totalReturnPct.toFixed(2)}%`);
+      saveLastSymbol(s);
       loadRuns(); // pick up the just-saved run in the history list
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -377,7 +379,7 @@ function BacktestInner() {
             <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', flexShrink: 0 }}>{status}</span>
           </form>
         }
-        right={<DublinClock />}
+        right={<><ResearchTabs symbol={symbol} /><DublinClock /></>}
       />
 
       {/* Body - page scrolls; chart row on top, result detail below */}
@@ -408,6 +410,7 @@ function BacktestInner() {
                 targetPrice={result.currentIdea?.targetPrice}
                 overlays={overlays}
                 panes={panes}
+                zoomStorageKey="qd-backtest-chart-zoom"
               />
             ) : (
               <div style={{ padding: 24, color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
