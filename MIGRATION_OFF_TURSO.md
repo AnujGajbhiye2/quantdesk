@@ -110,6 +110,12 @@ Rollback (if anything looks wrong): uncomment the two Turso lines in `.env`, set
 
 Cleanup after a week of stable operation: delete `data/turso-replica-retired.db*`,
 then delete the Turso database/org so no one re-enables it by accident.
+*(Update 2026-07-04: the prod-side backup files were deleted a week EARLY, with
+user approval - the 8GB root disk hit 91% and `npm ci` failed mid-deploy,
+leaving `node_modules` without the `next` binary. The laptop's verified pull
+remains the safety copy. The deploy workflow now refuses to run `npm ci` with
+under 2GB free. Remaining cleanup: delete the Turso org, and the laptop's
+`data/quantdesk.db.pre-migration-bak` / `.prev` when comfortable.)*
 
 ## Part 2 - Optional on-box snapshot cron (corruption protection, $0)
 
