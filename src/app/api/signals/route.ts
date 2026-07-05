@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSignals } from '@/core/db/signals';
 import { getBars } from '@/core/db/bars';
+import { requireAdmin, AuthError } from '@/core/auth/guard';
 
 /**
  * GET /api/signals?symbol=<sym>&limit=<n>
@@ -24,6 +25,8 @@ export interface SignalHistoryItem {
 
 export async function GET(request: Request) {
   try {
+    // Live persisted signals reveal the system's actual picks - admin-only.
+    await requireAdmin();
     const { searchParams } = new URL(request.url);
     const symbol = (searchParams.get('symbol') ?? '').trim().toUpperCase();
     const limit  = Math.min(Number(searchParams.get('limit') ?? '300'), 1000);
@@ -64,6 +67,9 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ symbol, items });
   } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('[GET /api/signals]', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },

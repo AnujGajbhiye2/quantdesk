@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { refreshUniverse, ingestUniverse, type UniverseEntry } from '@/core/data/ingest';
 import { buildIngestRunInput, insertIngestRun, pruneOldIngestRuns } from '@/core/db/ingest-log';
+import { requireAdmin, AuthError } from '@/core/auth/guard';
 
 /**
  * POST /api/ingest
@@ -18,6 +19,7 @@ import { buildIngestRunInput, insertIngestRun, pruneOldIngestRuns } from '@/core
  */
 export async function POST(request: Request) {
   try {
+    await requireAdmin();
     let mode: 'refresh' | 'full' = 'refresh';
     let universe: UniverseEntry[] | undefined;
 
@@ -54,6 +56,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ results, totalBars, errors });
   } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('[POST /api/ingest]', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },

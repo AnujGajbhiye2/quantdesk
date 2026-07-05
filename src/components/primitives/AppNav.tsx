@@ -4,6 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useIsMobile } from './useIsMobile';
 import { getLastResearchPath } from './ResearchTabs';
+import { useAuth } from '@/components/auth/AuthContext';
+
+// PAPER/JOURNAL show executed trades + performance - visible to any
+// logged-in user (read-only). SESSION (ops/ingestion internals) and
+// SETTINGS stay admin-only.
+const ADMIN_ONLY_HREFS = new Set(['/dashboard/session', '/settings']);
 
 const BASE_LINKS = [
   { href: '/',                   label: 'DASH' },
@@ -24,6 +30,7 @@ const RESEARCH_PREFIXES = ['/backtest', '/compare', '/symbol/', '/reconcile'];
 export default function AppNav() {
   const pathname  = usePathname();
   const isMobile  = useIsMobile();
+  const { isAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const menuRef   = useRef<HTMLDivElement>(null);
 
@@ -51,7 +58,7 @@ export default function AppNav() {
     ...BASE_LINKS.slice(0, 1),
     { href: researchHref, label: 'RESEARCH', matchPrefix: '__research__' },
     ...BASE_LINKS.slice(1),
-  ];
+  ].filter((link) => isAdmin || !ADMIN_ONLY_HREFS.has(link.href));
 
   useEffect(() => {
     if (!open) return;

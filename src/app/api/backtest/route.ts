@@ -12,6 +12,7 @@ import { medianWinHoldBars, projectExitRange } from '@/core/edge/projection';
 import { BARS_PER_YEAR } from '@/core/backtest/metrics';
 import { insertBacktestRun, getBacktestRuns } from '@/core/db/backtest-runs';
 import type { TradeIdea, Timeframe } from '@/core/types';
+import { requireUser, requireAdmin, AuthError } from '@/core/auth/guard';
 
 /**
  * POST /api/backtest
@@ -46,6 +47,7 @@ interface ExitProjectionPayload {
 }
 export async function POST(request: Request) {
   try {
+    const user = await requireUser();
     const body = await request.json() as {
       strategyId:   string;
       symbol:       string;
@@ -177,22 +179,29 @@ export async function POST(request: Request) {
         }
       : { symbol: BENCHMARK_SYMBOL, totalReturnPct: null };
 
-    // Persist the run (params + metrics) for the history list - never let a
-    // save failure break the response the user is waiting on.
-    try {
-      insertBacktestRun({
-        strategyId: body.strategyId,
-        symbol:     body.symbol,
-        timeframe,
-        params:     parsedParams as Record<string, unknown>,
-        metrics:    result.metrics,
-      });
-    } catch (err) {
-      console.error('[POST /api/backtest] failed to save run', err);
+    // Persist the run (params + metrics) for the history list - admin only.
+    // Non-admins still get the full computed result below; their runs just
+    // never land in the shared history. Never let a save failure break the
+    // response the user is waiting on.
+    if (user.isAdmin) {
+      try {
+        insertBacktestRun({
+          strategyId: body.strategyId,
+          symbol:     body.symbol,
+          timeframe,
+          params:     parsedParams as Record<string, unknown>,
+          metrics:    result.metrics,
+        });
+      } catch (err) {
+        console.error('[POST /api/backtest] failed to save run', err);
+      }
     }
 
     return NextResponse.json({ ...result, currentIdea, projection, benchmark });
   } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('[POST /api/backtest]', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },
@@ -201,13 +210,17 @@ export async function POST(request: Request) {
   }
 }
 
-/** GET /api/backtest?runs=50 - saved run history, newest first. */
+/** GET /api/backtest?runs=50 - saved run history, newest first. Admin-only (see POST). */
 export async function GET(request: Request) {
   try {
+    await requireAdmin();
     const url = new URL(request.url);
     const limit = Math.min(Number(url.searchParams.get('runs') ?? '50'), 200);
     return NextResponse.json({ runs: getBacktestRuns(limit) });
   } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('[GET /api/backtest]', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },

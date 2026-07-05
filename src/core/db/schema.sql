@@ -231,3 +231,17 @@ CREATE TABLE IF NOT EXISTS backtest_runs (
   metrics     TEXT NOT NULL              -- JSON: BacktestMetrics
 );
 CREATE INDEX IF NOT EXISTS idx_backtest_runs_created ON backtest_runs(created_at);
+
+-- Auth users. One row per signed-up account (credentials or google). No
+-- per-user trading data anywhere else in this schema - auth is a login wall
+-- in front of the single global system, not a multi-tenant model. Admin
+-- status is derived at runtime from email, not stored here.
+CREATE TABLE IF NOT EXISTS users (
+  id            TEXT PRIMARY KEY,
+  email         TEXT NOT NULL UNIQUE,
+  name          TEXT,
+  password_hash TEXT,                    -- NULL for google-only accounts
+  provider      TEXT NOT NULL DEFAULT 'credentials',
+  created_at    TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (email);

@@ -8,6 +8,7 @@ import { enrichIdeas } from '@/core/signals/enrich';
 import { EdgeIndex, type EdgeSummary } from '@/core/edge/context';
 import { getAllSymbols } from '@/core/db/bars';
 import type { TradeIdea } from '@/core/types';
+import { requireUser, AuthError } from '@/core/auth/guard';
 
 /**
  * POST /api/scan
@@ -35,6 +36,7 @@ import type { TradeIdea } from '@/core/types';
  */
 export async function POST(request: Request) {
   try {
+    const user = await requireUser();
     const body = await request.json() as {
       strategyId: string;
       symbols?:   string[];
@@ -61,7 +63,9 @@ export async function POST(request: Request) {
 
     // Budget mode: size ideas off the real account equity and cap entry cost
     // to spendable cash. Explicit body.equity always wins (API contract).
-    const account = body.equity == null ? accountSummary() : null;
+    // Non-admins never see the real account - the live book stays private -
+    // so their scans size off the caller's own equity value or nothing.
+    const account = (user.isAdmin && body.equity == null) ? accountSummary() : null;
 
     // Build trade ideas for non-exit signals (enter_long / enter_short only)
     const ideas: TradeIdea[] = [];
@@ -120,6 +124,9 @@ export async function POST(request: Request) {
       durationMs:   Date.now() - start,
     });
   } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('[POST /api/scan]', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },

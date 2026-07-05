@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getWatchlist, addToWatchlist, removeFromWatchlist } from '@/core/db/watchlist';
 import { getLatestSignals } from '@/core/db/signals';
 import { getAllSymbols } from '@/core/db/bars';
+import { requireUser, requireAdmin, AuthError } from '@/core/auth/guard';
 
 export interface WatchlistStatus {
   strategyId: string;
@@ -36,11 +37,22 @@ function buildItems(): WatchlistItem[] {
   }));
 }
 
-/** GET /api/watchlist - pinned symbols with latest per-strategy signal status. */
+/**
+ * GET /api/watchlist - pinned symbols with latest per-strategy signal status.
+ * Non-admins get the pinned symbol list (research view) but not the signal
+ * statuses - those reveal what the live system is actually picking.
+ */
 export async function GET() {
   try {
-    return NextResponse.json({ items: buildItems() });
+    const user = await requireUser();
+    const items = buildItems();
+    return NextResponse.json({
+      items: user.isAdmin ? items : items.map((i) => ({ ...i, statuses: [] })),
+    });
   } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('[GET /api/watchlist]', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },
@@ -57,6 +69,7 @@ const BodySchema = z.object({
 /** POST /api/watchlist - add or remove a pinned symbol; returns the fresh list. */
 export async function POST(request: Request) {
   try {
+    await requireAdmin();
     const parsed = BodySchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.message }, { status: 400 });
@@ -78,6 +91,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ items: buildItems() });
   } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('[POST /api/watchlist]', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },

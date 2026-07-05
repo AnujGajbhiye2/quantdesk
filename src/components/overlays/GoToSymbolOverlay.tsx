@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SymbolMeta } from '@/core/types';
 import { fetchErrorMessage } from '@/core/format/apiError';
+import { useAuth } from '@/components/auth/AuthContext';
 
 interface LocalSymbol {
   symbol: string;
@@ -33,6 +34,7 @@ interface DisplayItem {
 }
 
 export default function GoToSymbolOverlay({ allSymbols, onClose }: Props) {
+  const { isAdmin } = useAuth();
   const [query,    setQuery]    = useState('');
   const [cursor,   setCursor]   = useState(0);
   const [remote,   setRemote]   = useState<SearchResult[]>([]);
@@ -97,7 +99,11 @@ export default function GoToSymbolOverlay({ allSymbols, onClose }: Props) {
       onClose();
       return;
     }
-    // Not in DB - ingest first, then navigate
+    // Not in DB - ingesting new market data is admin-only.
+    if (!isAdmin) {
+      setStatus(`${item.symbol} not loaded yet - ask the admin to add it`);
+      return;
+    }
     setStatus(`ingesting ${item.symbol}...`);
     try {
       const res = await fetch('/api/ingest', {

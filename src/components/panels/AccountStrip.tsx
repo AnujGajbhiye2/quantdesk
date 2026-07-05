@@ -5,9 +5,10 @@ import InfoTip from '@/components/primitives/InfoTip';
 import type { AccountSummary } from '@/core/paper/account';
 
 interface Props {
-  account:     AccountSummary | null;
-  onSetBudget: (amount: number) => void;
-  busy?:       boolean;
+  account:      AccountSummary | null;
+  /** Omit to render read-only (no SET/RESET BUDGET control) - non-admin viewers. */
+  onSetBudget?: (amount: number) => void;
+  busy?:        boolean;
 }
 
 function usd(v: number): string {
@@ -35,6 +36,7 @@ export default function AccountStrip({ account, onSetBudget, busy }: Props) {
   const [input, setInput]     = useState('1000');
 
   function submit() {
+    if (!onSetBudget) return;
     const amount = Number(input);
     if (Number.isFinite(amount) && amount > 0) {
       onSetBudget(amount);
@@ -42,7 +44,7 @@ export default function AccountStrip({ account, onSetBudget, busy }: Props) {
     }
   }
 
-  const form = editing ? (
+  const form = !onSetBudget ? null : editing ? (
     <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
       <input
         autoFocus
@@ -130,7 +132,7 @@ export default function AccountStrip({ account, onSetBudget, busy }: Props) {
           </span>
         )}
 
-        <span style={{ marginLeft: 'auto' }}>{form}</span>
+        {form && <span style={{ marginLeft: 'auto' }}>{form}</span>}
       </div>
     </div>
   );

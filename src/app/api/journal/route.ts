@@ -7,6 +7,7 @@ import { GLOBAL_SCOPE } from '@/core/edge/types';
 import { marketOf, type Market } from '@/core/market/markets';
 import { toUSD } from '@/core/format/fx';
 import type { PaperTrade } from '@/core/types';
+import { requireUser, AuthError } from '@/core/auth/guard';
 
 /**
  * GET /api/journal
@@ -40,6 +41,9 @@ const TOLERANCE_PP = 5;
 
 export async function GET() {
   try {
+    // Trade outcomes - visible to any logged-in user (performance data, not
+    // live signals). See plan "open up trades + performance".
+    await requireUser();
     const entries = getJournalEntries(300);
     const trades  = getPaperTrades();
     const tradeById = new Map(trades.map((t) => [t.id, t]));
@@ -101,6 +105,9 @@ export async function GET() {
 
     return NextResponse.json({ rows, report });
   } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('[GET /api/journal]', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },

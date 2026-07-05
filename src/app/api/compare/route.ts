@@ -6,6 +6,7 @@ import { maxHoldBars } from '@/core/config';
 import { dropPartialToday } from '@/core/scan/scanner';
 import { BARS_PER_YEAR } from '@/core/backtest/metrics';
 import type { Timeframe } from '@/core/types';
+import { requireUser, AuthError } from '@/core/auth/guard';
 
 /**
  * POST /api/compare
@@ -50,6 +51,7 @@ function benchmarkReturnPct(fromTime: string, toTime: string): number | null {
 
 export async function POST(request: Request) {
   try {
+    await requireUser();
     const body = (await request.json()) as { symbol?: string; timeframe?: string };
     const symbol = (body.symbol ?? '').trim().toUpperCase();
     if (!symbol) {
@@ -115,6 +117,9 @@ export async function POST(request: Request) {
       durationMs: Date.now() - started,
     });
   } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('[POST /api/compare]', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },

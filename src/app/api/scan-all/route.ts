@@ -9,6 +9,7 @@ import { EdgeIndex, type EdgeSummary } from '@/core/edge/context';
 import { getAllSymbols } from '@/core/db/bars';
 import { compute } from '@/core/indicators/registry';
 import type { TradeIdea, Timeframe } from '@/core/types';
+import { requireAdmin, AuthError } from '@/core/auth/guard';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -66,6 +67,8 @@ function barRegime(bars: readonly { open: number; high: number; low: number; clo
  */
 export async function POST(request: Request) {
   try {
+    // Persists live signals and reveals live scan activity - admin-only.
+    await requireAdmin();
     const body = (await request.json().catch(() => ({}))) as {
       symbols?:   string[];
       timeframe?: Timeframe;
@@ -161,6 +164,9 @@ export async function POST(request: Request) {
       durationMs:      result.durationMs,
     });
   } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('[POST /api/scan-all]', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },

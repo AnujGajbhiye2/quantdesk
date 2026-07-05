@@ -7,6 +7,7 @@ import Sparkline from '@/components/primitives/Sparkline';
 import { fmtMoney } from '@/core/format/currency';
 import type { MarketRow } from '@/core/market/snapshot';
 import { fetchErrorMessage } from '@/core/format/apiError';
+import { useAuth } from '@/components/auth/AuthContext';
 
 export interface PlaceholderSymbol {
   symbol:     string;
@@ -180,6 +181,7 @@ function RowRenderer({
 function ScanResultsPanel({ rows, selected, placeholders = [], onIngestDone, sort }: ScanResultsPanelProps) {
   const router   = useRouter();
   const listRef  = useListRef(null);
+  const { isAdmin } = useAuth();
 
   const [ingesting,   setIngesting]   = useState<string | null>(null);
   const [ingestError, setIngestError] = useState<string | null>(null);
@@ -192,6 +194,10 @@ function ScanResultsPanel({ rows, selected, placeholders = [], onIngestDone, sor
   }, [selected, rows.length]);
 
   const handleIngest = useCallback(async (sym: PlaceholderSymbol) => {
+    if (!isAdmin) {
+      setIngestError('ingesting new symbols is admin-only');
+      return;
+    }
     setIngesting(sym.symbol);
     setIngestError(null);
     try {
@@ -217,7 +223,7 @@ function ScanResultsPanel({ rows, selected, placeholders = [], onIngestDone, sor
     } finally {
       setIngesting(null);
     }
-  }, [onIngestDone]);
+  }, [onIngestDone, isAdmin]);
 
   const listRows: ListRow[] = useMemo(() => [
     ...rows.map((row, idx) => ({ kind: 'data' as const, row, idx })),

@@ -33,6 +33,7 @@ import type { PaperTrade, Signal, TradeIdea, SymbolMeta } from "@/core/types";
 import { marketOf, ALL_MARKETS, type Market } from "@/core/market/markets";
 import AppHeader from "@/components/primitives/AppHeader";
 import { fetchErrorMessage } from "@/core/format/apiError";
+import { useAuth } from "@/components/auth/AuthContext";
 
 interface QuoteRow {
   symbol: string;
@@ -137,6 +138,7 @@ export default function Dashboard({
   initialStrategies,
   allSymbols,
 }: Props) {
+  const { isAdmin } = useAuth();
   const [rows, setRows] = useState<MarketRow[]>(initialRows);
   const [trades, setTrades] = useState<PaperTrade[]>(initialTrades);
   const [marks, setMarks] = useState<MarksMap>(new Map());
@@ -161,6 +163,13 @@ export default function Dashboard({
   // Persisted UI prefs - survive full reloads and <a href> navigation
   const [marketFilter, setMarketFilter] = usePersistedState<Market | "ALL">("qd.v1.marketFilter", "ALL");
   const [tab, setTab] = usePersistedState<"scan" | "signals" | "risk">("qd.v1.tab", "scan");
+
+  // The persisted tab can rehydrate to "signals" from a prior admin session
+  // on this browser - that tab has no render branch for non-admins, which
+  // otherwise leaves the whole content area blank with no way back in.
+  useEffect(() => {
+    if (!isAdmin && tab === "signals") setTab("scan");
+  }, [isAdmin, tab, setTab]);
 
   // Persisted scan results - bundled atomically so they rehydrate together
   interface ScanBundle {
@@ -312,8 +321,10 @@ export default function Dashboard({
   }, undefined, 'qd.v1.scanSort');
   // ideasSort removed - sorting is now handled by TanStack inside TradeIdeasPanel.
 
-  // All-strategies x all-symbols scan ('s' key / SCAN ALL button)
+  // All-strategies x all-symbols scan ('s' key / SCAN ALL button). Admin-only:
+  // persists signals + reveals live activity (server also enforces this).
   const runScanAll = useCallback(async () => {
+    if (!isAdmin) return;
     setScanningAll(true);
     setScanStatus("scanning all strategies...");
     try {
@@ -347,9 +358,12 @@ export default function Dashboard({
     } finally {
       setScanningAll(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   // --- Account / budget ---
+  // "risk" is a read action on /api/paper - open to any logged-in user
+  // (executed trades + performance are visible; only the budget-set control
+  // on AccountStrip stays admin-gated, below).
 
   const loadAccount = useCallback(async () => {
     try {
@@ -374,8 +388,11 @@ export default function Dashboard({
     void loadAccount();
   }, [loadAccount]);
 
-  // Backtested win rate per strategy (global scope) for TRUST/WATCH/AVOID verdicts
+  // Backtested win rate per strategy (global scope) for TRUST/WATCH/AVOID
+  // verdicts. Admin-only data (derived from the live book) - skip for
+  // non-admins rather than let the request 403.
   useEffect(() => {
+    if (!isAdmin) return;
     fetch("/api/edge?scope=global")
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { rows?: { strategyId: string; winRate: number }[] } | null) => {
@@ -387,9 +404,10 @@ export default function Dashboard({
       .catch(() => {
         // verdicts degrade to WATCH without backtest data; non-critical
       });
-  }, []);
+  }, [isAdmin]);
 
   const setBudget = useCallback(async (amount: number) => {
+    if (!isAdmin) return;
     try {
       const res = await fetch("/api/paper", {
         method: "POST",
@@ -411,7 +429,7 @@ export default function Dashboard({
         `budget error: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
-  }, []);
+  }, [isAdmin]);
 
   // --- Watchlist ([w] toggle, [p] pin selected row) ---
 
@@ -435,6 +453,7 @@ export default function Dashboard({
 
   const mutateWatchlist = useCallback(
     async (action: "add" | "remove", symbol: string) => {
+      if (!isAdmin) return;
       try {
         const res = await fetch("/api/watchlist", {
           method: "POST",
@@ -458,7 +477,7 @@ export default function Dashboard({
         );
       }
     },
-    [],
+    [isAdmin],
   );
 
   const { selected, setSelected } = useKeyboardNav({
@@ -576,6 +595,7 @@ export default function Dashboard({
   );
 
   const handleTakeIdea = useCallback(async (idea: EnrichedTradeIdea) => {
+    if (!isAdmin) return;
     setIdeaBusy(true);
     try {
       const res = await fetch("/api/paper", {
@@ -627,7 +647,7 @@ export default function Dashboard({
     } finally {
       setIdeaBusy(false);
     }
-  }, [loadAccount]);
+  }, [loadAccount, isAdmin]);
 
   const confirmPendingIdea = useCallback(async () => {
     if (!pendingIdea) return;
@@ -635,8 +655,10 @@ export default function Dashboard({
     setPendingIdea(null);
   }, [pendingIdea, handleTakeIdea]);
 
-  // Pull new bars from providers, then re-read market + trades data
+  // Pull new bars from providers, then re-read market + trades data.
+  // Admin-only: ingest + sweep are admin-gated server-side.
   const refreshAll = useCallback(async () => {
+    if (!isAdmin) return;
     setRefreshing(true);
     try {
       // Fetch any bars newer than what the DB holds (incl. today's live bar)
@@ -714,7 +736,7 @@ export default function Dashboard({
     } finally {
       setRefreshing(false);
     }
-  }, [setSelected, loadAccount]);
+  }, [setSelected, loadAccount, isAdmin]);
 
   // Quick scan from the signal-dashboard strategy picker
   const quickScan = useCallback(async () => {
@@ -805,23 +827,25 @@ export default function Dashboard({
           right={
             <>
               <KeyboardHintsButton />
-              <button
-                onClick={() => void refreshAll()}
-                disabled={refreshing}
-                title="Refresh market data"
-                style={{
-                  background: "var(--bg-panel)",
-                  border: "1px solid var(--border)",
-                  color: refreshing ? "var(--color-accent)" : "var(--text-muted)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--fs-xs)",
-                  padding: "2px 8px",
-                  cursor: "pointer",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {refreshing ? "REFRESHING..." : "REFRESH"}
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => void refreshAll()}
+                  disabled={refreshing}
+                  title="Refresh market data"
+                  style={{
+                    background: "var(--bg-panel)",
+                    border: "1px solid var(--border)",
+                    color: refreshing ? "var(--color-accent)" : "var(--text-muted)",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "var(--fs-xs)",
+                    padding: "2px 8px",
+                    cursor: "pointer",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {refreshing ? "REFRESHING..." : "REFRESH"}
+                </button>
+              )}
               <DublinClock />
             </>
           }
@@ -899,24 +923,26 @@ export default function Dashboard({
           >
             SCAN
           </button>
-          <button
-            onClick={() => void runScanAll()}
-            disabled={scanningAll}
-            title="Run every strategy against every symbol [s]"
-            style={{
-              background: scanningAll ? "var(--bg-panel-header)" : "var(--bg-panel)",
-              border: "1px solid var(--border)",
-              color: "var(--color-accent)",
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--fs-xs)",
-              padding: "3px 10px",
-              cursor: scanningAll ? "wait" : "pointer",
-              fontWeight: 700,
-              flexShrink: 0,
-            }}
-          >
-            {scanningAll ? "SCANNING..." : "SCAN ALL [s]"}
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => void runScanAll()}
+              disabled={scanningAll}
+              title="Run every strategy against every symbol [s]"
+              style={{
+                background: scanningAll ? "var(--bg-panel-header)" : "var(--bg-panel)",
+                border: "1px solid var(--border)",
+                color: "var(--color-accent)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--fs-xs)",
+                padding: "3px 10px",
+                cursor: scanningAll ? "wait" : "pointer",
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
+            >
+              {scanningAll ? "SCANNING..." : "SCAN ALL [s]"}
+            </button>
+          )}
           {scanStatus && (
             <span
               style={{
@@ -972,8 +998,9 @@ export default function Dashboard({
           <MarketSummaryStrip rows={visibleRows} />
         </div>
 
-        {/* Paper trading budget strip */}
-        <AccountStrip account={account} onSetBudget={(amt) => void setBudget(amt)} />
+        {/* Paper trading budget strip - visible to any logged-in user;
+            the budget-edit control itself stays admin-only (onSetBudget). */}
+        <AccountStrip account={account} onSetBudget={isAdmin ? (amt) => void setBudget(amt) : undefined} />
 
         {/* Tab strip */}
         <div
@@ -983,7 +1010,10 @@ export default function Dashboard({
             borderBottom: "1px solid var(--border)",
           }}
         >
-          {(["scan", "signals", "risk"] as const).map((t, idx) => {
+          {/* RISK & TRADES shows executed trades + performance - visible to
+              any logged-in user. SIGNALS & IDEAS shows live picks/signals
+              not yet acted on - stays admin-only. */}
+          {(isAdmin ? (["scan", "signals", "risk"] as const) : (["scan", "risk"] as const)).map((t, idx) => {
             const labels = { scan: "SCAN", signals: "SIGNALS & IDEAS", risk: "RISK & TRADES" };
             const active = tab === t;
             return (
@@ -1036,8 +1066,9 @@ export default function Dashboard({
             </Group>
           )}
 
-          {/* Tab: SIGNALS & IDEAS - Signal dashboard + Trade ideas */}
-          {tab === "signals" && (
+          {/* Tab: SIGNALS & IDEAS - Signal dashboard + Trade ideas. Admin-only:
+              these are live picks not yet acted on, not executed trades. */}
+          {tab === "signals" && isAdmin && (
             <Group
               orientation="horizontal"
               defaultLayout={signalsLayout.defaultLayout ?? { 'sig-dashboard': 50, 'sig-ideas': 50 }}
@@ -1057,7 +1088,7 @@ export default function Dashboard({
               <Panel id="sig-ideas" defaultSize={50} minSize={25} suppressHydrationWarning>
                 <TradeIdeasPanel
                   ideas={visibleIdeas}
-                  onTake={onTakeIdea}
+                  onTake={isAdmin ? onTakeIdea : undefined}
                   busy={ideaBusy}
                   strategyNames={strategyNames}
                   focused={ideasFocus}
@@ -1067,7 +1098,8 @@ export default function Dashboard({
             </Group>
           )}
 
-          {/* Tab: RISK & TRADES - top row (Risk + Edge) + Trades below */}
+          {/* Tab: RISK & TRADES - top row (Risk + Edge) + Trades below.
+              Executed trades + performance - visible to any logged-in user. */}
           {tab === "risk" && (
             <Group
               orientation="vertical"

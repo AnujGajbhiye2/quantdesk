@@ -20,6 +20,7 @@ import { fmtDate } from '@/core/format/date';
 import EquityCurveChart from '@/components/charts/EquityCurveChart';
 import type { PerfMetrics } from '@/core/paper/perf';
 import { isUsMarketOpen } from '@/core/market/hours';
+import { useAuth } from '@/components/auth/AuthContext';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -246,8 +247,9 @@ function TradesTable({
   marks:      Map<string, MarkEntry>;
   displayCur: string;
   fxRates:    Record<string, number>;
-  onClose:    (id: string) => void;
-  onCancel:   (id: string) => void;
+  /** Omit both to render read-only (no ACTION column) - non-admin viewers. */
+  onClose?:   (id: string) => void;
+  onCancel?:  (id: string) => void;
 }) {
   const dispGlyph = curGlyph(displayCur) || displayCur;
 
@@ -408,11 +410,13 @@ function TradesTable({
       },
       meta: { align: 'center' },
     },
-    {
+    // ACTION column omitted entirely when neither handler is passed - read-only
+    // viewers (non-admin) never see a CLOSE/CANCEL control, not just a disabled one.
+    ...(onClose || onCancel ? [{
       id: 'action',
       header: 'ACTION',
-      cell: ({ row: { original: t } }) => {
-        if (t.status === 'open') {
+      cell: ({ row: { original: t } }: { row: { original: PaperTradeWithHold } }) => {
+        if (t.status === 'open' && onClose) {
           return (
             <button onClick={() => onClose(t.id)}
               style={{ background: 'var(--bg-panel)', border: '1px solid var(--color-down)', color: 'var(--color-down)', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)', padding: '1px 6px', cursor: 'pointer' }}>
@@ -420,7 +424,7 @@ function TradesTable({
             </button>
           );
         }
-        if (t.status === 'pending') {
+        if (t.status === 'pending' && onCancel) {
           return (
             <button onClick={() => onCancel(t.id)}
               style={{ background: 'var(--bg-panel)', border: '1px solid #e6a817', color: '#e6a817', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)', padding: '1px 6px', cursor: 'pointer' }}>
@@ -431,7 +435,7 @@ function TradesTable({
         return null;
       },
       meta: { align: 'center' },
-    },
+    } as ColumnDef<PaperTradeWithHold, unknown>] : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [displayCur, marks, fxRates, onClose, onCancel, dispGlyph]);
 
@@ -457,7 +461,8 @@ function PendingOrdersTable({
   fillDiagnostics: Map<string, PendingFillResult>;
   displayCur:      string;
   fxRates:         Record<string, number>;
-  onCancel:        (id: string) => void;
+  /** Omit to render read-only (no ACTION column) - non-admin viewers. */
+  onCancel?:       (id: string) => void;
 }) {
   void fxRates; void displayCur; // reserved for future currency conversion on this table
   const columns = useMemo<ColumnDef<PaperTradeWithHold, unknown>[]>(() => [
@@ -556,17 +561,17 @@ function PendingOrdersTable({
         );
       },
     },
-    {
+    ...(onCancel ? [{
       id: 'action',
       header: 'ACTION',
-      cell: ({ row: { original: o } }) => (
+      cell: ({ row: { original: o } }: { row: { original: PaperTradeWithHold } }) => (
         <button onClick={() => onCancel(o.id)}
           style={{ background: 'var(--bg-panel)', border: '1px solid var(--color-down)', color: 'var(--color-down)', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)', padding: '1px 6px', cursor: 'pointer' }}>
           CANCEL
         </button>
       ),
       meta: { align: 'center' },
-    },
+    } as ColumnDef<PaperTradeWithHold, unknown>] : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [fillDiagnostics, onCancel]);
 
@@ -578,6 +583,7 @@ function PendingOrdersTable({
 // ---------------------------------------------------------------------------
 
 export default function PaperPage() {
+  const { isAdmin } = useAuth();
   const [trades,       setTrades]       = useState<PaperTradeWithHold[]>([]);
   const [performance,  setPerformance]  = useState<PerfMetrics | null>(null);
   const [marks,        setMarks]        = useState<Map<string, MarkEntry>>(new Map());
@@ -795,58 +801,64 @@ export default function PaperPage() {
           <>
             {sweepMsg && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>{sweepMsg}</span>}
             {lastRefresh && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>prices @ {lastRefresh}</span>}
-            <button
-              onClick={() => void handleRefreshPrices()}
-              disabled={refreshing}
-              style={{
-                background:   'var(--bg-panel)',
-                border:       '1px solid var(--border)',
-                color:        refreshing ? 'var(--color-accent)' : 'var(--text-muted)',
-                fontFamily:   'var(--font-mono)',
-                fontSize:     'var(--fs-xs)',
-                padding:      '2px 8px',
-                cursor:       'pointer',
-              }}
-            >
-              {refreshing ? 'REFRESHING...' : 'REFRESH PRICES'}
-            </button>
-            <button
-              onClick={() => void handleSweep()}
-              disabled={sweeping}
-              style={{
-                background:   'var(--bg-panel)',
-                border:       '1px solid var(--border)',
-                color:        sweeping ? 'var(--color-accent)' : 'var(--text-muted)',
-                fontFamily:   'var(--font-mono)',
-                fontSize:     'var(--fs-xs)',
-                padding:      '2px 8px',
-                cursor:       'pointer',
-              }}
-            >
-              {sweeping ? 'SWEEPING...' : 'EOD SWEEP'}
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => void handleRefreshPrices()}
+                disabled={refreshing}
+                style={{
+                  background:   'var(--bg-panel)',
+                  border:       '1px solid var(--border)',
+                  color:        refreshing ? 'var(--color-accent)' : 'var(--text-muted)',
+                  fontFamily:   'var(--font-mono)',
+                  fontSize:     'var(--fs-xs)',
+                  padding:      '2px 8px',
+                  cursor:       'pointer',
+                }}
+              >
+                {refreshing ? 'REFRESHING...' : 'REFRESH PRICES'}
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                onClick={() => void handleSweep()}
+                disabled={sweeping}
+                style={{
+                  background:   'var(--bg-panel)',
+                  border:       '1px solid var(--border)',
+                  color:        sweeping ? 'var(--color-accent)' : 'var(--text-muted)',
+                  fontFamily:   'var(--font-mono)',
+                  fontSize:     'var(--fs-xs)',
+                  padding:      '2px 8px',
+                  cursor:       'pointer',
+                }}
+              >
+                {sweeping ? 'SWEEPING...' : 'EOD SWEEP'}
+              </button>
+            )}
             <DublinClock />
           </>
         }
       />
 
-      {/* Paper trading budget strip */}
+      {/* Paper trading budget strip - visible to any logged-in user; the
+          budget-edit control itself stays admin-only. */}
       <AccountStrip
         account={account}
-        onSetBudget={(amount) => {
+        onSetBudget={isAdmin ? (amount) => {
           void fetch('/api/paper', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify({ action: 'account-set', startingBalance: amount }),
           }).then(() => loadData());
-        }}
+        } : undefined}
       />
 
-      {/* Auto-trade status panel */}
-      <AutoTradePanel />
+      {/* Auto-trade status panel - control surface for the automated engine,
+          same bucket as live signals/ops. Admin-only. */}
+      {isAdmin && <AutoTradePanel />}
 
-      {/* New trade form */}
-      <NewPaperTrade onOpened={handleOpened} />
+      {/* New trade form - admin-only. */}
+      {isAdmin && <NewPaperTrade onOpened={handleOpened} />}
 
       {/* Body */}
       <div className="flex-1 overflow-auto" style={{ background: 'var(--bg-base)' }}>
@@ -907,32 +919,34 @@ export default function PaperPage() {
               <span style={{ color: '#e6a817', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em', fontWeight: 700 }}>
                 [ PENDING / RESTING ORDERS ({pendingOrders.length}) ]
               </span>
-              <button
-                onClick={() => void handleCheckFills()}
-                disabled={checkingFills}
-                style={{
-                  background:  'var(--bg-panel)',
-                  border:      '1px solid #e6a817',
-                  color:       checkingFills ? '#e6a817' : 'var(--text-muted)',
-                  fontFamily:  'var(--font-mono)',
-                  fontSize:    'var(--fs-xs)',
-                  padding:     '2px 8px',
-                  cursor:      'pointer',
-                }}
-              >
-                {checkingFills ? 'CHECKING...' : 'CHECK FILLS'}
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => void handleCheckFills()}
+                  disabled={checkingFills}
+                  style={{
+                    background:  'var(--bg-panel)',
+                    border:      '1px solid #e6a817',
+                    color:       checkingFills ? '#e6a817' : 'var(--text-muted)',
+                    fontFamily:  'var(--font-mono)',
+                    fontSize:    'var(--fs-xs)',
+                    padding:     '2px 8px',
+                    cursor:      'pointer',
+                  }}
+                >
+                  {checkingFills ? 'CHECKING...' : 'CHECK FILLS'}
+                </button>
+              )}
             </div>
             <PendingOrdersTable
               orders={pendingOrders}
               fillDiagnostics={fillDiagnostics}
               displayCur={displayCur}
               fxRates={fxRates}
-              onCancel={(id) => void handleCancel(id)}
+              onCancel={isAdmin ? (id) => void handleCancel(id) : undefined}
             />
             <div style={{ marginTop: 6, fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
               Resting limit orders - fill only when market price crosses the limit (not on gap-up/gap-down short of the limit).
-              CHECK FILLS runs the live-quote fill check and shows per-order diagnostics.
+              {isAdmin && ' CHECK FILLS runs the live-quote fill check and shows per-order diagnostics.'}
             </div>
           </div>
         )}
@@ -997,8 +1011,8 @@ export default function PaperPage() {
             marks={marks}
             displayCur={displayCur}
             fxRates={fxRates}
-            onClose={handleClose}
-            onCancel={handleCancel}
+            onClose={isAdmin ? handleClose : undefined}
+            onCancel={isAdmin ? handleCancel : undefined}
           />
         </div>
       </div>

@@ -19,10 +19,14 @@ export default function DashboardPage() {
   // getMarketSnapshot caches full-universe results for 60 s internally;
   // navigation away+back is fast after the first load.
   const rows       = getMarketSnapshot({ timeframe: '1d' });
-  const trades     = getPaperTrades();
   const metas      = getAllSymbols();
   const allSymbols = mergeKnownSymbols(metas);
   const strategies = listStrategies();
+
+  // Executed trades + performance are visible to any logged-in user (this
+  // route already requires login via middleware) - only the *mutating*
+  // controls on Dashboard stay admin-gated (client-side, via useAuth()).
+  const trades = getPaperTrades();
 
   return (
     <Dashboard

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getEdgeStats } from '@/core/db/edge';
 import { computeEdgeForUniverse } from '@/core/edge/compute';
+import { requireAdmin, AuthError } from '@/core/auth/guard';
 
 /**
  * GET /api/edge?strategyId=&symbol=&scope=
@@ -9,9 +10,12 @@ import { computeEdgeForUniverse } from '@/core/edge/compute';
  * POST /api/edge  { "action": "compute", "symbols": ["AAPL"] }
  * Recompute edge stats (full universe if symbols omitted). Heavy - runs
  * full backtests over the trailing 2y window per strategy x symbol.
+ *
+ * Both are admin-only: edge stats are derived from the live trading book.
  */
 export async function GET(request: Request) {
   try {
+    await requireAdmin();
     const url = new URL(request.url);
     const rows = getEdgeStats({
       strategyId: url.searchParams.get('strategyId') ?? undefined,
@@ -20,6 +24,9 @@ export async function GET(request: Request) {
     });
     return NextResponse.json({ rows });
   } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('[GET /api/edge]', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },
@@ -30,6 +37,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    await requireAdmin();
     const body = (await request.json().catch(() => ({}))) as {
       action?:  string;
       symbols?: string[];
@@ -40,6 +48,9 @@ export async function POST(request: Request) {
     const result = computeEdgeForUniverse({ symbols: body.symbols });
     return NextResponse.json(result);
   } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('[POST /api/edge]', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unknown error' },

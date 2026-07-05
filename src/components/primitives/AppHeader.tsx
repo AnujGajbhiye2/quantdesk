@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import AppNav from './AppNav';
+import UserMenu from '@/components/auth/UserMenu';
 
 interface AppHeaderProps {
   /** Expanding center slot - sits between brand/nav and right controls. */
@@ -52,11 +53,10 @@ export default function AppHeader({ center, right, hint }: AppHeaderProps) {
       )}
 
       {/* Right: controls */}
-      {right && (
-        <div className="flex items-center gap-2 shrink-0">
-          {right}
-        </div>
-      )}
+      <div className="flex items-center gap-2 shrink-0">
+        {right}
+        <UserMenu />
+      </div>
     </div>
   );
 }

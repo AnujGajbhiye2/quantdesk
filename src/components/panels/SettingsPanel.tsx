@@ -14,6 +14,7 @@ import { useCallback, useState } from 'react';
 import { useSettings } from '@/components/providers/SettingsProvider';
 import { DISPLAY_CURRENCIES } from '@/core/format/currencies';
 import { curGlyph } from '@/core/format/currency';
+import UserStatsPanel from '@/components/panels/UserStatsPanel';
 
 // --------------------------------------------------------------------------
 // Helpers
@@ -312,6 +313,8 @@ export default function SettingsPanel() {
           </div>
         </div>
       </div>
+
+      <UserStatsPanel />
     </div>
   );
 }

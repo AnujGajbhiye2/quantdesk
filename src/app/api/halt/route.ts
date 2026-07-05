@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isTradingHalted, setTradingHalt, clearTradingHalt } from '@/core/paper/halt';
+import { requireAdmin, AuthError } from '@/core/auth/guard';
 
 /**
  * POST /api/halt
@@ -22,6 +23,7 @@ export async function POST(req: Request) {
   const action = body['action'];
 
   try {
+    await requireAdmin();
     if (action === 'status') {
       return NextResponse.json(isTradingHalted());
     }
@@ -41,6 +43,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ error: `unknown action: ${String(action)}` }, { status: 400 });
   } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 500 });
   }

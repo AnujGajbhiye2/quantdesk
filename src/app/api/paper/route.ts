@@ -24,6 +24,15 @@ import { buildPerformanceMetrics } from '@/core/paper/perf';
 import { setStartingBalance } from '@/core/db/account';
 import { getPaperTrades } from '@/core/db/paper';
 import { openTradingViewChart } from '@/core/tradingview/open';
+import { requireUser, requireAdmin, AuthError } from '@/core/auth/guard';
+
+// Read actions: any logged-in user (executed trades + performance are
+// visible, not just admin - see plan "open up trades + performance").
+// Everything else mutates the live book and stays admin-only.
+const READ_ACTIONS = new Set([
+  'list', 'tradebook', 'account', 'equity-history', 'performance',
+  'reconcile', 'mark', 'project', 'auto-status', 'risk',
+]);
 
 /**
  * POST /api/paper
@@ -57,6 +66,14 @@ export async function POST(request: Request) {
   try {
     const body = await request.json() as Record<string, unknown>;
     const { action } = body;
+
+    // Executed trades + performance are visible to any logged-in user;
+    // every action that opens/closes/mutates the book stays admin-only.
+    if (READ_ACTIONS.has(action as string)) {
+      await requireUser();
+    } else {
+      await requireAdmin();
+    }
 
     switch (action) {
       case 'open': {
@@ -252,6 +269,9 @@ export async function POST(request: Request) {
         );
     }
   } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('[POST /api/paper]', err);
     if (
       err instanceof InsufficientFundsError ||

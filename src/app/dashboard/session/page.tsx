@@ -20,6 +20,8 @@ import {
 } from '@/components/dashboard/SessionTables';
 import type { IngestErrorRow, IngestRunRow, OpenPositionRow, ClosedTradeRow } from '@/components/dashboard/SessionTables';
 import { fmtDate } from '@/core/format/date';
+import { getSessionUser } from '@/core/auth/guard';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,7 +105,11 @@ function Stat({ label, value, color }: { label: string; value: string; color?: s
 // Page
 // ---------------------------------------------------------------------------
 
-export default function SessionPage() {
+export default async function SessionPage() {
+  // Defence in depth - middleware already redirects non-admins away from
+  // /dashboard/*, but this page reads the DB directly, so guard here too.
+  const user = await getSessionUser();
+  if (!user?.isAdmin) redirect('/');
   initDb();
 
   // --- Data loading ---
