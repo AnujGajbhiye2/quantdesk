@@ -3,6 +3,9 @@ import { validateStrategy } from './validate';
 import { RSIReversionStrategy }      from './examples/rsi-reversion';
 import { BollingerReversionStrategy } from './examples/bollinger-reversion';
 import { StochReversalStrategy }      from './examples/stoch-reversal';
+import { RSIReversionShortStrategy }      from './examples/rsi-reversion-short';
+import { BollingerReversionShortStrategy } from './examples/bollinger-reversion-short';
+import { StochReversalShortStrategy }      from './examples/stoch-reversal-short';
 
 /**
  * Strategy registry.
@@ -20,9 +23,13 @@ import { StochReversalStrategy }      from './examples/stoch-reversal';
 /**
  * Live-eligible strategy IDs.
  *
- * Only these three strategies are registered at all. They are also the only
- * ones that run on the live intraday scan and auto-trade path - the registry
- * and the live path are identical (no separate research-only tier).
+ * Six strategies are registered: the original long trio plus their short
+ * mirrors (fade-the-overbought-bounce counterparts, added for bearish-market
+ * coverage). All six run on the live intraday scan and auto-trade path - the
+ * registry and the live path are identical (no separate research-only tier).
+ * Long and short entries are mutually exclusive per symbol per bar (a symbol
+ * can't be oversold and overbought at once), so consensus and rotation stay
+ * side-scoped automatically via scan/consensus.ts's symbol+side grouping.
  *
  * BINNED strategies live in strategy/graveyard/ and are NOT registered
  * (they no longer appear in backtest, compare, or research UI):
@@ -40,6 +47,9 @@ const LIVE_STRATEGY_IDS = new Set<string>([
   'bollinger-reversion',
   'rsi-reversion',
   'stoch-reversal',
+  'bollinger-reversion-short',
+  'rsi-reversion-short',
+  'stoch-reversal-short',
 ]);
 
 const _registry = new Map<string, Strategy>();
@@ -83,3 +93,6 @@ export function listLive(): { id: string; name: string; description: string; tie
 register(new RSIReversionStrategy());
 register(new BollingerReversionStrategy());
 register(new StochReversalStrategy());
+register(new RSIReversionShortStrategy());
+register(new BollingerReversionShortStrategy());
+register(new StochReversalShortStrategy());

@@ -694,3 +694,9 @@ checks) → Telegram entry alert → sweep closes stop/target hits → Telegram 
 
 Real-money order routing, user accounts, multi-tenant, in-app YouTube transcription.
 Single-user local research tool only. Auto-trading is paper-only.
+
+
+fixes todo:
+
+fix strategy name
+add bearish momentum
