@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-06T00:00:00.000Z",
+  "title": "Design System: QuantDesk",
+  "extensions": {
+    "colorMeta": {
+      "signal-amber": { "role": "primary", "displayName": "Signal Amber", "canonical": "#e3b341", "tonalRamp": ["#3a2e10", "#5c481a", "#836624", "#a9832e", "#c9a038", "#e3b341", "#edc873", "#f6e1b0"] },
+      "signal-green": { "role": "secondary", "displayName": "Signal Green", "canonical": "#26a641", "tonalRamp": ["#0a2410", "#123c1a", "#1c5c28", "#217e34", "#26a641", "#4bc464", "#7ed891", "#b7ecc0"] },
+      "signal-red": { "role": "secondary", "displayName": "Signal Red", "canonical": "#f85149", "tonalRamp": ["#3a0f0d", "#5c1815", "#83221e", "#a92c26", "#d33f36", "#f85149", "#fb8a84", "#fdc3c0"] },
+      "signal-pending": { "role": "secondary", "displayName": "Signal Pending", "canonical": "#e6a817", "tonalRamp": ["#3c2c08", "#5e440c", "#856012", "#ab7c18", "#cc9820", "#e6a817", "#f0c463", "#f7dea0"] },
+      "bg-base": { "role": "neutral", "displayName": "Terminal Black", "canonical": "#0a0e14" },
+      "bg-panel": { "role": "neutral", "displayName": "Panel Black", "canonical": "#0d1117" },
+      "bg-panel-header": { "role": "neutral", "displayName": "Panel Header Gray", "canonical": "#161b22" },
+      "text-primary": { "role": "neutral", "displayName": "Terminal Text", "canonical": "#c9d1d9" },
+      "text-muted": { "role": "neutral", "displayName": "Muted Steel", "canonical": "#8b949e" },
+      "border": { "role": "neutral", "displayName": "Hairline Border", "canonical": "#30363d" }
+    },
+    "typographyMeta": {
+      "body": { "displayName": "Body", "purpose": "Default reading size for tables, panel content, forms." },
+      "small": { "displayName": "Small", "purpose": "Secondary UI text, form labels, compact table cells." },
+      "label": { "displayName": "Label", "purpose": "Panel header titles in brackets, nav links, uppercase." }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Bracketed-title container - the core surface of every screen.",
+      "html": "<div class=\"ds-panel\"><div class=\"ds-panel-header\">[ SCAN RESULTS ]</div><div class=\"ds-panel-body\">— no data —</div></div>",
+      "css": ".ds-panel { display: flex; flex-direction: column; overflow: hidden; background: #0d1117; border: 1px solid #30363d; font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; } .ds-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; background: #161b22; border-bottom: 1px solid #30363d; color: #8b949e; font-size: 12px; letter-spacing: 0.08em; } .ds-panel-body { flex: 1; overflow: auto; padding: 12px; color: #c9d1d9; font-size: 15px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "The only button variant in the system - transparent, bordered, amber text.",
+      "html": "<button class=\"ds-btn-ghost\">INGEST</button>",
+      "css": ".ds-btn-ghost { background: transparent; border: 1px solid #30363d; color: #e3b341; font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 12px; padding: 1px 6px; border-radius: 0; cursor: pointer; transition: border-color 0.15s; } .ds-btn-ghost:hover { border-color: #8b949e; } .ds-btn-ghost:focus-visible { outline: 1px solid #e3b341; outline-offset: 1px; } .ds-btn-ghost:disabled { color: #8b949e; cursor: wait; }"
+    },
+    {
+      "name": "Nav Link",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Top strip nav item - uppercase, flat, no icons.",
+      "html": "<a class=\"ds-nav-link ds-nav-link--active\" href=\"/\">DASH</a>",
+      "css": ".ds-nav-link { font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 12px; letter-spacing: 0.08em; color: #8b949e; text-decoration: none; padding: 4px 8px; } .ds-nav-link:hover { color: #c9d1d9; } .ds-nav-link--active { color: #e3b341; }"
+    },
+    {
+      "name": "Data Cell (P&L)",
+      "kind": "custom",
+      "refersTo": "data-cell",
+      "description": "Right-aligned numeric cell with signal-only color for up/down values.",
+      "html": "<span class=\"ds-cell ds-cell--up\">+4.2%</span>",
+      "css": ".ds-cell { font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 14px; display: inline-flex; justify-content: flex-end; min-width: 64px; } .ds-cell--up { color: #26a641; } .ds-cell--down { color: #f85149; } .ds-cell--muted { color: #8b949e; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Trading Terminal",
+    "overview": "QuantDesk reads like a broker's execution terminal, not a SaaS dashboard: dark, dense, monospace, zero decoration. Every panel is bracketed like a console window ([ TITLE ]), every pixel of border and color is load-bearing - nothing is there to look nice, only to say something true. The aesthetic philosophy is precise, disciplined, quiet: the interface gets out of the way of the data. This system explicitly rejects the generic SaaS dashboard (gradient hero-metric cards, glassmorphism, soft rounded cards-on-cards, uppercase tracked eyebrows) and the consumer fintech app look (Robinhood-style playful color, celebratory micro-interactions, oversized friendly type). This is a research tool, not a growth app.",
+    "keyCharacteristics": [
+      "Flat, dark, monospace-everywhere; body text and labels share one font family",
+      "Zero border-radius; panels are rectangles with 1px borders, nothing rounded",
+      "Color is reserved for signal (up/down/accent), never mood or decoration",
+      "Bracket-and-caps labeling instead of icons or imagery",
+      "No shadows, no gradients, no card-on-card nesting"
+    ],
+    "rules": [
+      { "name": "The Signal-Only Rule", "body": "Green, red, and amber exist to carry meaning (direction, P&L sign, interactivity). If a color doesn't map to one of those three meanings, it doesn't belong on screen.", "section": "colors" },
+      { "name": "The One-Font Rule", "body": "No second typeface, ever - not even for numerals or headings. Monospace end to end is what makes this read as a terminal instead of a themed dashboard.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "No box-shadow on any component, ever. Tonal contrast and 1px borders are the only depth cues available. If a component needs to look elevated, darken or lighten its background one step instead of adding a shadow.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep every screen in JetBrains Mono - no second typeface, ever.",
+      "Do use square corners (0px radius) on every surface and control.",
+      "Do reserve Signal Green / Signal Red / Signal Amber strictly for direction, P&L sign, and interactivity - never for decoration or mood.",
+      "Do convey depth with the three-step tonal ladder (base to panel to panel-header) and 1px hairline borders only.",
+      "Do label panels and empty states in the existing bracket/caps voice ([ TITLE ], — no data —).",
+      "Do keep the 'research tool, not financial advice, results are hypothetical' disclaimer visible."
+    ],
+    "donts": [
+      "Don't add gradient hero-metric cards, glassmorphism, or soft rounded cards-on-cards - named anti-references in PRODUCT.md.",
+      "Don't build a consumer-fintech look (Robinhood-style playful color, celebration micro-interactions, oversized friendly type).",
+      "Don't add box-shadow to any component - flat by default, no exceptions.",
+      "Don't introduce a filled/primary button style; the ghost button is the only variant.",
+      "Don't use color decoratively - if a hue doesn't map to up/down/accent, remove it.",
+      "Don't add tiny uppercase tracked eyebrow labels or numbered section scaffolding (01/02/03) - not part of this system's vocabulary."
+    ]
+  }
+}

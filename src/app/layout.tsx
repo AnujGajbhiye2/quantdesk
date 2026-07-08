@@ -21,7 +21,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className="h-full">
-      <body className="h-full flex flex-col">
+      <body className="h-full flex flex-col" suppressHydrationWarning>
         <Providers isAdmin={isAdmin} isLoggedIn={isLoggedIn} email={email} name={name}>{children}</Providers>
       </body>
     </html>

@@ -9,6 +9,7 @@
   --color-up: #26a641;
   --color-down: #f85149;
   --color-accent: #e3b341;
+  --color-pending: #e6a817;
   --border: #30363d;
   --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   /* font-size scale */
@@ -65,6 +66,12 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* Keyboard focus - terminal aesthetic, amber ring, no default blue */
+:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: 1px;
 }
 
 /* Resize handle hover / active states */

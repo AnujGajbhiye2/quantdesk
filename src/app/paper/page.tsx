@@ -308,7 +308,7 @@ function TradesTable({
       cell: ({ row: { original: t } }) => {
         const cur = t.currency ?? 'USD'; const ef = fmtCvt(t.entryPrice, cur);
         return t.status === 'pending'
-          ? <span style={{ color: '#e6a817', fontVariantNumeric: 'tabular-nums' }} title={ef.title}>LIMIT {ef.text}</span>
+          ? <span style={{ color: 'var(--color-pending)', fontVariantNumeric: 'tabular-nums' }} title={ef.title}>LIMIT {ef.text}</span>
           : <span style={{ fontVariantNumeric: 'tabular-nums' }} title={ef.title}>{ef.text}</span>;
       },
       meta: { numeric: true },
@@ -405,7 +405,7 @@ function TradesTable({
       header: 'STATUS',
       cell: ({ getValue }) => {
         const s = getValue() as string;
-        const color = s === 'open' ? 'var(--color-accent)' : s === 'pending' ? '#e6a817' : 'var(--text-muted)';
+        const color = s === 'open' ? 'var(--color-accent)' : s === 'pending' ? 'var(--color-pending)' : 'var(--text-muted)';
         return <span style={{ color }}>{s.toUpperCase()}</span>;
       },
       meta: { align: 'center' },
@@ -427,7 +427,7 @@ function TradesTable({
         if (t.status === 'pending' && onCancel) {
           return (
             <button onClick={() => onCancel(t.id)}
-              style={{ background: 'var(--bg-panel)', border: '1px solid #e6a817', color: '#e6a817', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)', padding: '1px 6px', cursor: 'pointer' }}>
+              style={{ background: 'var(--bg-panel)', border: '1px solid var(--color-pending)', color: 'var(--color-pending)', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)', padding: '1px 6px', cursor: 'pointer' }}>
               CANCEL
             </button>
           );
@@ -480,7 +480,7 @@ function PendingOrdersTable({
       id: 'limit',
       header: 'LIMIT',
       cell: ({ row: { original: o } }) => (
-        <span style={{ color: '#e6a817', fontVariantNumeric: 'tabular-nums' }}>
+        <span style={{ color: 'var(--color-pending)', fontVariantNumeric: 'tabular-nums' }}>
           {fmtMoney(o.entryPrice, o.currency ?? 'USD')}
         </span>
       ),
@@ -548,7 +548,7 @@ function PendingOrdersTable({
         if (!diag) return <span style={{ color: 'var(--text-muted)' }}>--</span>;
         const col = diag.action === 'filled'       ? 'var(--color-up)'
                   : diag.action === 'fill-blocked' ? 'var(--color-down)'
-                  : diag.crossed                   ? '#e6a817'
+                  : diag.crossed                   ? 'var(--color-pending)'
                   : 'var(--text-muted)';
         const text = diag.action === 'filled'       ? `FILLED @ ${fmtMoney(diag.fillPrice ?? o.entryPrice, o.currency ?? 'USD')}`
                    : diag.action === 'fill-blocked' ? 'BLOCKED (budget/risk)'
@@ -890,7 +890,7 @@ export default function PaperPage() {
               borderBottom: '1px solid var(--border)',
             }}
           >
-            <div style={{ padding: '12px 16px', height: 260, minWidth: 0, background: 'var(--bg-page)' }}>
+            <div style={{ padding: '12px 16px', height: 260, minWidth: 0, background: 'var(--bg-panel)' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em', marginBottom: 8 }}>
                 [ ACCOUNT EQUITY CURVE {equityHistory ? '(USD, realized)' : '(notional)'} ]
               </div>
@@ -916,7 +916,7 @@ export default function PaperPage() {
         {pendingOrders.length > 0 && (
           <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ color: '#e6a817', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em', fontWeight: 700 }}>
+              <span style={{ color: 'var(--color-pending)', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em', fontWeight: 700 }}>
                 [ PENDING / RESTING ORDERS ({pendingOrders.length}) ]
               </span>
               {isAdmin && (
@@ -925,8 +925,8 @@ export default function PaperPage() {
                   disabled={checkingFills}
                   style={{
                     background:  'var(--bg-panel)',
-                    border:      '1px solid #e6a817',
-                    color:       checkingFills ? '#e6a817' : 'var(--text-muted)',
+                    border:      '1px solid var(--color-pending)',
+                    color:       checkingFills ? 'var(--color-pending)' : 'var(--text-muted)',
                     fontFamily:  'var(--font-mono)',
                     fontSize:    'var(--fs-xs)',
                     padding:     '2px 8px',

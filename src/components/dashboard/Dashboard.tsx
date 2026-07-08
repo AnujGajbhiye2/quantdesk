@@ -84,11 +84,14 @@ function KeyboardHintsButton() {
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}
         title="Keyboard shortcuts"
+        aria-pressed={open}
+        aria-label="Keyboard shortcuts"
         style={{
           background:  open ? 'var(--color-accent)' : 'var(--bg-panel)',
           border:      '1px solid var(--border)',
-          color:       open ? '#0a0e14' : 'var(--text-muted)',
+          color:       open ? 'var(--bg-base)' : 'var(--text-muted)',
           fontFamily:  'var(--font-mono)',
           fontSize:    'var(--fs-xs)',
           padding:     '2px 7px',
@@ -100,6 +103,7 @@ function KeyboardHintsButton() {
       </button>
       {open && (
         <div
+          role="menu"
           style={{
             position:   'absolute',
             top:        'calc(100% + 4px)',
@@ -877,6 +881,7 @@ export default function Dashboard({
           }}
         >
           <span
+            id="signal-scan-label"
             style={{
               color: "var(--text-muted)",
               fontSize: "var(--fs-xs)",
@@ -889,6 +894,7 @@ export default function Dashboard({
           <select
             value={scanStratId}
             onChange={(e) => setScanStratId(e.target.value)}
+            aria-labelledby="signal-scan-label"
             style={{
               background: "var(--bg-panel)",
               border: "1px solid var(--border)",
@@ -972,13 +978,14 @@ export default function Dashboard({
                   setSelected(-1);
                 }}
                 title="filters every panel below - scan, signals, ideas, trades"
+                aria-pressed={marketFilter === m}
                 style={{
                   background:
                     marketFilter === m
                       ? "var(--color-accent)"
                       : "var(--bg-panel)",
                   border: "1px solid var(--border)",
-                  color: marketFilter === m ? "#0a0e14" : "var(--text-muted)",
+                  color: marketFilter === m ? "var(--bg-base)" : "var(--text-muted)",
                   fontFamily: "var(--font-mono)",
                   fontSize: "var(--fs-xs)",
                   padding: "1px 10px",
@@ -1004,6 +1011,7 @@ export default function Dashboard({
 
         {/* Tab strip */}
         <div
+          role="tablist"
           className="flex items-center gap-1 px-4 py-1 shrink-0"
           style={{
             background: "var(--bg-panel-header)",
@@ -1019,12 +1027,14 @@ export default function Dashboard({
             return (
               <button
                 key={t}
+                role="tab"
+                aria-selected={active}
                 onClick={() => { setTab(t); setSelected(-1); }}
                 title={`Switch to ${labels[t]} [${idx + 1}]`}
                 style={{
                   background: active ? "var(--color-accent)" : "var(--bg-panel)",
                   border: "1px solid var(--border)",
-                  color: active ? "#0a0e14" : "var(--text-muted)",
+                  color: active ? "var(--bg-base)" : "var(--text-muted)",
                   fontFamily: "var(--font-mono)",
                   fontSize: "var(--fs-xs)",
                   padding: "1px 14px",
