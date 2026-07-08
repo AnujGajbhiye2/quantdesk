@@ -596,6 +596,10 @@ export default function PaperPage() {
   const [refreshing,     setRefreshing]     = useState(false);
   const [lastRefresh,    setLastRefresh]    = useState('');
   const [checkingFills,  setCheckingFills]  = useState(false);
+  const [exportOpen,     setExportOpen]     = useState(false);
+  const [exporting,      setExporting]      = useState(false);
+  const [exportFrom,     setExportFrom]     = useState('');
+  const [exportTo,       setExportTo]       = useState('');
   // keyed by trade.id - populated after CHECK FILLS or REFRESH PRICES
   const [fillDiagnostics, setFillDiagnostics] = useState<Map<string, PendingFillResult>>(new Map());
   const { displayCurrency: displayCur, rates: fxRates, setDisplayCurrency: setDisplayCur } = useSettings();
@@ -776,6 +780,51 @@ export default function PaperPage() {
     }
   }, [loadData]);
 
+  /**
+   * Download the full report bundle (account, performance, tradebook,
+   * reconcile, trades, latest scan snapshot) as JSON - built for feeding
+   * into an external analyst. from/to are optional 'YYYY-MM-DD'; empty = all-time.
+   */
+  const handleExport = useCallback(async (from?: string, to?: string) => {
+    setExporting(true);
+    try {
+      const res = await fetch('/api/paper', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'report', from: from || undefined, to: to || undefined }),
+      });
+      if (!res.ok) return;
+      const { report } = await res.json() as { report: unknown };
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      const scopeTag = from || to ? `${from || 'start'}_${to || 'now'}` : `alltime-${new Date().toISOString().slice(0, 10)}`;
+      a.href     = url;
+      a.download = `quantdesk-report-${scopeTag}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setExportOpen(false);
+    } finally {
+      setExporting(false);
+    }
+  }, []);
+
+  function thisMonthRange(): [string, string] {
+    const now = new Date();
+    const from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const to   = now.toISOString().slice(0, 10);
+    return [from, to];
+  }
+
+  function lastMonthRange(): [string, string] {
+    const now   = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const end   = new Date(now.getFullYear(), now.getMonth(), 0);
+    return [start.toISOString().slice(0, 10), end.toISOString().slice(0, 10)];
+  }
+
   // Filtered view - no refetch needed, status lives on each trade object
   const visibleTrades = statusFilter === 'all'
     ? trades
@@ -835,6 +884,89 @@ export default function PaperPage() {
                 {sweeping ? 'SWEEPING...' : 'EOD SWEEP'}
               </button>
             )}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setExportOpen((v) => !v)}
+                style={{
+                  background:   'var(--bg-panel)',
+                  border:       '1px solid var(--border)',
+                  color:        exportOpen ? 'var(--color-accent)' : 'var(--text-muted)',
+                  fontFamily:   'var(--font-mono)',
+                  fontSize:     'var(--fs-xs)',
+                  padding:      '2px 8px',
+                  cursor:       'pointer',
+                }}
+              >
+                EXPORT
+              </button>
+              {exportOpen && (
+                <div
+                  style={{
+                    position:     'absolute',
+                    top:          '100%',
+                    right:        0,
+                    marginTop:    4,
+                    background:   'var(--bg-panel)',
+                    border:       '1px solid var(--border)',
+                    padding:      10,
+                    zIndex:       20,
+                    minWidth:     240,
+                    display:      'flex',
+                    flexDirection: 'column',
+                    gap:          8,
+                  }}
+                >
+                  <div style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', letterSpacing: '0.08em' }}>
+                    EXPORT REPORT (JSON)
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      onClick={() => void handleExport()}
+                      disabled={exporting}
+                      style={{ flex: 1, background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)', padding: '4px 6px', cursor: 'pointer' }}
+                    >
+                      ALL-TIME
+                    </button>
+                    <button
+                      onClick={() => { const [f, t] = thisMonthRange(); void handleExport(f, t); }}
+                      disabled={exporting}
+                      style={{ flex: 1, background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)', padding: '4px 6px', cursor: 'pointer' }}
+                    >
+                      THIS MONTH
+                    </button>
+                    <button
+                      onClick={() => { const [f, t] = lastMonthRange(); void handleExport(f, t); }}
+                      disabled={exporting}
+                      style={{ flex: 1, background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)', padding: '4px 6px', cursor: 'pointer' }}
+                    >
+                      LAST MONTH
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <input
+                      type="date"
+                      value={exportFrom}
+                      onChange={(e) => setExportFrom(e.target.value)}
+                      style={{ flex: 1, background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)', padding: '3px 4px' }}
+                    />
+                    <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>to</span>
+                    <input
+                      type="date"
+                      value={exportTo}
+                      onChange={(e) => setExportTo(e.target.value)}
+                      style={{ flex: 1, background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)', padding: '3px 4px' }}
+                    />
+                  </div>
+                  <button
+                    onClick={() => void handleExport(exportFrom, exportTo)}
+                    disabled={exporting}
+                    style={{ background: 'var(--bg-base)', border: '1px solid var(--color-accent)', color: 'var(--color-accent)', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)', padding: '4px 6px', cursor: 'pointer' }}
+                  >
+                    {exporting ? 'DOWNLOADING...' : 'DOWNLOAD JSON'}
+                  </button>
+                </div>
+              )}
+            </div>
             <DublinClock />
           </>
         }

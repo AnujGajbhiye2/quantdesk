@@ -42,9 +42,18 @@ export interface PerfMetrics {
  * totalTrades >= 30 - below that the sample size is too small to be reliable.
  */
 export function buildPerformanceMetrics(): PerfMetrics {
-  const all    = getPaperTrades({ status: 'closed' });
+  return computeMetricsFromTrades(getPaperTrades({ status: 'closed' }));
+}
+
+/**
+ * Pure version of buildPerformanceMetrics() - takes an already-filtered
+ * closed-trade array instead of reading the whole book. Lets callers (e.g.
+ * the report builder) scope the same math to a date window without
+ * duplicating the calculation.
+ */
+export function computeMetricsFromTrades(closedTrades: import('@/core/types').PaperTrade[]): PerfMetrics {
   // Sort chronologically so the equity curve is meaningful
-  const trades = [...all].sort((a, b) =>
+  const trades = [...closedTrades].sort((a, b) =>
     (a.exitTime ?? '').localeCompare(b.exitTime ?? ''),
   );
 

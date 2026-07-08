@@ -21,6 +21,7 @@ import { accountSummary } from '@/core/paper/summary';
 import { computeEquityHistory } from '@/core/paper/account';
 import { buildReconcileReport } from '@/core/paper/reconcile';
 import { buildPerformanceMetrics } from '@/core/paper/perf';
+import { buildReport } from '@/core/paper/report';
 import { setStartingBalance } from '@/core/db/account';
 import { getPaperTrades } from '@/core/db/paper';
 import { openTradingViewChart } from '@/core/tradingview/open';
@@ -31,7 +32,7 @@ import { requireUser, requireAdmin, AuthError } from '@/core/auth/guard';
 // Everything else mutates the live book and stays admin-only.
 const READ_ACTIONS = new Set([
   'list', 'tradebook', 'account', 'equity-history', 'performance',
-  'reconcile', 'mark', 'project', 'auto-status', 'risk',
+  'reconcile', 'mark', 'project', 'auto-status', 'risk', 'report',
 ]);
 
 /**
@@ -61,6 +62,11 @@ const READ_ACTIONS = new Set([
  *
  *   list      — List paper trades, optionally filtered.
  *               Body: { action, status?, strategyId? }
+ *
+ *   report    — Full JSON export bundle (account, performance, tradebook,
+ *               reconcile, trades, latest scan snapshot) for external
+ *               analysis. Optionally scoped to a date window.
+ *               Body: { action, from?, to? }  (ISO 'YYYY-MM-DD', inclusive)
  */
 export async function POST(request: Request) {
   try {
@@ -200,6 +206,14 @@ export async function POST(request: Request) {
 
       case 'performance': {
         return NextResponse.json({ performance: buildPerformanceMetrics() });
+      }
+
+      case 'report': {
+        const report = buildReport({
+          from: body.from as string | undefined,
+          to:   body.to   as string | undefined,
+        });
+        return NextResponse.json({ report });
       }
 
       case 'risk': {
