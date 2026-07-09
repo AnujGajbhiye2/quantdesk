@@ -248,7 +248,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (email);
 
 -- Broker mirror orders: each internal paper trade that mirrors to an external
 -- broker (Alpaca paper account) gets one row per leg (entry + exit). The
--- internal system is the source of truth; these rows track the follower
+-- internal system is the source of truth - these rows track the follower
 -- order's lifecycle and actual fill so real-vs-modeled slippage is measurable
 -- (see core/broker/mirror.ts). status flow:
 --   queued -> submitted -> filled | rejected | canceled
