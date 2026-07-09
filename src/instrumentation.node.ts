@@ -167,6 +167,21 @@ export async function register() {
             console.error('[cron:us] heartbeat failed:', err);
           }
           void ingestStartedAt;
+
+          // Nightly mirror reconciliation - Alpaca positions vs internal book
+          try {
+            const { mirrorEnabled } = await import('@/core/broker/mirror');
+            if (mirrorEnabled()) {
+              const { reconcileMirror } = await import('@/core/broker/mirror-reconcile');
+              const rec = await reconcileMirror();
+              console.log(
+                `[cron:us] mirror reconcile: ${rec.matched} matched, ` +
+                `${rec.mismatches.length} mismatch(es), ${rec.stuckOrders} stuck order(s)`,
+              );
+            }
+          } catch (err) {
+            console.error('[cron:us] mirror reconcile failed:', err);
+          }
         } catch (err) {
           console.error('[cron:us] post-refresh failed:', err);
         }
@@ -266,6 +281,23 @@ export async function register() {
         }
       } catch (err) {
         console.error('[monitor] pending fill check failed:', err);
+      }
+
+      // Broker mirror: re-drive queued follower orders + poll fills (no-op
+      // unless ALPACA_MIRROR_ENABLED=1)
+      try {
+        const { mirrorEnabled, submitQueuedMirrorOrders, pollMirrorFills } =
+          await import('@/core/broker/mirror');
+        if (mirrorEnabled()) {
+          const submitted = await submitQueuedMirrorOrders();
+          const polled    = await pollMirrorFills();
+          const filled    = polled.filter((p) => p.status === 'filled').length;
+          if (submitted.length > 0 || filled > 0) {
+            console.log(`[monitor] mirror: ${submitted.length} order(s) processed, ${filled} fill(s) recorded`);
+          }
+        }
+      } catch (err) {
+        console.error('[monitor] mirror pass failed:', err);
       }
 
       try {

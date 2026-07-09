@@ -111,6 +111,19 @@ describe('getHistory', () => {
     expect((init.headers as Record<string, string>)['APCA-API-SECRET-KEY']).toBe('test-secret');
   });
 
+  it('defaults to the iex feed', async () => {
+    mockFetch.mockResolvedValueOnce(barsResponse([VALID_BAR]));
+    await provider.getHistory('AAPL', '1d', '2025-06-01', '2025-06-18');
+    expect(mockFetch.mock.calls[0][0]).toContain('feed=iex');
+  });
+
+  it('uses the sip feed when constructed with feed: "sip" (paid plan)', async () => {
+    const sipProvider = new AlpacaProvider({ keyId: 'k', secretKey: 's', feed: 'sip' });
+    mockFetch.mockResolvedValueOnce(barsResponse([VALID_BAR]));
+    await sipProvider.getHistory('AAPL', '1d', '2025-06-01', '2025-06-18');
+    expect(mockFetch.mock.calls[0][0]).toContain('feed=sip');
+  });
+
   it('validates bar OHLCV via zod - quarantines (drops) an invalid bar instead of failing the whole fetch', async () => {
     // A single malformed bar used to abort the entire symbol's ingest; now
     // it's dropped (logged) and valid bars in the same response still come

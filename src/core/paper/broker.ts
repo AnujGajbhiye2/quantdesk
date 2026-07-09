@@ -34,6 +34,8 @@ import { openPositionsUSD } from '@/core/risk/exposure';
 import { toUSD } from '@/core/format/fx';
 import type { Strategy, StrategyContext, StrategyDecision } from '@/core/strategy/Strategy';
 import { isTradingHalted } from '@/core/paper/halt';
+import { tryEnqueueEntryMirror, tryEnqueueExitMirror } from '@/core/broker/mirror';
+import { costModelFromEnv, roundTripCosts } from '@/core/costs';
 
 // ---------------------------------------------------------------------------
 // Open
@@ -229,6 +231,9 @@ export function openPaperTrade(input: OpenTradeInput): PaperTrade {
     ...input.journalWhy,
   });
 
+  // Broker mirror (Alpaca paper follower order) - no-op unless enabled + eligible
+  tryEnqueueEntryMirror(trade);
+
   return trade;
 }
 
@@ -260,9 +265,19 @@ export function closePaperTrade(id: string, exit: CloseTradeInput): PaperTrade {
     slippagePct = 0.0005,
   } = exit;
 
-  const fillPrice        = exitFillPrice(trade.side, rawExitPrice, slippagePct);
-  const { pnl, costs }   = realizedPnl(trade.side, trade.entryPrice, fillPrice, trade.qty, commission);
-  const pnlPct           = (pnl / (trade.entryPrice * trade.qty)) * 100;
+  const fillPrice = exitFillPrice(trade.side, rawExitPrice, slippagePct);
+
+  // Costs: explicit commission override (round-trip = 2x, backtest convention)
+  // plus, for USD trades, the US regulatory fee model (SEC + TAF on the sell
+  // leg). Non-USD trades keep commission-only - their fee structures differ.
+  const grossPnl = realizedPnl(trade.side, trade.entryPrice, fillPrice, trade.qty, 0).pnl;
+  const isUsd    = (trade.currency ?? 'USD') === 'USD';
+  const fees     = isUsd
+    ? roundTripCosts(costModelFromEnv(), trade.side, trade.entryPrice, fillPrice, trade.qty)
+    : 0;
+  const costs    = 2 * commission + fees;
+  const pnl      = grossPnl - costs;
+  const pnlPct   = (pnl / (trade.entryPrice * trade.qty)) * 100;
 
   const updated: PaperTrade = {
     ...trade,
@@ -288,6 +303,9 @@ export function closePaperTrade(id: string, exit: CloseTradeInput): PaperTrade {
     pnlPct,
     heldDays,
   });
+
+  // Broker mirror - flatten the follower position at Alpaca
+  tryEnqueueExitMirror(updated);
 
   return updated;
 }
@@ -533,6 +551,9 @@ export function fillPendingTrade(
   if (telegramConfigured()) {
     void sendTelegram(pendingFillText(filled, limitPrice));
   }
+
+  // Broker mirror - a pending trade only reaches Alpaca once it fills internally
+  tryEnqueueEntryMirror(filled);
 
   return filled;
 }

@@ -2,6 +2,8 @@ import type { DataProvider } from './DataProvider';
 import { YahooProvider } from './providers/yahoo';
 import { TwelveDataProvider } from './providers/twelve-data';
 import { AlpacaProvider } from './providers/alpaca';
+import { alpacaEnv } from '@/core/broker/alpaca-env';
+import { alpacaLimiter } from '@/core/broker/rate-limiter';
 
 /**
  * Global provider registry.
@@ -75,11 +77,17 @@ if (process.env.TWELVE_DATA_API_KEY) {
 
 // Alpaca Markets - disabled; set ALPACA_ENABLED=1 to re-enable when needed.
 // Requires ALPACA_KEY_ID + ALPACA_SECRET_KEY + ALPACA_ENABLED=1.
-if (process.env.ALPACA_ENABLED === '1' && process.env.ALPACA_KEY_ID && process.env.ALPACA_SECRET_KEY) {
-  register(new AlpacaProvider({
-    keyId:     process.env.ALPACA_KEY_ID,
-    secretKey: process.env.ALPACA_SECRET_KEY,
-  }));
+// Feed (iex/sip) and rate budget follow ALPACA_PLAN - see core/broker/alpaca-env.ts.
+{
+  const alpaca = alpacaEnv();
+  if (alpaca.dataEnabled && alpaca.keyId && alpaca.secretKey) {
+    register(new AlpacaProvider({
+      keyId:     alpaca.keyId,
+      secretKey: alpaca.secretKey,
+      feed:      alpaca.feed,
+      limiter:   alpacaLimiter(),
+    }));
+  }
 }
 
 // Future example:

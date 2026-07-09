@@ -53,6 +53,16 @@ const SP500_SYMBOLS   = new Set((sp500 as UniverseEntry[]).map((e) => e.symbol))
 const GOLD_SYMBOLS    = new Set((gold  as UniverseEntry[]).map((e) => e.symbol));
 
 /**
+ * True when a symbol is a US instrument Alpaca can trade (S&P 500 or gold
+ * universe member). Used for broker-mirror eligibility - the paper_trades
+ * market column is unreliable (NULL on intraday/manual trades), so
+ * eligibility is decided by symbol membership, not the market tag.
+ */
+export function isAutoTradeSymbol(symbol: string): boolean {
+  return SP500_SYMBOLS.has(symbol) || GOLD_SYMBOLS.has(symbol);
+}
+
+/**
  * Universe eligible for automated intraday paper-trading.
  * Only US instruments served by Alpaca (free tier).
  */

@@ -28,7 +28,9 @@ do with it during a session). Every page and every panel gets both lenses.
 9. [Deployment](#production-deployment)
 10. [Environment variables](#environment-variables)
 11. [Scripts](#scripts)
-12. [Out of scope](#out-of-scope)
+12. [Auto-trading quick-start](#auto-trading-quick-start)
+13. [Alpaca paper-trade mirroring](#alpaca-paper-trade-mirroring) - the path from paper to real money
+14. [Out of scope](#out-of-scope)
 
 ---
 
@@ -180,7 +182,7 @@ what the backtest implied.
 | `[ PERFORMANCE BY STRATEGY ]` | Table, grouped client-side | Which strategy is actually making money in the live account, not the backtest |
 | `[ ACCOUNT EQUITY CURVE ]` | `buildPerformanceMetrics()` in `core/paper/perf.ts`, reuses `EquityCurveChart` | The live account's own equity curve - the number that actually matters, finally visible (added because every backtest had one and the live account didn't) |
 | `[ PENDING / RESTING ORDERS ]` | `CHECK FILLS` button hits `/api/paper action:fill-pending` against live quotes | Orders waiting to fill, how close price is to triggering them |
-| `[ TRADES ]` | Full blotter, filterable by status and display currency (USD/EUR/GBP/INR/CHF/SEK/NOK/DKK/PLN) | DATE/SYMBOL/STRATEGY/SIDE/ENTRY/CUR/STOP/TARGET/QTY/EXIT/P&L/P&L%/EST HOLD/STATUS, with CLOSE/CANCEL buttons |
+| `[ TRADES ]` | Full blotter, filterable by status and display currency (USD/EUR/GBP/INR/CHF/SEK/NOK/DKK/PLN) | DATE/SYMBOL/STRATEGY/SIDE/ENTRY/CUR/STOP/TARGET/QTY/EXIT/P&L/P&L%/EST HOLD/STATUS/MIRROR, with CLOSE/CANCEL buttons - MIRROR column (Alpaca order status + fill drift bps) only shows when `ALPACA_MIRROR_ENABLED=1` |
 | REFRESH PRICES / EOD SWEEP buttons | Re-marks positions against live quotes / runs `sweepOpenTrades()` for stop-target-time-stop exits | Manually force a price update or a stop/target check instead of waiting for the next cron tick |
 
 ### `/journal` (`src/app/journal/page.tsx`)
@@ -298,7 +300,9 @@ Every subfolder below in **engineering** terms (what it does structurally) and
 | `db/` | Turso/libSQL access layer, one module per domain: `account`, `alerts`, `bars`, `edge`, `flags`, `journal`, `membership`, `paper`, `research`, `runs`, `signals`, `watchlist` | The system of record for every trade, signal, and setting - nothing here is ephemeral |
 | `backtest/` | `engine.ts` (single-symbol simulator), `cross-sectional.ts` (portfolio-level momentum backtest), `fills.ts` (fill/slippage math), `metrics.ts` (Sharpe/drawdown/profit factor), `momentum.ts`, `walkforward.ts` | The lab where every strategy's honesty is tested before it ever sees real signals |
 | `strategy/` | `Strategy.ts` interface, `registry.ts`, `context.ts` (frozen no-look-ahead context), `validate.ts` (auto-runs a look-ahead probe on every registered strategy), `examples/` (live implementations), `graveyard/` (retired strategies, unregistered but kept for reproducible rejection evidence) | The actual trading rules - what makes a strategy "RSI reversion" versus "MA crossover" in practice |
-| `paper/` | `broker.ts` (order/fill/close engine), `auto-trade.ts` (unattended intraday loop), `daily-auto-trade.ts`, `rotation.ts`, `halt.ts` (kill switch), `perf.ts`, `tradebook.ts`, `earnings-blackout.ts` | Everything that happens between "I want this trade" and "this trade is closed and recorded" |
+| `paper/` | `broker.ts` (order/fill/close engine), `auto-trade.ts` (unattended intraday loop), `daily-auto-trade.ts`, `rotation.ts`, `halt.ts` (kill switch), `perf.ts`, `tradebook.ts`, `earnings-blackout.ts`, `reconcile.ts` (live-vs-backtest + promotion criteria) | Everything that happens between "I want this trade" and "this trade is closed and recorded" |
+| `broker/` | `alpaca-env.ts` (plan/feed/rate config), `alpaca-trading.ts` (Trading API client, live-endpoint guard), `mirror.ts` (follower-order engine, broker hooks), `mirror-reconcile.ts` (position diff + slippage drift), `rate-limiter.ts` | Mirrors eligible US paper trades to the Alpaca paper account - the evidence trail before real money |
+| `costs.ts` | US regulatory fee model (SEC Section 31 + FINRA TAF on sells), opt-in via env, shared by paper broker and backtest engine | Realistic round-trip costs instead of `costs: 0` |
 | `risk/` | `checks.ts` (pre-trade gate), `sizing.ts`, `exposure.ts`, `correlation.ts` | The rules that stop a good idea from becoming an oversized, over-concentrated, or over-correlated bet |
 | `edge/` | `compute.ts` (nightly backtested-edge job), `aggregate.ts`, `score.ts` (conviction tiers), `projection.ts` | The numeric backbone behind every "this strategy is trustworthy" claim in the UI |
 | `market/` | `hours.ts` (NYSE calendar, DST-aware), `regime.ts` (trend/vol/ADX gating), `markets.ts` (exchange bucket classification), `snapshot.ts` | Knows when markets are open and what regime they're in, so strategies don't fire into a closed market or the wrong conditions |
@@ -664,6 +668,75 @@ agree) → psychology filters (daily-loss halt, max-trades/day, no re-entry on a
 just-stopped symbol, no entries near close, earnings blackout) → risk-size at ~1%
 equity/trade → `openPaperTrade()` (broker enforces budget + risk gate + duplicate
 checks) → Telegram entry alert → sweep closes stop/target hits → Telegram exit alert.
+
+---
+
+## Alpaca paper-trade mirroring
+
+Purpose: before risking real money, mirror every eligible internal paper trade onto an
+actual Alpaca paper account, so the promotion evidence ("this system can execute on a
+real broker") is concrete, not theoretical. The internal system stays the single source
+of truth - Alpaca is a **follower**, never the decision-maker.
+
+**Scope.** Only US symbols the system already routes through Alpaca for intraday data
+(S&P 500 + gold universe) mirror. NSE and EU trades are skipped - Alpaca cannot trade
+them.
+
+**How it works:**
+
+1. `openPaperTrade` / `fillPendingTrade` / `closePaperTrade` (`core/paper/broker.ts`) each
+   call a one-line hook into `core/broker/mirror.ts` after the internal DB write.
+2. The hook enqueues a `mirror_orders` row (`queued`) and fires an async submit pass -
+   never blocks or throws into the trading path.
+3. A plain market order goes to Alpaca: `day` time-in-force during market hours, `opg`
+   (market-on-open) when the internal trade opened after hours - matching the internal
+   next-bar-open fill convention.
+4. The 15-minute monitor cron re-drives anything still `queued`/`submitted` and polls
+   fills, so a crashed process or an Alpaca outage never loses a mirror order.
+5. A nightly job (`core/broker/mirror-reconcile.ts`) diffs Alpaca positions against the
+   internal open book (missing/orphan/qty-mismatch → Telegram alert) and computes real
+   fill drift vs the internal 5 bps slippage model.
+
+**Why follower orders, not bracket orders.** Alpaca bracket orders (entry + stop-loss +
+take-profit legs) would let Alpaca manage stops in real time while the internal engine's
+trailing-stop and target-ratchet mutate stops on daily bars - two independent books that
+diverge immediately. Follower orders keep one brain (the internal system) making every
+decision; Alpaca's fill price becomes the slippage-evidence signal instead of a second
+source of truth to reconcile.
+
+**Setup:**
+
+```bash
+# 1. Reset the Alpaca paper account to $10k in the dashboard (one click) so
+#    buying power matches the internal budget - otherwise position sizes
+#    diverge and orders get rejected for insufficient buying power.
+# 2. Add to .env.local
+ALPACA_MIRROR_ENABLED=1
+ALPACA_ENDPOINT=https://paper-api.alpaca.markets
+# 3. Restart. Watch /paper's MIRROR column and Telegram for entry/exit confirmations.
+```
+
+`ALPACA_ALLOW_LIVE_TRADING` is a hard guard - the trading client throws if the endpoint
+is anything other than Alpaca's paper host unless this is set. Real-money order routing
+stays [out of scope](#out-of-scope) until explicitly revisited.
+
+**Paid-plan upgrade path (Algo Trader Plus, $99/mo).** Set `ALPACA_PLAN=plus` and swap in
+paid keys - feed flips IEX → SIP (full exchange coverage) and the rate budget flips
+200 → 10,000 req/min, with zero code changes. `ALPACA_FEED` / `ALPACA_RATE_LIMIT_PER_MIN`
+override the plan default individually if needed. Websocket streaming
+(`core/data/stream/types.ts`) is interface-only for now - implement when intraday
+strategies need it.
+
+**Realistic costs.** Paper trades used to book `costs: 0` (commission defaults to 0;
+slippage lives in the fill price, not the costs field). `core/costs.ts` adds the US
+regulatory fees that actually apply to a sell (SEC Section 31 + FINRA TAF) - off by
+default so historical evidence stays reproducible, opt in per `.env.local.example`.
+
+**Reading the evidence.** `/api/paper action:reconcile` (surfaced on `/journal`) reports a
+`slippage` criterion that goes `n/a` (mirroring off) → `pending (n/20 fills)` →
+`pass`/`fail` once 20 clean (day-tif) mirrored fills exist. Combined with the existing
+60-trade / 6-month promotion criteria, that's the bar before increasing size or moving
+to real money.
 
 ---
 

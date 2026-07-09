@@ -65,6 +65,14 @@ vi.mock('@/core/notify/telegram', () => ({
   sendTelegram:       () => Promise.resolve(false),
 }));
 
+// Broker mirror - capture hook calls; broker must work when mirroring is off
+const mockEntryMirror = vi.fn();
+const mockExitMirror  = vi.fn();
+vi.mock('@/core/broker/mirror', () => ({
+  tryEnqueueEntryMirror: (...args: unknown[]) => mockEntryMirror(...args),
+  tryEnqueueExitMirror:  (...args: unknown[]) => mockExitMirror(...args),
+}));
+
 // Import broker AFTER mocks are registered
 const { openPaperTrade, closePaperTrade, markOpenTrades, projectTrade, DuplicateOpenTradeError, sweepPendingTrades, sweepOpenTrades } =
   await import('./broker');

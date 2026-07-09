@@ -26,6 +26,38 @@ import { setStartingBalance } from '@/core/db/account';
 import { getPaperTrades } from '@/core/db/paper';
 import { openTradingViewChart } from '@/core/tradingview/open';
 import { requireUser, requireAdmin, AuthError } from '@/core/auth/guard';
+import { mirrorEnabled } from '@/core/broker/mirror';
+import { getMirrorOrdersForTrades } from '@/core/db/mirror';
+
+/**
+ * Per-trade mirror status for the UI (list action). Shows the entry leg
+ * (or the exit leg once present) - status, Alpaca order id, actual fill and
+ * signed adverse drift vs the internal modeled fill.
+ */
+async function buildMirrorInfo(tradeIds: string[]): Promise<{
+  mirrorEnabled: boolean;
+  mirror: Record<string, { leg: string; status: string; brokerOrderId: string | null; fillPrice: number | null; driftBps: number | null }>;
+}> {
+  const enabled = mirrorEnabled();
+  const mirror: Record<string, { leg: string; status: string; brokerOrderId: string | null; fillPrice: number | null; driftBps: number | null }> = {};
+  if (!enabled || tradeIds.length === 0) return { mirrorEnabled: enabled, mirror };
+  for (const order of getMirrorOrdersForTrades(tradeIds)) {
+    // Later legs overwrite earlier ones (rows are created_at ASC), so an exit
+    // leg replaces the entry leg once the trade closes.
+    const drift =
+      order.fillPrice != null && order.internalPrice > 0
+        ? ((order.fillPrice - order.internalPrice) / order.internalPrice) * 10_000 * (order.side === 'buy' ? 1 : -1)
+        : null;
+    mirror[order.tradeId] = {
+      leg: order.leg,
+      status: order.status,
+      brokerOrderId: order.brokerOrderId ?? null,
+      fillPrice: order.fillPrice ?? null,
+      driftBps: drift,
+    };
+  }
+  return { mirrorEnabled: enabled, mirror };
+}
 
 // Read actions: any logged-in user (executed trades + performance are
 // visible, not just admin - see plan "open up trades + performance").
@@ -232,7 +264,7 @@ export async function POST(request: Request) {
           strategyId: body.strategyId as string | undefined,
         });
         // Open trades carry estHold - historical median winner hold time
-        return NextResponse.json({ trades: withEstHold(trades) });
+        return NextResponse.json({ trades: withEstHold(trades), ...(await buildMirrorInfo(trades.map((t) => t.id))) });
       }
 
       case 'auto-trigger': {

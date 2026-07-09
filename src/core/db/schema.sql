@@ -245,3 +245,37 @@ CREATE TABLE IF NOT EXISTS users (
   created_at    TEXT NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (email);
+
+-- Broker mirror orders: each internal paper trade that mirrors to an external
+-- broker (Alpaca paper account) gets one row per leg (entry + exit). The
+-- internal system is the source of truth; these rows track the follower
+-- order's lifecycle and actual fill so real-vs-modeled slippage is measurable
+-- (see core/broker/mirror.ts). status flow:
+--   queued -> submitted -> filled | rejected | canceled
+--   queued -> failed (submit errors exhausted) | skipped (ineligible, e.g.
+--   fractional short rounded to 0 shares)
+CREATE TABLE IF NOT EXISTS mirror_orders (
+  id              TEXT PRIMARY KEY,
+  trade_id        TEXT NOT NULL,
+  leg             TEXT NOT NULL CHECK (leg IN ('entry', 'exit')),
+  broker          TEXT NOT NULL DEFAULT 'alpaca',
+  client_order_id TEXT NOT NULL UNIQUE,   -- qd:{tradeId}:{leg} - idempotency key at the broker
+  broker_order_id TEXT,
+  symbol          TEXT NOT NULL,
+  side            TEXT NOT NULL CHECK (side IN ('buy', 'sell')),
+  qty             REAL NOT NULL,
+  order_type      TEXT NOT NULL DEFAULT 'market',
+  time_in_force   TEXT NOT NULL DEFAULT 'day',  -- 'day' during RTH, 'opg' after hours
+  status          TEXT NOT NULL DEFAULT 'queued'
+                  CHECK (status IN ('queued', 'submitted', 'filled', 'rejected', 'canceled', 'failed', 'skipped')),
+  internal_price  REAL NOT NULL,          -- modeled fill (slippage-embedded) for drift calc
+  fill_price      REAL,
+  fill_qty        REAL,
+  filled_at       TEXT,
+  error           TEXT,
+  attempts        INTEGER NOT NULL DEFAULT 0,
+  created_at      TEXT NOT NULL,
+  updated_at      TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_mirror_orders_trade  ON mirror_orders (trade_id);
+CREATE INDEX IF NOT EXISTS idx_mirror_orders_status ON mirror_orders (status);

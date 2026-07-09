@@ -2,6 +2,8 @@ import 'server-only';
 import { getPaperTrades } from '@/core/db/paper';
 import { buildPerformanceMetrics } from '@/core/paper/perf';
 import { toUSD } from '@/core/format/fx';
+import { mirrorDriftStats } from '@/core/broker/mirror-reconcile';
+import { mirrorEnabled } from '@/core/broker/mirror';
 
 /**
  * Live-vs-backtest reconciliation (IMPROVEMENT_PLAN.md WS5): compares the
@@ -9,10 +11,11 @@ import { toUSD } from '@/core/format/fx';
  * OOS expectation, and evaluates the written promotion criteria
  * (PROMOTION_CRITERIA.md - numbers fixed there, do not move them here).
  *
- * Honesty note on slippage: paper fills ARE the cost model (entry/exit prices
- * already include modeled slippage + commission), so "actual vs modeled
- * slippage" is not measurable until real-money fills exist. The criterion is
- * reported as not-applicable on paper rather than silently passed as 0 drift.
+ * Slippage: with Alpaca mirroring enabled, real fill prices from the paper
+ * follower account are compared against the internal modeled fills (5 bps) -
+ * see core/broker/mirror-reconcile.ts. Without mirroring, paper fills ARE
+ * the cost model and the criterion stays not-applicable rather than silently
+ * passing as 0 drift.
  */
 
 // Walk-forward OOS expectations for the LIVE configuration (trailing stop +
@@ -183,14 +186,37 @@ export function buildReconcileReport(): ReconcileReport {
       actual: `${perf.maxDrawdownPct.toFixed(1)}%`,
       status: perf.maxDrawdownPct <= PROMO_MAX_DD_MULT * PROMO_WORST_MODELED_DD ? 'pass' : 'fail',
     },
-    {
-      id: 'slippage',
-      label: 'Slippage drift < 2x model',
-      target: '< 2x',
-      actual: 'n/a on paper (fills are the model)',
-      status: 'n/a',
-    },
+    buildSlippageCriterion(),
   ];
 
   return { generatedAt: new Date().toISOString(), rows, criteria };
+}
+
+// Modeled slippage is 5 bps per fill (broker/engine default). The promotion
+// criterion allows actual slippage up to 2x the model, i.e. mean drift beyond
+// the model must stay under +5 bps. Requires 20 clean (day-tif) mirrored
+// fills before it reports a number - OPG fills embed overnight gap and are
+// excluded (see mirror-reconcile.ts).
+const SLIPPAGE_MODEL_BPS = 5;
+const SLIPPAGE_MIN_FILLS = 20;
+
+function buildSlippageCriterion(): PromotionCriterionRow {
+  const base = {
+    id: 'slippage',
+    label: 'Slippage drift < 2x model',
+    target: `< +${SLIPPAGE_MODEL_BPS} bps vs model`,
+  };
+  if (!mirrorEnabled()) {
+    return { ...base, actual: 'n/a on paper (fills are the model; enable Alpaca mirror)', status: 'n/a' };
+  }
+  const drift = mirrorDriftStats();
+  if (!drift || drift.fills < SLIPPAGE_MIN_FILLS) {
+    const n = drift?.fills ?? 0;
+    return { ...base, actual: `pending (${n}/${SLIPPAGE_MIN_FILLS} mirrored day fills)`, status: 'pending' };
+  }
+  return {
+    ...base,
+    actual: `${drift.meanDriftBps >= 0 ? '+' : ''}${drift.meanDriftBps.toFixed(1)} bps mean over ${drift.fills} fills`,
+    status: drift.meanDriftBps < SLIPPAGE_MODEL_BPS ? 'pass' : 'fail',
+  };
 }

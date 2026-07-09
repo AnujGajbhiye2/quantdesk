@@ -20,6 +20,8 @@
 import type { DataProvider } from '../DataProvider';
 import { validateBars, validateSymbolMetas } from '../schemas';
 import type { AssetClass, Bar, SymbolMeta, Timeframe } from '@/core/types';
+import type { AlpacaFeed } from '@/core/broker/alpaca-env';
+import type { SlidingWindowLimiter } from '@/core/broker/rate-limiter';
 import { z } from 'zod';
 
 // -------------------------------------------------------------------------
@@ -76,6 +78,10 @@ interface AlpacaProviderOptions {
   secretKey: string;
   /** Max consecutive retries on 429/5xx. Default 3. */
   maxRetries?: number;
+  /** Data feed - 'iex' (free tier, default) or 'sip' (Algo Trader Plus). */
+  feed?: AlpacaFeed;
+  /** Shared account-wide rate limiter (one budget across data + trading APIs). */
+  limiter?: SlidingWindowLimiter;
 }
 
 // -------------------------------------------------------------------------
@@ -104,11 +110,15 @@ export class AlpacaProvider implements DataProvider {
   private readonly keyId:     string;
   private readonly secretKey: string;
   private readonly maxRetries: number;
+  private readonly feed:      AlpacaFeed;
+  private readonly limiter?:  SlidingWindowLimiter;
 
   constructor(opts: AlpacaProviderOptions) {
     this.keyId      = opts.keyId;
     this.secretKey  = opts.secretKey;
     this.maxRetries = opts.maxRetries ?? 3;
+    this.feed       = opts.feed ?? 'iex';
+    this.limiter    = opts.limiter;
   }
 
   /** Alpaca uses standard US equity tickers; no translation needed. */
@@ -120,6 +130,7 @@ export class AlpacaProvider implements DataProvider {
   // Internal fetch helper with retry + auth
   // -----------------------------------------------------------------------
   private async apiFetch(url: string, attempt = 0): Promise<unknown> {
+    await this.limiter?.acquire();
     const resp = await fetch(url, {
       headers: {
         'APCA-API-KEY-ID':     this.keyId,
@@ -165,7 +176,7 @@ export class AlpacaProvider implements DataProvider {
         timeframe: tf,
         start:     from,
         end:       to,
-        feed:      'iex',
+        feed:      this.feed,
         adjustment: 'all',
         limit:     '10000',
       });
@@ -211,7 +222,7 @@ export class AlpacaProvider implements DataProvider {
           timeframe:  tf,
           start:      from,
           end:        to,
-          feed:       'iex',
+          feed:       this.feed,
           adjustment: 'all',
           limit:      '10000',
         });
@@ -244,7 +255,7 @@ export class AlpacaProvider implements DataProvider {
   async getQuote(symbol: string): Promise<{ price: number; time: string } | null> {
     const sym = this.toProviderSymbol(symbol);
     try {
-      const url = `${DATA_BASE}/stocks/snapshots?symbols=${encodeURIComponent(sym)}&feed=iex`;
+      const url = `${DATA_BASE}/stocks/snapshots?symbols=${encodeURIComponent(sym)}&feed=${this.feed}`;
       const raw = await this.apiFetch(url);
       const data = AlpacaMultiSnapshotResponseSchema.safeParse(raw);
       if (!data.success) return null;

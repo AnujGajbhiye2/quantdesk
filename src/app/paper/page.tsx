@@ -235,11 +235,21 @@ function ByStrategyTable({
   return <DataTable columns={columns} data={rows} enableSorting />;
 }
 
+/** Per-trade Alpaca mirror status from the list API (mirrorEnabled only). */
+interface MirrorInfo {
+  leg:           string;
+  status:        string;
+  brokerOrderId: string | null;
+  fillPrice:     number | null;
+  driftBps:      number | null;
+}
+
 function TradesTable({
   trades,
   marks,
   displayCur,
   fxRates,
+  mirror,
   onClose,
   onCancel,
 }: {
@@ -247,6 +257,8 @@ function TradesTable({
   marks:      Map<string, MarkEntry>;
   displayCur: string;
   fxRates:    Record<string, number>;
+  /** Undefined = mirroring disabled - MIRROR column hidden entirely. */
+  mirror?:    Record<string, MirrorInfo>;
   /** Omit both to render read-only (no ACTION column) - non-admin viewers. */
   onClose?:   (id: string) => void;
   onCancel?:  (id: string) => void;
@@ -410,6 +422,37 @@ function TradesTable({
       },
       meta: { align: 'center' },
     },
+    // MIRROR column only when Alpaca mirroring is enabled server-side
+    ...(mirror ? [{
+      id: 'mirror',
+      header: 'MIRROR',
+      cell: ({ row: { original: t } }: { row: { original: PaperTradeWithHold } }) => {
+        const m = mirror[t.id];
+        if (!m) return <span style={{ color: 'var(--text-muted)' }}>--</span>;
+        const color =
+          m.status === 'filled' ? 'var(--color-up)'
+          : m.status === 'rejected' || m.status === 'failed' ? 'var(--color-down)'
+          : m.status === 'skipped' || m.status === 'canceled' ? 'var(--text-muted)'
+          : 'var(--color-pending)';
+        const title = [
+          `${m.leg} leg: ${m.status}`,
+          m.brokerOrderId ? `alpaca order ${m.brokerOrderId}` : null,
+          m.fillPrice != null ? `fill ${m.fillPrice}` : null,
+          m.driftBps != null ? `drift ${m.driftBps >= 0 ? '+' : ''}${m.driftBps.toFixed(1)} bps vs model` : null,
+        ].filter(Boolean).join(' · ');
+        return (
+          <span style={{ color, whiteSpace: 'nowrap' }} title={title}>
+            {m.status.toUpperCase()}
+            {m.driftBps != null && (
+              <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)', marginLeft: 4 }}>
+                {m.driftBps >= 0 ? '+' : ''}{m.driftBps.toFixed(1)}bp
+              </span>
+            )}
+          </span>
+        );
+      },
+      meta: { align: 'center' },
+    } as ColumnDef<PaperTradeWithHold, unknown>] : []),
     // ACTION column omitted entirely when neither handler is passed - read-only
     // viewers (non-admin) never see a CLOSE/CANCEL control, not just a disabled one.
     ...(onClose || onCancel ? [{
@@ -437,7 +480,7 @@ function TradesTable({
       meta: { align: 'center' },
     } as ColumnDef<PaperTradeWithHold, unknown>] : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [displayCur, marks, fxRates, onClose, onCancel, dispGlyph]);
+  ], [displayCur, marks, fxRates, mirror, onClose, onCancel, dispGlyph]);
 
   if (trades.length === 0) {
     return <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', padding: 8 }}>no trades yet</p>;
@@ -585,6 +628,7 @@ function PendingOrdersTable({
 export default function PaperPage() {
   const { isAdmin } = useAuth();
   const [trades,       setTrades]       = useState<PaperTradeWithHold[]>([]);
+  const [mirrorInfo,   setMirrorInfo]   = useState<Record<string, MirrorInfo> | undefined>(undefined);
   const [performance,  setPerformance]  = useState<PerfMetrics | null>(null);
   const [marks,        setMarks]        = useState<Map<string, MarkEntry>>(new Map());
   const [book,         setBook]         = useState<TradeBook | null>(null);
@@ -628,8 +672,13 @@ export default function PaperPage() {
       setEquityHistory(history);
     }
     if (tRes.ok) {
-      const { trades: t } = await tRes.json() as { trades: PaperTrade[] };
+      const { trades: t, mirrorEnabled: me, mirror } = await tRes.json() as {
+        trades: PaperTrade[];
+        mirrorEnabled?: boolean;
+        mirror?: Record<string, MirrorInfo>;
+      };
       setTrades(t);
+      setMirrorInfo(me ? (mirror ?? {}) : undefined);
     }
     if (bRes.ok) {
       const { book: b } = await bRes.json() as { book: TradeBook };
@@ -1143,6 +1192,7 @@ export default function PaperPage() {
             marks={marks}
             displayCur={displayCur}
             fxRates={fxRates}
+            mirror={mirrorInfo}
             onClose={isAdmin ? handleClose : undefined}
             onCancel={isAdmin ? handleCancel : undefined}
           />

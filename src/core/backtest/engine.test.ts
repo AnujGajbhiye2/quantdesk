@@ -465,3 +465,51 @@ describe('short positions', () => {
     expect(result.trades[0].exitPrice).toBeCloseTo(80, 6);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Regulatory cost model (SEC/TAF on sells) - opt-in via config.costModel
+// ---------------------------------------------------------------------------
+
+describe('costModel fees', () => {
+  const bars: Bar[] = [
+    { time: '2024-01-01', open: 98,  high: 105, low: 95,  close: 100, volume: 1000 },
+    { time: '2024-01-02', open: 100, high: 108, low: 97,  close: 106, volume: 1000 },
+    { time: '2024-01-03', open: 106, high: 115, low: 104, close: 112, volume: 1000 },
+    { time: '2024-01-04', open: 112, high: 118, low: 108, close: 115, volume: 1000 },
+    { time: '2024-01-05', open: 115, high: 120, low: 112, close: 118, volume: 1000 },
+    { time: '2024-01-06', open: 120, high: 125, low: 118, close: 122, volume: 1000 },
+  ];
+
+  const strategy = barMapStrategy({
+    0: { action: 'enter_long' },
+    4: { action: 'exit' },
+  });
+
+  const costModel = {
+    commissionPerFill: 0,
+    secFeeRate: 0.0000278,
+    tafPerShare: 0.000166,
+    tafCap: 8.3,
+  };
+
+  it('long trade pnl is reduced by exactly the sell-leg fees', () => {
+    const base = runBacktest({
+      strategy, bars, rawParams: {}, initialEquity: 1000, commission: 0, slippagePct: 0,
+    });
+    const withFees = runBacktest({
+      strategy, bars, rawParams: {}, initialEquity: 1000, commission: 0, slippagePct: 0,
+      costModel,
+    });
+    // qty = 10, sell at 120: SEC = 10*120*0.0000278 = 0.03336;
+    // TAF = 10*0.000166 = 0.00166 -> total 0.03502
+    const expectedFees = 10 * 120 * costModel.secFeeRate + 10 * costModel.tafPerShare;
+    expect(withFees.trades[0].pnl).toBeCloseTo(base.trades[0].pnl - expectedFees, 6);
+    expect(withFees.trades[0].costs).toBeCloseTo(expectedFees, 6);
+  });
+
+  it('omitting costModel keeps existing behavior', () => {
+    const a = runBacktest({ strategy, bars, rawParams: {}, initialEquity: 1000, commission: 5, slippagePct: 0 });
+    expect(a.trades[0].pnl).toBeCloseTo(190, 6);
+    expect(a.trades[0].costs).toBeCloseTo(10, 6);
+  });
+});

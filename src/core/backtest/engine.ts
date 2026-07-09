@@ -38,6 +38,7 @@ import {
   type SlippageFn,
 } from './fills';
 import { compute as computeIndicator } from '../indicators/registry';
+import { fillFees, type CostModel } from '../costs';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -108,6 +109,14 @@ export interface BacktestConfig {
   fillOn?: 'next_open' | 'close';
   /** Commission per fill in currency. Default 0. */
   commission?: number;
+  /**
+   * Optional US regulatory fee model (SEC + TAF on sells). When set, per-fill
+   * fees are charged on top of `commission` and included in each trade's
+   * costs. Default: unset (today's behavior, existing evidence reproducible).
+   * Note: with partial exits, the short entry's sell fee is attributed to
+   * each closing leg pro rata via that leg's qty.
+   */
+  costModel?: CostModel;
   /** Flat adverse slippage fraction per market fill. Default 0.0005 (0.05%). Ignored when slippageFn is set. */
   slippagePct?: number;
   /**
@@ -250,6 +259,7 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     rawParams    = {},
     fillOn       = 'next_open',
     commission   = 0,
+    costModel,
     slippagePct  = 0.0005,
     initialEquity = 10_000,
     barsPerYear  = 252,
@@ -267,6 +277,10 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     targetRatchetExtensionR:     cfgRatchetR,
     targetRatchetMaxExtensions:  cfgRatchetMaxExt,
   } = config;
+
+  // Regulatory fee per fill (0 without a costModel). Sells pay SEC + TAF.
+  const regFee = (action: 'buy' | 'sell', qty: number, price: number): number =>
+    costModel ? fillFees(costModel, action, qty, price) : 0;
 
   // Pre-compute ATR% for each bar when a slippageFn is provided (O(n) once).
   // atrPctArr[i] = ATR(14)[i] / bars[i].close, or 0 when NaN (warm-up).
@@ -339,7 +353,7 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     const fillPrice = entryFillPrice('long', rawOpen, slippageAt(barIndex));
     const qty = qtyForCash(cash, pending.sizePct, fillPrice);
 
-    cash -= fillPrice * qty + commission;
+    cash -= fillPrice * qty + commission + regFee('buy', qty, fillPrice);
 
     let { stopPrice, targetPrice } = stopTargetPrices(
       'long', fillPrice, pending.stopPct, pending.targetPct,
@@ -403,8 +417,8 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     const fillPrice = entryFillPrice('short', rawOpen, slippageAt(barIndex));
     const qty = qtyForCash(cash, pending.sizePct, fillPrice);
 
-    // Short sale: receive proceeds, pay commission
-    cash += fillPrice * qty - commission;
+    // Short sale: receive proceeds, pay commission + sell-side regulatory fees
+    cash += fillPrice * qty - commission - regFee('sell', qty, fillPrice);
 
     const { stopPrice, targetPrice } = stopTargetPrices(
       'short', fillPrice, pending.stopPct, pending.targetPct,
@@ -449,8 +463,11 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     if (!openTrade || openTrade.side !== 'long') return;
     const { entryFillPrice: entryFill, qty, entryTime, entryBar, entryReason } = openTrade;
 
-    cash += fillPrice * qty - commission;
-    const { pnl, costs } = realizedPnl('long', entryFill, fillPrice, qty, commission);
+    const fees = regFee('buy', qty, entryFill) + regFee('sell', qty, fillPrice);
+    cash += fillPrice * qty - commission - regFee('sell', qty, fillPrice);
+    const base = realizedPnl('long', entryFill, fillPrice, qty, commission);
+    const pnl   = base.pnl - fees;
+    const costs = base.costs + fees;
 
     trades.push({
       id:          `trade-${++tradeIdCounter}`,
@@ -486,8 +503,11 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     if (!openTrade || openTrade.side !== 'short') return;
     const { entryFillPrice: entryFill, qty, entryTime, entryBar, entryReason } = openTrade;
 
-    cash -= fillPrice * qty + commission;
-    const { pnl, costs } = realizedPnl('short', entryFill, fillPrice, qty, commission);
+    const fees = regFee('sell', qty, entryFill) + regFee('buy', qty, fillPrice);
+    cash -= fillPrice * qty + commission + regFee('buy', qty, fillPrice);
+    const base = realizedPnl('short', entryFill, fillPrice, qty, commission);
+    const pnl   = base.pnl - fees;
+    const costs = base.costs + fees;
 
     trades.push({
       id:          `trade-${++tradeIdCounter}`,
@@ -525,8 +545,11 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     const frac   = partialExitFraction ?? 0.5;
     const partQty = qty * frac;
 
-    cash += fillPrice * partQty - commission;
-    const { pnl, costs } = realizedPnl('long', entryFill, fillPrice, partQty, commission);
+    const fees = regFee('buy', partQty, entryFill) + regFee('sell', partQty, fillPrice);
+    cash += fillPrice * partQty - commission - regFee('sell', partQty, fillPrice);
+    const base = realizedPnl('long', entryFill, fillPrice, partQty, commission);
+    const pnl   = base.pnl - fees;
+    const costs = base.costs + fees;
 
     trades.push({
       id:          `trade-${++tradeIdCounter}`,
@@ -561,8 +584,11 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     const frac    = partialExitFraction ?? 0.5;
     const partQty = qty * frac;
 
-    cash -= fillPrice * partQty + commission;
-    const { pnl, costs } = realizedPnl('short', entryFill, fillPrice, partQty, commission);
+    const fees = regFee('sell', partQty, entryFill) + regFee('buy', partQty, fillPrice);
+    cash -= fillPrice * partQty + commission + regFee('buy', partQty, fillPrice);
+    const base = realizedPnl('short', entryFill, fillPrice, partQty, commission);
+    const pnl   = base.pnl - fees;
+    const costs = base.costs + fees;
 
     trades.push({
       id:          `trade-${++tradeIdCounter}`,
