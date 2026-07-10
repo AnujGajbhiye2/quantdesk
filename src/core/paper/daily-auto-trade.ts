@@ -25,7 +25,7 @@ import { markOpenTrades } from '@/core/paper/broker';
 import { getActivePaperTradeBySymbol, getPaperTrades } from '@/core/db/paper';
 import { getLatestBarTime, getRecentBars, getAllSymbols } from '@/core/db/bars';
 import { recommendTrade, capIdeaToCash } from '@/core/signals/recommend';
-import { listLive as listLiveStrategies } from '@/core/strategy/registry';
+import { listLiveDaily as listLiveStrategies, isSoloConsensus } from '@/core/strategy/registry';
 import { refreshUniverse } from '@/core/data/ingest';
 import { universeForMarket, type ScanMarket } from '@/core/data/universe';
 import { sendTelegram, telegramConfigured } from '@/core/notify/telegram';
@@ -302,8 +302,10 @@ async function runDailyAutoTradeInner(
   const strategies    = listLiveStrategies();
   const totalStrats   = strategies.length;
 
+  // Transcript strategies may trade solo (consensus 1); the original six
+  // still require cfg.minConsensus agreeing strategies.
   const consensus = buildConsensus(scanResult.signals, totalStrats)
-    .filter((c) => c.agreeCount >= cfg.minConsensus);
+    .filter((c) => c.agreeCount >= cfg.minConsensus || c.strategyIds.some(isSoloConsensus));
 
   // Decisions (incl. stopPct/targetPct) captured at scan time, keyed by
   // `${symbol}:${strategyId}` - reused at execution instead of re-running

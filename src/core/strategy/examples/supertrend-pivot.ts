@@ -24,24 +24,31 @@ const paramsSchema = z.object({
   sizePct:     z.number().positive().max(1).default(1),
 });
 
-/** R1 from the prior full calendar month's bars, or NaN if none exists. */
+/**
+ * R1 from the prior full calendar month's bars, or NaN if none exists.
+ * The pivot month only counts when the walk also reaches a bar from an even
+ * older month - proof the pivot month is fully inside the window. A partial
+ * month (data starts mid-month, or intraday feeds too short to span two
+ * months) returns NaN so the strategy holds instead of using a wrong R1.
+ */
 function monthlyPivotR1(bars: ReadonlyArray<Bar>, i: number): number {
   const currentMonth = bars[i].time.slice(0, 7);
   let hi = -Infinity;
   let lo = Infinity;
   let lastClose = NaN;
   let pivotMonth = '';
-  // ponytail: bounded backward walk (~45 bars max) instead of calendar grouping
+  let sawOlderMonth = false;
+  // ponytail: bounded backward walk (fits daily worst case) instead of calendar grouping
   for (let j = i; j >= 0 && i - j < 60; j--) {
     const m = bars[j].time.slice(0, 7);
     if (m === currentMonth) continue;
     if (!pivotMonth) pivotMonth = m;
-    if (m !== pivotMonth) break;
+    if (m !== pivotMonth) { sawOlderMonth = true; break; }
     hi = Math.max(hi, bars[j].high);
     lo = Math.min(lo, bars[j].low);
     if (!Number.isFinite(lastClose)) lastClose = bars[j].close; // first hit = month's last bar
   }
-  if (!pivotMonth || !Number.isFinite(lastClose)) return NaN;
+  if (!sawOlderMonth || !Number.isFinite(lastClose)) return NaN;
   const p = (hi + lo + lastClose) / 3;
   return 2 * p - lo;
 }

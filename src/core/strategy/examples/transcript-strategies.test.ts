@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { runBacktest } from '@/core/backtest/engine';
 import { makeContext } from '@/core/strategy/context';
+import { listLive, listLiveDaily, isSoloConsensus } from '@/core/strategy/registry';
 import { Ema8MomentumBreakoutStrategy } from './ema8-momentum-breakout';
 import { CapitulationReversalStrategy } from './capitulation-reversal';
 import { Sma44PullbackStrategy } from './sma44-pullback';
@@ -71,11 +72,14 @@ function fibPullbackFixture(): number[] {
   return closes;
 }
 
-/** One flat synthetic month, then a rising month that crosses the pivot R1. */
+/**
+ * Two flat synthetic months (the pivot month must be provably complete, so a
+ * bar from an older month has to exist), then a rising month crossing R1.
+ */
 function pivotCrossFixture(): number[] {
   const closes: number[] = [];
   let price = 100;
-  for (let i = 0; i < 28; i++) closes.push(price);
+  for (let i = 0; i < 56; i++) closes.push(price);
   for (let i = 0; i < 70; i++) { price *= 1.005; closes.push(price); }
   return closes;
 }
@@ -178,5 +182,31 @@ describe('ema50-fib-pullback specifics', () => {
   it('3R structure from the swing low', () => {
     const d = findEntry(new Ema50FibPullbackStrategy(), build(fibPullbackFixture()));
     expect(d.targetPct! / d.stopPct!).toBeCloseTo(3, 5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Live-set wiring
+// ---------------------------------------------------------------------------
+
+describe('live sets', () => {
+  const transcriptIds = cases.map(([id]) => id);
+
+  it('intraday live set unchanged - excludes all transcript strategies', () => {
+    const intraday = listLive().map((s) => s.id);
+    expect(intraday).toHaveLength(6);
+    for (const id of transcriptIds) expect(intraday).not.toContain(id);
+  });
+
+  it('daily live set = intraday six + transcript five', () => {
+    const daily = listLiveDaily().map((s) => s.id);
+    expect(daily).toHaveLength(11);
+    for (const id of transcriptIds) expect(daily).toContain(id);
+  });
+
+  it('solo consensus applies only to transcript strategies', () => {
+    for (const id of transcriptIds) expect(isSoloConsensus(id)).toBe(true);
+    expect(isSoloConsensus('rsi-reversion')).toBe(false);
+    expect(isSoloConsensus('bollinger-reversion')).toBe(false);
   });
 });

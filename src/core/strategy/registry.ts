@@ -57,6 +57,29 @@ const LIVE_STRATEGY_IDS = new Set<string>([
   'stoch-reversal-short',
 ]);
 
+/**
+ * Transcript strategies (docs/transcription/strat-1..5). Daily-bar designs -
+ * live on the daily EOD auto-trade path only, NOT on the intraday 15m path
+ * (SMA44 of 15m bars = ~11 hours, not the videos' 44 days). They may trade
+ * solo (consensus 1) via isSoloConsensus(); the original six keep the
+ * DAILY_AUTO_TRADE_MIN_CONSENSUS rule.
+ */
+const TRANSCRIPT_STRATEGY_IDS = new Set<string>([
+  'ema8-momentum-breakout',
+  'capitulation-reversal',
+  'sma44-pullback',
+  'ema50-fib-pullback',
+  'supertrend-pivot',
+]);
+
+/** Live set for the daily EOD scan/auto-trade path: original six + transcript five. */
+const DAILY_LIVE_STRATEGY_IDS = new Set<string>([...LIVE_STRATEGY_IDS, ...TRANSCRIPT_STRATEGY_IDS]);
+
+/** True when this strategy may open a daily trade without cross-strategy consensus. */
+export function isSoloConsensus(id: string): boolean {
+  return TRANSCRIPT_STRATEGY_IDS.has(id);
+}
+
 const _registry = new Map<string, Strategy>();
 
 export function register(strategy: Strategy): void {
@@ -94,6 +117,14 @@ export function listLive(): { id: string; name: string; description: string; tie
   return list().filter(({ id }) => LIVE_STRATEGY_IDS.has(id));
 }
 
+/**
+ * Live set for the daily EOD path (scanAll + daily-auto-trade): the intraday
+ * six plus the transcript strategies, which run on daily bars as designed.
+ */
+export function listLiveDaily(): { id: string; name: string; description: string; tier: 'baseline' | 'production' }[] {
+  return list().filter(({ id }) => DAILY_LIVE_STRATEGY_IDS.has(id));
+}
+
 // Seed built-in strategies
 register(new RSIReversionStrategy());
 register(new BollingerReversionStrategy());
@@ -101,8 +132,9 @@ register(new StochReversalStrategy());
 register(new RSIReversionShortStrategy());
 register(new BollingerReversionShortStrategy());
 register(new StochReversalShortStrategy());
-// Transcript strategies (docs/transcription/strat-1..5) - research/backtest only,
-// not in LIVE_STRATEGY_IDS pending walk-forward validation.
+// Transcript strategies (docs/transcription/strat-1..5) - live on the daily
+// EOD path via DAILY_LIVE_STRATEGY_IDS (solo consensus), excluded from the
+// intraday 15m path because they are daily-bar designs.
 register(new Ema8MomentumBreakoutStrategy());
 register(new CapitulationReversalStrategy());
 register(new Sma44PullbackStrategy());

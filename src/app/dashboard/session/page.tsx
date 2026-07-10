@@ -6,7 +6,7 @@ import { getExitReasons } from '@/core/db/journal';
 import { markOpenTrades } from '@/core/paper/broker';
 import { buildPerformanceMetrics } from '@/core/paper/perf';
 import { isTradingHalted } from '@/core/paper/halt';
-import { listLive as listLiveStrategies } from '@/core/strategy/registry';
+import { listLiveDaily as listLiveStrategies } from '@/core/strategy/registry';
 import Panel from '@/components/primitives/Panel';
 import EmptyState from '@/components/primitives/EmptyState';
 import AppHeader from '@/components/primitives/AppHeader';
