@@ -411,3 +411,48 @@ describe('goldenCross() / deathCross()', () => {
     expect(result.every((v) => !v)).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Supertrend
+// ---------------------------------------------------------------------------
+
+describe('supertrend', () => {
+  // Trending series with real range so ATR is non-zero
+  const n = 60;
+  const bars = barsFromOHLCV(
+    Array.from({ length: n }, (_, i) => 100 + i),
+    Array.from({ length: n }, (_, i) => 101 + i),
+    Array.from({ length: n }, (_, i) => 99 + i),
+    Array.from({ length: n }, (_, i) => 100.5 + i),
+    Array(n).fill(1_000),
+  );
+
+  it('outputs aligned to bars.length with NaN warm-up', () => {
+    const out = compute('supertrend', bars, {}) as Record<string, number[]>;
+    expect(out.line.length).toBe(bars.length);
+    expect(out.direction.length).toBe(bars.length);
+    expect(leadingNaNs(out.line)).toBeGreaterThan(0);
+    expect(leadingNaNs(out.line)).toBe(leadingNaNs(out.direction));
+  });
+
+  it('bullish on an uptrend: direction +1 and line below close', () => {
+    const out = compute('supertrend', bars, {}) as Record<string, number[]>;
+    const i = bars.length - 1;
+    expect(out.direction[i]).toBe(1);
+    expect(out.line[i]).toBeLessThan(bars[i].close);
+  });
+
+  it('bearish on a downtrend: direction -1 and line above close', () => {
+    const down = barsFromOHLCV(
+      Array.from({ length: n }, (_, i) => 200 - i),
+      Array.from({ length: n }, (_, i) => 201 - i),
+      Array.from({ length: n }, (_, i) => 199 - i),
+      Array.from({ length: n }, (_, i) => 199.5 - i),
+      Array(n).fill(1_000),
+    );
+    const out = compute('supertrend', down, {}) as Record<string, number[]>;
+    const i = down.length - 1;
+    expect(out.direction[i]).toBe(-1);
+    expect(out.line[i]).toBeGreaterThan(down[i].close);
+  });
+});

@@ -273,3 +273,57 @@ register({
     return padLeft(ta.willr(highs(bars), lows(bars), closes(bars), period), bars.length);
   },
 });
+
+// --- Supertrend -----------------------------------------------------------
+// Not in @ixjb94/indicators - hand-rolled standard recursion on top of ta.atr.
+// Returns { line, direction }: direction[i] is +1 (bullish, line below price)
+// or -1 (bearish, line above price), NaN during ATR warm-up.
+const supertrendSchema = z.object({
+  period:     z.number().int().positive().default(10),
+  multiplier: z.number().positive().default(3),
+});
+
+register({
+  id: 'supertrend',
+  label: 'Supertrend',
+  params: supertrendSchema,
+  compute(bars, rawParams) {
+    const p = supertrendSchema.parse(rawParams);
+    const n = bars.length;
+    const atr = padLeft(ta.atr(highs(bars), lows(bars), closes(bars), p.period), n);
+    const line = new Array<number>(n).fill(NaN);
+    const direction = new Array<number>(n).fill(NaN);
+
+    let prevFinalUpper = NaN;
+    let prevFinalLower = NaN;
+    let prevDir = 1;
+
+    for (let i = 0; i < n; i++) {
+      if (!Number.isFinite(atr[i])) continue;
+      const b = bars[i];
+      const hl2 = (b.high + b.low) / 2;
+      const basicUpper = hl2 + p.multiplier * atr[i];
+      const basicLower = hl2 - p.multiplier * atr[i];
+      const prevClose = i > 0 ? bars[i - 1].close : b.close;
+
+      const finalUpper =
+        !Number.isFinite(prevFinalUpper) || basicUpper < prevFinalUpper || prevClose > prevFinalUpper
+          ? basicUpper
+          : prevFinalUpper;
+      const finalLower =
+        !Number.isFinite(prevFinalLower) || basicLower > prevFinalLower || prevClose < prevFinalLower
+          ? basicLower
+          : prevFinalLower;
+
+      const dir = prevDir === 1 ? (b.close < finalLower ? -1 : 1) : (b.close > finalUpper ? 1 : -1);
+
+      line[i] = dir === 1 ? finalLower : finalUpper;
+      direction[i] = dir;
+      prevFinalUpper = finalUpper;
+      prevFinalLower = finalLower;
+      prevDir = dir;
+    }
+
+    return { line, direction };
+  },
+});

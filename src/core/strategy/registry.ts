@@ -6,6 +6,11 @@ import { StochReversalStrategy }      from './examples/stoch-reversal';
 import { RSIReversionShortStrategy }      from './examples/rsi-reversion-short';
 import { BollingerReversionShortStrategy } from './examples/bollinger-reversion-short';
 import { StochReversalShortStrategy }      from './examples/stoch-reversal-short';
+import { Ema8MomentumBreakoutStrategy }    from './examples/ema8-momentum-breakout';
+import { CapitulationReversalStrategy }    from './examples/capitulation-reversal';
+import { Sma44PullbackStrategy }           from './examples/sma44-pullback';
+import { Ema50FibPullbackStrategy }        from './examples/ema50-fib-pullback';
+import { SupertrendPivotStrategy }         from './examples/supertrend-pivot';
 
 /**
  * Strategy registry.
@@ -96,3 +101,10 @@ register(new StochReversalStrategy());
 register(new RSIReversionShortStrategy());
 register(new BollingerReversionShortStrategy());
 register(new StochReversalShortStrategy());
+// Transcript strategies (docs/transcription/strat-1..5) - research/backtest only,
+// not in LIVE_STRATEGY_IDS pending walk-forward validation.
+register(new Ema8MomentumBreakoutStrategy());
+register(new CapitulationReversalStrategy());
+register(new Sma44PullbackStrategy());
+register(new Ema50FibPullbackStrategy());
+register(new SupertrendPivotStrategy());
